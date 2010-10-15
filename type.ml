@@ -2,6 +2,11 @@ type variable = string
 
 type operation = string
 
+type arity =
+  | Zero
+  | One
+  | Two
+
 type signature = {
   sig_const : operation list;
   sig_unary: operation list;

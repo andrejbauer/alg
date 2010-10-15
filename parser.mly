@@ -19,10 +19,9 @@ theory: s = signature a = axioms EOF
 
 signature: SIGNATURE COLON lst = list(op_declaration)
   { List.fold_left (fun s -> function
-                      | (0, op) -> {s with sig_const = op :: s.sig_const}
-                      | (1, op) -> {s with sig_unary = op :: s.sig_unary}
-                      | (2, op) -> {s with sig_binary = op :: s.sig_binary}
-                      | _ -> assert false)
+                      | (Zero, op) -> {s with sig_const = op :: s.sig_const}
+                      | (One, op) -> {s with sig_unary = op :: s.sig_unary}
+                      | (Two, op) -> {s with sig_binary = op :: s.sig_binary})
       { sig_const = []; sig_unary = []; sig_binary = [] } lst
   }
 
@@ -39,9 +38,9 @@ op_declaration: op = name COLON k = arity
   { (k, op) }
 
 arity:
-  | ZERO { 0 }
-  | ONE  { 1 }
-  | TWO  { 2 }
+  | ZERO { Zero }
+  | ONE  { One }
+  | TWO  { Two }
 
 equation: t1 = term EQUAL t2 = term
   { (t1, t2) }
