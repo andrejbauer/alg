@@ -34,7 +34,7 @@ type theory = {
   axioms : equation list
 }
 
-type structure = {
+type algebra = {
   size : int;
   const : (operation * int) list;
   unary : (operation * int array) list;
