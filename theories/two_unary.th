@@ -1,0 +1,11 @@
+# Test axioms for two unary operations
+signature:
+        e : 0
+        f : 1
+        g : 1
+        h : 1
+axioms:
+        f(g(h(x))) = h(g(f(x)));
+        g(f(h(x))) = f(g(h(x)));
+        g(h(f(x))) = f(g(x));
+        f(e) = e;
