@@ -12,20 +12,17 @@ let invert = List.map (fun (a,b) -> (b,a))
 
 let zip = List.combine
 
-let list_of_array n arr =
-  let xs = ref [] in
-  for i=0 to n-1 do
-    xs := arr.(i) :: !xs
-  done ; !xs
+let list_of_array = Array.to_list
 
 (* Select axioms that refer only to unary operations and constants. *)
 let part_axioms axioms =
   let rec no_binary = function
     | Binary _ -> false
     | Unary (_, t) -> no_binary t
-    | _ -> true in
+    | Var _ | Const _ -> true in
   let no_binary_axiom (eq1, eq2) = no_binary eq1 && no_binary eq2 in
-  (List.filter no_binary_axiom axioms, List.filter (fun x -> not (no_binary_axiom x)) axioms)
+    (* Andrej: why aren't you using List.partition here? *)
+    (List.filter no_binary_axiom axioms, List.filter (fun x -> not (no_binary_axiom x)) axioms)
 
 
 (*
@@ -104,12 +101,10 @@ let make_3d_array x y z initial =
   Depth of an equation is the number of binary operations in it.
 *)
 let axiom_depth (left, right) =
-  let rec
-      term_depth acc = function
-        | (Unary (_,t)) -> term_depth acc t
-        | (Var _) | (Const _) -> acc
-        | (Binary (_,t1,t2)) -> let dl = term_depth acc t1 in
-                               term_depth dl t2
+  let rec term_depth acc = function
+    | (Unary (_,t)) -> term_depth acc t
+    | (Var _) | (Const _) -> acc
+    | (Binary (_,t1,t2)) -> term_depth (term_depth acc t1) t2
   in max (term_depth 0 left) (term_depth 0 right)
 
 (*
@@ -292,8 +287,8 @@ let gen_binary n const unary binary axioms unary_arr k =
         end
       | (Binary (op, lt, rt)) ->
         begin
-          (* This would be faster if i would first check left side
-             and then right only if left is not None *)
+          (* This would be faster if I first checked the left side
+             and then the right only if left is not None *)
           match (eval_eq i lt, eval_eq i rt) with
             | (None, _) | (_, None) -> None
             | (Some lv, Some rv) when lv = -1 || rv = -1 -> None

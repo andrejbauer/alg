@@ -1,23 +1,23 @@
-# The axioms for a ring
+# The axioms for a ring with unit
 signature:
         m : 2 #add
         n : 2 #mult
         i : 1 #additive inverse
-        e : 0 #additive unit
-        f : 0 #multiplicative unit
+        0 : 0 #additive unit
+        1 : 0 #multiplicative unit
 
 axioms:
-        i(e) = e;
+        i(0) = 0;
         i(i(x)) = x;
-        m(x,i(x)) = x;
-        m(i(x),x) = x;
-        m(e,x) = x;
-        m(x,e) = x;
+        m(x,i(x)) = 0;
+        m(i(x),x) = 0;
+        m(0,x) = x;
+        m(x,0) = x;
         m(x,m(y,z)) = m(m(x,y),z);
         m(x,y) = m(y,x);
         
-        n(f,x) = x;
-        n(x,f) = x;
+        n(1,x) = x;
+        n(x,1) = x;
         n(x,n(y,z)) = n(n(x,y),z);
         n(m(x,y),z) = m(n(x,z),n(y,z));
         n(x,m(y,z)) = m(n(x,y),n(x,z));
