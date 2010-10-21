@@ -63,4 +63,7 @@ let are_iso {size=n1; const=c1; unary=u1; binary=b1}
         p := !p || is_isomorphism perms.(i) 
       done ; !p
 
+(* 
+   Have we already seen an algebra of this isomorphism type. 
+*)
 let seen s alg = List.fold_left (fun p c -> p || are_iso c alg s) false
