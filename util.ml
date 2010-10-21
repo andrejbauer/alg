@@ -62,8 +62,64 @@ let perms n =
         else ()
       done in loop 0; arr
 
+(* 
+   Make fresh copies of operation tables of a given algebra. 
+*)
 let copy_algebra {size=n; const=const; unary=unary; binary=binary} = 
   let unaryc = List.map (fun (op, arr) -> (op, Array.copy arr)) unary in
   let binaryc = List.map (fun (op, arr) -> 
                             (op, Array.copy (Array.map Array.copy arr))) binary in
   {size=n; const=const; unary=unaryc; binary=binaryc}
+
+(*
+  Generate next k-combination of elements 0..n-1.
+*)
+let next_comb n k cur = 
+  let i = ref 0 in
+  while !i < k && cur.(k - !i - 1) >= n - !i - 1 do
+    incr i
+  done ; 
+  if !i = k then
+    None
+  else
+    begin
+      cur.(k- !i-1) <- cur.(k- !i-1) + 1;
+      decr i;
+      for j = !i downto 0 do
+        cur.(k-j-1) <- cur.(k-j-2) + 1;
+      done ;
+      Some cur
+    end
+
+(*
+  Generate all k element subsets of 0..n-1 and pass each set to a given continuation.
+*)
+let combs n k cont = 
+  let cur = Array.make k 0 in
+  for i=0 to k-1 do
+    cur.(i) <- i
+  done ; 
+  let rec loop = function 
+    | None -> ()
+    | Some arr -> cont arr ; 
+                  loop (next_comb n k cur) 
+  in loop (Some cur)
+
+
+(*
+  Generate all k element subsets of the given elements and pass each one to a
+  given continuation. Elements are assumed to  be distinct.
+*)
+let subsets k elems cont = 
+  let n = Array.length elems in
+  let tmp = Array.make k 0 in
+  let f arr = 
+    for i=0 to k-1 do
+      tmp.(i) <- elems.(arr.(i));
+    done ; cont tmp in
+  combs n k f
+
+let print_arr a = 
+  for i=0 to Array.length a - 1 do
+    Printf.printf "%d " a.(i)
+  done ; print_endline ""
