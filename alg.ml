@@ -1,5 +1,9 @@
 open Type
 
+open Iso
+
+open Util
+
 let size = ref 3
 let noniso = ref false
 let irreducible = ref false
@@ -46,8 +50,25 @@ try
     close_in fh ;
     let theory = Cook.cook_theory raw_theory in
     let k = ref 0 in
+    let unique = ref [] in
     let names = Print.names !size theory.signature in
-      Enum.enum !size theory (fun a -> incr k ; Print.algebra names a) ;
+    let cont a = 
+      if !noniso then
+        begin
+          if not (seen theory.signature a !unique) then
+            begin
+              incr k;
+              unique := (copy_algebra a) :: !unique ;
+              Print.algebra names a
+            end
+          else ()
+        end
+      else 
+        begin
+          incr k;
+          Print.algebra names a
+        end in 
+      Enum.enum !size theory cont ;
       print_endline ("\nTotal count: " ^ string_of_int !k)
 with
     Error.Error (pos, err, msg) -> print_endline (err ^ " error: " ^ msg)

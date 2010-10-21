@@ -1,3 +1,5 @@
+open Type
+
 (*
   Generating all ntuples.
 *)
@@ -28,3 +30,40 @@ let ntuples j n =
         end
       done in loop 0 ; arr
 
+let fac n = 
+  let r = ref 1 in
+  for i=2 to n do
+    r := !r * i
+  done ; !r
+
+(* generate array of all permutations of elements 0..n-1 *)
+let perms n =
+  let arr = Array.make_matrix (fac n) n 0 in
+  let place = ref 0 in
+  let used = Array.make n false in
+  let cur = Array.make n 0 in
+  let rec loop = function
+    | k when k = n -> 
+      begin 
+        for i=0 to n-1 do
+          arr.(!place).(i) <- cur.(i);
+        done ;
+        place := !place + 1
+      end
+    | k -> 
+      for i=0 to n-1 do
+        if not used.(i) then
+          begin
+            used.(i) <- true;
+            cur.(k) <- i;
+            loop (k+1) ;
+            used.(i) <- false
+          end
+        else ()
+      done in loop 0; arr
+
+let copy_algebra {size=n; const=const; unary=unary; binary=binary} = 
+  let unaryc = List.map (fun (op, arr) -> (op, Array.copy arr)) unary in
+  let binaryc = List.map (fun (op, arr) -> 
+                            (op, Array.copy (Array.map Array.copy arr))) binary in
+  {size=n; const=const; unary=unaryc; binary=binaryc}
