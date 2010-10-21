@@ -4,6 +4,7 @@ signature:
         n : 2 #mult
         i : 1 #additive inverse
         0 : 0 #additive unit
+        1 : 0 #multiplicative unit
 
 axioms:
         i(0) = 0;
@@ -15,6 +16,8 @@ axioms:
         m(x,m(y,z)) = m(m(x,y),z);
         m(x,y) = m(y,x);
         
+        n(1,x) = x;
+        n(x,1) = x;
         n(x,n(y,z)) = n(n(x,y),z);
         n(m(x,y),z) = m(n(x,z),n(y,z));
         n(x,m(y,z)) = m(n(x,y),n(x,z));
