@@ -12,7 +12,7 @@ let check_const iso c1 c2 = iso.(c1) = c2
   Checks if a function commutes with permutation.
   f(i(a)) = i(f(a)).
 *)
-let check_unary iso u1 u2 = 
+let check_unary iso u1 u2 =
   let p = ref true in
   let l = Array.length iso in 
   for i=0 to l - 1 do
@@ -36,9 +36,9 @@ let check_binary iso b1 b2 =
    Basic version. Generates all permutations and then eliminates
    all that are not isomorphisms.
 *)
-let are_iso {size=n1; const=c1; unary=u1; binary=b1}
-            {size=n2; const=c2; unary=u2; binary=b2}
-            {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op} = 
+let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
+            {size=n1; const=c1; unary=u1; binary=b1}
+            {size=n2; const=c2; unary=u2; binary=b2} =
   if n1 <> n2 then
     false
   else
@@ -66,4 +66,4 @@ let are_iso {size=n1; const=c1; unary=u1; binary=b1}
 (* 
    Have we already seen an algebra of this isomorphism type. 
 *)
-let seen s alg = List.fold_left (fun p c -> p || are_iso c alg s) false
+let seen s a lst = List.exists (are_iso s a) lst

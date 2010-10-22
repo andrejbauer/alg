@@ -1,0 +1,10 @@
+# Idempotent monoids
+signature:
+   1 : 0
+   m : 2
+
+axioms:
+        m(x,x) = x;
+        m(1,x) = x;
+        m(x,1) = x;
+        m(x,m(y,z)) = m(m(x,y),z);
