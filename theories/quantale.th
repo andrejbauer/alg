@@ -1,11 +1,15 @@
-# The theory of a bounded lattice
+# The theory of a quantale
 signature:
+   ### Lattice structure
    1 : 0 # top
    0 : 0 # bottom
    & : 2 # binary meet
    | : 2 # binary join
+   ### Multiplication
+   * : 2
 
 axioms:
+   ### Lattice structure
    # properties of 0 and 1
    0 | x = x;
    x | 0 = x;
@@ -26,3 +30,7 @@ axioms:
    # absorption laws
    x & (x | y) = x;
    x | (x & y) = x;
+   ### Multiplication
+   x * (y * z) = (x * y) * z;
+   x * (y | z) = (x | y) * (x | z);
+   (y | z) * x = (y | x) * (z | x);

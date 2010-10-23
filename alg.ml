@@ -5,8 +5,9 @@ open Iso
 open Util
 
 let size = ref 3
-let noniso = ref false
+let isos = ref false
 let irreducible = ref false
+let count_only = ref false
 
 (* Command-line options and usage *)
 let usage = "Usage: alg --size <n> <theory.th>" ;;
@@ -18,12 +19,15 @@ let options = Arg.align [
   ("--size",
     Arg.Int (fun n -> size := n),
     " Look for models of this size (default " ^ string_of_int !size ^ ")");
+  ("--count",
+    Arg.Set count_only,
+    " Just count the models, do not print them out.");
   ("--isos",
-    Arg.Set noniso,
+    Arg.Set isos,
     " Output all algebras instead of just one for each isomorphism type");
   ("--irreducible",
     Arg.Set irreducible,
-    " Output only irreducible algebras");
+    " Output only irreducible algebras (not implemented)");
 ] ;;
 
 (* Main program *)
@@ -53,21 +57,18 @@ try
     let unique = ref [] in
     let names = Print.names !size theory.signature in
     let cont a = 
-      if !noniso then
-        begin
-          if not (seen theory.signature a !unique) then
-            begin
-              incr k;
-              unique := (copy_algebra a) :: !unique ;
-              Print.algebra names a
-            end
-          else ()
-        end
-      else 
+      if !isos then
         begin
           incr k;
-          Print.algebra names a
-        end in 
+          if not !count_only then Print.algebra names a
+        end
+      else if not (seen theory.signature a !unique) then
+        begin
+          incr k;
+          unique := (copy_algebra a) :: !unique ;
+          if not !count_only then Print.algebra names a
+        end
+    in 
       Enum.enum !size theory cont ;
       print_endline ("\nTotal count: " ^ string_of_int !k)
 with

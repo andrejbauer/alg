@@ -1,0 +1,29 @@
+# The theory of an involutive unital quantale
+signature:
+   0 : 0 # bottom
+   1 : 0 # one
+   i : 1 # involution
+   | : 2 # join
+   & : 2 # tensor
+
+axioms:
+   ### 0 and | form a semilattice
+   0 | x = x;
+   x | 0 = x;
+   x | y = y | x;
+   x | (y | z) = (x | y) | z;
+   x | x = x;
+   ### 1 and & form a monoid
+   1 & x = x;
+   x & 1 = x;
+   x & (y & z) = (x & y) & z;
+   ### & and |
+   x & 0 = 0;
+   x & (y | z) = (x & y) | (x & z);
+   ### involution
+   i(i(x)) = x;
+   i(x & y) = i(x) & i(y);
+   i(x | y) = i(x) | i(y);
+   ### consequences
+   i(1) = 1;
+   i(0) = 0;

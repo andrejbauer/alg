@@ -1,0 +1,6 @@
+# Semigroup
+signature:
+   * : 2
+
+axioms:
+   x * (y * z) = (x * y) * z;

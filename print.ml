@@ -34,7 +34,7 @@ let algebra names {size=n; const=const; unary=unary; binary=binary} =
                for i = 0 to n-1 do
                  Printf.printf "| %s " names.(t.(i))
                done ;
-               Printf.printf "\n"
+               Printf.printf "\n\n"
             ) unary ;
   List.iter (fun (op,t) -> 
                Printf.printf "\n\n %s " op ;

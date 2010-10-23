@@ -1,18 +1,18 @@
-# The theory of a lattice
 signature:
-   & : 2 # binary meet
-   | : 2 # binary join
+  & : 2
+  | : 2
 
 axioms:
    # properties of meet
    x & x = x;
-   x & y = y & x;
    x & (y & z) = (x & y) & z;
    # properties of join
    x | x = x;
-   x | y = y | x;
    x | (y | z) = (x | y) | z;
    # absorption laws
    x & (x | y) = x;
+   (x | y) & y = y;
    x | (x & y) = x;
-
+   (x & y) | y = y;
+   # normality
+   ((x & y) & z) & x = ((x & z) & y) & x;
