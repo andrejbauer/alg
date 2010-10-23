@@ -1,0 +1,28 @@
+# The theory of a lattice
+signature:
+   0 : 0 # least element
+   1 : 0 # greatest element
+   m : 2 # binary meet
+   j : 2 # binary join
+
+axioms:
+   # properties of 0 and 1
+   j(0,x) = x;
+   j(x,0) = x;
+   j(1,x) = 1;
+   j(x,1) = 1;
+   m(1,x) = x;
+   m(x,1) = x;
+   m(0,x) = 0;
+   m(x,0) = 0;
+   # properties of meet
+   m(x,x) = x;
+   m(x,y) = m(y,x);
+   m(m(x,y),z) = m(x, m(y,z));
+   # properties of join
+   j(x,x) = x;
+   j(x,y) = j(y,x);
+   j(j(x,y),z) = j(x, j(y,z));
+   # absorption laws
+   m(x,j(x,y)) = x;
+   j(x,m(x,y)) = x;

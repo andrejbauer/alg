@@ -18,9 +18,9 @@ let options = Arg.align [
   ("--size",
     Arg.Int (fun n -> size := n),
     " Look for models of this size (default " ^ string_of_int !size ^ ")");
-  ("--noniso",
+  ("--isos",
     Arg.Set noniso,
-    " Output one algebra of each isomorphism type");
+    " Output all algebras instead of just one for each isomorphism type");
   ("--irreducible",
     Arg.Set irreducible,
     " Output only irreducible algebras");
