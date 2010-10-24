@@ -59,14 +59,20 @@ try
             begin
               incr k;
               unique := (copy_algebra a) :: !unique ;
-              Print.algebra names a
+              Print.algebra names 
+                            (Util.invert (Util.enum_ops theory.signature.sig_unary)) 
+                            (Util.invert (Util.enum_ops theory.signature.sig_binary)) 
+                            a
             end
           else ()
         end
       else 
         begin
           incr k;
-          Print.algebra names a
+          Print.algebra names 
+                        (Util.invert (Util.enum_ops theory.signature.sig_unary)) 
+                        (Util.invert (Util.enum_ops theory.signature.sig_binary)) 
+                        a
         end in 
       Enum.enum !size theory cont ;
       print_endline ("\nTotal count: " ^ string_of_int !k)

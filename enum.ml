@@ -2,18 +2,6 @@ open Type
 open Util
 
 (* TODO This module is a little messy. *)
-(* TODO Hash tables seem to be a bit slow. *)
-
-(* Auxiliary functions. *)
-
-let enum_ops op = snd (List.fold_left (fun (k,lst) c -> (k+1, (c,k)::lst)) (0,[]) op)
-
-(* Invert assoc list. *)
-let invert = List.map (fun (a,b) -> (b,a))
-
-let zip = List.combine
-
-let list_of_array = Array.to_list
 
 (* Select axioms that refer only to unary operations and constants. *)
 let part_axioms axioms =
@@ -104,7 +92,7 @@ let axiom_depth (left, right) =
   let rec term_depth acc = function
     | (Unary (_,t)) -> term_depth acc t
     | (Var _) | (Const _) -> acc
-    | (Binary (_,t1,t2)) -> term_depth (term_depth acc t1) t2
+    | (Binary (_,t1,t2)) -> term_depth (term_depth (1+acc) t1) t2
   in max (term_depth 0 left) (term_depth 0 right)
 
 (*
@@ -138,22 +126,7 @@ let num_dist_vars a = List.length (dist_vars a)
    should only contain axioms where there is at least one binary
    operation.
 *)
-let gen_binary n const unary binary axioms unary_arr k =
-  let binary_hash = Hashtbl.create (List.length binary) in
-  List.iter (fun (a,b) -> Hashtbl.add binary_hash a b) binary ;
-
-  let unary_hash = Hashtbl.create (List.length unary) in
-  List.iter (fun (a,b) -> Hashtbl.add unary_hash a b) unary ;
-
-  let const_hash = Hashtbl.create (List.length const) in
-  List.iter (fun (a,b) -> Hashtbl.add const_hash a b) const ;
-
-  let binary_index k = Hashtbl.find binary_hash k in (* List.assoc k binary in *)
-  let unary_index k = Hashtbl.find unary_hash k in (* List.assoc k unary in *)
-  let const_index k = Hashtbl.find const_hash k in (* List.assoc k const in *)
-
-  let lb = List.length binary in
-
+let gen_binary n const lu lb axioms unary_arr k =
   let (simple, complicated) = part_binary_axioms axioms in
 
   (*
@@ -167,15 +140,15 @@ let gen_binary n const unary binary axioms unary_arr k =
   *)
   let apply_simple axiom =
     let rec get_value = function
-      | (Const c) -> const_index c
-      | (Unary (op,v)) -> unary_arr.(unary_index op).(get_value v)
+      | (Const c) -> c
+      | (Unary (op,v)) -> unary_arr.(op).(get_value v)
       | _ -> failwith "Ooops, binary operation or variable in apply_simple.get_value. This shouldn't happen!"
     in match axiom with
       | (Binary (op, t1, t2), Const c)
       | (Const c, Binary (op, t1, t2)) ->
         let v1 = get_value t1 in
         let v2 = get_value t2 in
-        binary_arr.(binary_index op).(v1).(v2) <- const_index c
+        binary_arr.(op).(v1).(v2) <- c
 
       | _ -> failwith "Not a simple binary axiom."
   in List.iter apply_simple simple ;
@@ -194,9 +167,9 @@ let gen_binary n const unary binary axioms unary_arr k =
 
   let apply_one_var axiom elem =
     let rec get_value = function
-      | (Const c) -> const_index c
+      | (Const c) -> c
       | (Var _) -> elem
-      | (Unary (op,v)) -> unary_arr.(unary_index op).(get_value v)
+      | (Unary (op,v)) -> unary_arr.(op).(get_value v)
       | _ -> failwith "Ooops, binary operation in apply_one_var.get_value. This shouldn't happen!"
     in match axiom with
       | (Binary (op, t1, t2), t3)
@@ -204,14 +177,14 @@ let gen_binary n const unary binary axioms unary_arr k =
         let v1 = get_value t1 in
         let v2 = get_value t2 in
         let v3 = get_value t3 in
-        binary_arr.(binary_index op).(v1).(v2) <- v3
+        binary_arr.(op).(v1).(v2) <- v3
       | _ -> failwith "not a legal axiom in apply_one_var"
   in
   for i=0 to n-1 do
     List.iter (fun x -> apply_one_var x i) one_var_shallow
   done ;
 
-  (* let zipped_axioms = List.map (fun a -> (num_dist_vars a, axiom_depth a, a)) left in *)
+  let zipped_axioms = List.map (fun a -> (num_dist_vars a, a)) left in
   let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in 
 
   (* This could potentially gobble up memory. TODO *)
@@ -219,41 +192,21 @@ let gen_binary n const unary binary axioms unary_arr k =
     let arr = Array.make (max_vars + 1) 0 in
     Array.mapi (fun i _ -> ntuples n i) arr in
 
-  (* Global hash table so that it is not created every time 
-     when axiom_ok is called *)
-  let var_map = Hashtbl.create max_vars in
-
   (*
      Returns false if there is a conflict.
   *)
-  let axiom_ok ((left, right) as a) =
+  let axiom_ok (num_vars, (left, right)) =
 
-    Hashtbl.clear var_map ; 
-
-    (* Count number of variables seen so far *)
-    let count = ref 0 in
-
-    (* These could be cached *)
-    let vars = dist_vars a in
-    let num_vars = List.length vars in
-    let var_index = Hashtbl.find var_map in (* List.assoc v (snd (List.fold_left (fun (k, e) b -> (k+1, (b,k)::e)) (0,[]) vars)) in *)
     let tuples = all_tuples.(num_vars) in
     let rec eval_eq i = function
-      | (Const c) -> Some (const_index c)
-      | (Var v) -> 
-        if Hashtbl.mem var_map v then Some (i.(var_index v))
-        else
-          begin
-            Hashtbl.add var_map v !count ;
-            count := !count + 1;
-            Some (i.(!count - 1))
-          end
+      | (Const c) -> Some c
+      | (Var v) -> Some (i.(v))
       | (Unary (op, t)) ->
         begin
           match eval_eq i t with
             | None -> None
             | Some v when v = -1 -> None
-            | Some v -> Some unary_arr.(unary_index op).(v)
+            | Some v -> Some unary_arr.(op).(v)
         end
       | (Binary (op, lt, rt)) ->
         begin
@@ -262,7 +215,7 @@ let gen_binary n const unary binary axioms unary_arr k =
           match (eval_eq i lt, eval_eq i rt) with
             | (None, _) | (_, None) -> None
             | (Some lv, Some rv) when lv = -1 || rv = -1 -> None
-            | (Some lv, Some rv) -> let r = binary_arr.(binary_index op).(lv).(rv) in
+            | (Some lv, Some rv) -> let r = binary_arr.(op).(lv).(rv) in
                                     if r = -1 then None else (Some r)
         end in
     let apply_to i =
@@ -276,7 +229,7 @@ let gen_binary n const unary binary axioms unary_arr k =
     Checks if all axioms are still valid.
     TODO: Needlessly slow.
   *)
-  let check () = List.for_all axiom_ok left in
+  let check () = List.for_all axiom_ok zipped_axioms in
 
 
   (* Main loop. *)
@@ -287,16 +240,14 @@ let gen_binary n const unary binary axioms unary_arr k =
           const = const;
           unary =
           begin
-            let iunary = invert unary in
             let r = ref [] in
-            for i=0 to List.length unary-1 do
-              r := (List.assoc i iunary, unary_arr.(i)) :: !r
+            for i=0 to lu - 1 do
+              r := (i, unary_arr.(i)) :: !r
             done ; !r
           end ;
-          binary = let ibinary = invert binary in
-                   let r = ref [] in
+          binary = let r = ref [] in
                    for i=0 to lb-1 do
-                     r := (List.assoc i ibinary, binary_arr.(i)) :: !r
+                     r := (i, binary_arr.(i)) :: !r
                   done ; !r
         }
     | (i,_) when i = n -> gen_operation (o+1) (0,0)
@@ -318,17 +269,7 @@ let gen_binary n const unary binary axioms unary_arr k =
    probably be changed. TODO
    const, unary and binary are assumed to be a assoc lists
 *)
-let gen_unary n const unary binary axioms k =
-  let lu = List.length unary in
-
-  let unary_hash = Hashtbl.create lu in
-  List.iter (fun (a,b) -> Hashtbl.add unary_hash a b) unary ;
-  let const_hash = Hashtbl.create (List.length const) in
-  List.iter (fun (a,b) -> Hashtbl.add const_hash a b) const ;
-
-  let unary_index k = Hashtbl.find unary_hash k in (* List.assoc k unary in *)
-  let const_index k = Hashtbl.find const_hash k in (* List.assoc k const in *)
-
+let gen_unary n const lu lb axioms k =
   let (unary_axioms, binary_axioms) = part_axioms axioms in
   (*
      Simple and complicated unary axioms. Simple are the
@@ -363,8 +304,7 @@ let gen_unary n const unary binary axioms k =
      TODO: constants and axioms of the form forall a,b f_1(...(f_n(a))...) = b
   *)
   let normal_axioms = List.map (function
-    | (eq1, eq2) -> (List.map unary_index (List.tl eq1),
-                     List.map unary_index (List.tl eq2)))
+    | (eq1, eq2) -> (List.tl eq1, List.tl eq2))
     (List.filter (function | (eq1, eq2) -> (List.hd eq1 = List.hd eq2)) paths_from_axioms) in
 
   (* Main operation tables *)
@@ -375,7 +315,7 @@ let gen_unary n const unary binary axioms k =
     (function
       | (Unary (op, Const c1), Const c2)
       | (Const c2, Unary (op, Const c1))
-        -> unary_arr.(unary_index op).(const_index c1) <- const_index c2
+        -> unary_arr.(op).(c1) <- c2
       | _ -> failwith "Something went terribly wrong!")
     simple ;
 
@@ -422,7 +362,7 @@ let gen_unary n const unary binary axioms k =
   let rec
       gen_operation i = function
         | j when j = n && i < lu - 1 -> gen_operation (i+1) 0
-        | j when j = n || i = lu -> gen_binary n const unary binary binary_axioms unary_arr k
+        | j when j = n || i = lu -> gen_binary n const lu lb binary_axioms unary_arr k
           (* || i = lu is necessary for when there aren't any unary operations *)
         | j when unary_arr.(i).(j) = -1 ->
           for k=0 to n-1 do
@@ -443,4 +383,4 @@ let gen_unary n const unary binary axioms k =
    and pass them to the given continuation.
 *)
 let enum n {signature={sig_const=const; sig_unary=unary; sig_binary=binary}; axioms=axioms} k =
-  gen_unary n (enum_ops const) (enum_ops unary) (enum_ops binary) axioms k
+  gen_unary n (enum_ops const) (List.length unary) (List.length binary) axioms k

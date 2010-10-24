@@ -1,6 +1,6 @@
 open Type
 
-(* Generate names for a given size an signature. *)
+(* Generate names for a given size and signature. *)
 let names n {sig_const=const; sig_unary=unary; sig_binary=binary} =
   let forbidden_names = const @ unary @ binary in
   let default_names = 
@@ -19,10 +19,10 @@ let names n {sig_const=const; sig_unary=unary; sig_binary=binary} =
 
 (* Print an algebra to standard output, with given names that were
    precomputed earlier. It would be better to use the Format module here. *)
-let algebra names {size=n; const=const; unary=unary; binary=binary} =
+let algebra names unary_names binary_names {size=n; const=const; unary=unary; binary=binary} =
   Printf.printf "\n\n=======================================================================\n\n";
   List.iter (fun (op,t) -> 
-               Printf.printf " %s " op ;
+               Printf.printf " %s " (List.assoc op unary_names) ;
                for i = 0 to n-1 do
                  Printf.printf "| %s " names.(i)
                done ;
@@ -37,7 +37,7 @@ let algebra names {size=n; const=const; unary=unary; binary=binary} =
                Printf.printf "\n"
             ) unary ;
   List.iter (fun (op,t) -> 
-               Printf.printf "\n\n %s " op ;
+               Printf.printf "\n\n %s " (List.assoc op binary_names) ;
                for i = 0 to n-1 do
                  Printf.printf "| %s " names.(i)
                done ;

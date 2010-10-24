@@ -140,3 +140,14 @@ let print_arr a =
   for i=0 to Array.length a - 1 do
     Printf.printf "%d " a.(i)
   done ; print_endline ""
+
+
+
+(* Auxiliary functions. *)
+
+(* Enumerate operations *)
+let enum_ops op = snd (List.fold_left (fun (k,lst) c -> (k+1, (c,k)::lst)) (0,[]) op)
+
+(* Invert assoc list. *)
+let invert xs = List.map (fun (a,b) -> (b,a)) xs
+

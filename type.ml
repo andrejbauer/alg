@@ -2,6 +2,10 @@ type variable = string
 
 type operation = string
 
+type operation_index = int
+
+type var_index = int
+
 type arity =
   | Zero
   | One
@@ -18,11 +22,11 @@ type raw_term =
   | RawVar of variable
   | RawApply of operation * raw_term list
 
-type term =
-  | Var of string
-  | Const of operation
-  | Unary of operation * term
-  | Binary of operation * term * term
+type term = 
+  | Var of var_index
+  | Const of operation_index
+  | Unary of operation_index * term
+  | Binary of operation_index * term * term
 
 type equation = term * term
 
@@ -36,7 +40,7 @@ type theory = {
 
 type algebra = {
   size : int;
-  const : (operation * int) list;
-  unary : (operation * int array) list;
-  binary : (operation * int array array) list
+  const : (string * int) list;
+  unary : (operation_index * int array) list;
+  binary : (operation_index * int array array) list
 }
