@@ -17,6 +17,14 @@ let array_exists p a =
 let matrix_forall p a =
   array_exists (fun r -> array_exists p r) a
 
+(* Missing list functions. *)
+let enumFromTo s e = 
+  let rec 
+      loop = function
+        | n when n <= e -> n :: loop (n+1)
+        | _ -> [] in
+  loop s
+
 (*
   Generating all ntuples.
 *)

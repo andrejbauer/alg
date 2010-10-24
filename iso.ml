@@ -43,18 +43,16 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
     false
   else
     let sortf (a,_) (b,_) = compare a b in
-    let c1s = List.sort sortf c1 in
-    let c2s = List.sort sortf c2 in
+    let c1s = List.sort compare c1 in
+    let c2s = List.sort compare c2 in
     let u1s = List.sort sortf u1 in
     let u2s = List.sort sortf u2 in
     let b1s = List.sort sortf b1 in
     let b2s = List.sort sortf b2 in
     let is_isomorphism x = 
       let check_op f a1 a2 = 
-        List.fold_left (fun p ((_,i), (_,j)) -> p && f x i j)
-          true
-          (List.combine a1 a2) in
-      check_op check_const c1s c2s &&
+        List.for_all (fun ((_,i), (_,j)) -> f x i j) (List.combine a1 a2) in
+      List.for_all (fun (i,j) -> check_const x i j) (List.combine c1s c2s) &&
         check_op check_unary u1s u2s &&
         check_op check_binary b1s b2s in
     let p = ref false in

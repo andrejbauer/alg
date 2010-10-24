@@ -17,7 +17,10 @@ let arity op s =
   else if List.mem op s.sig_binary then Some Two
   else None
 
-
+(* 
+   Operation indices in axioms are taken from theory signature with enum_ops.
+   !!!!!! This must not change, otherwise we won't get the right results. !!!!!!!
+*)
 let cook_axioms s a =
   let ec = Util.enum_ops s.sig_const in
   let eu = Util.enum_ops s.sig_unary in

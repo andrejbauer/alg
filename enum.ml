@@ -120,13 +120,13 @@ let num_dist_vars a = List.length (dist_vars a)
 (* Main search functions. *)
 
 (*
-   Generate binary operation tables. const, unary and binary are
-   assumed to be assoc lists, unary_arr is supposed to be a matrix
-   of unary operations where each line is an operation. axioms
-   should only contain axioms where there is at least one binary
-   operation.
+  Generate binary operation tables. lc, lu and lb are numbers of constants, 
+  unary and binary operations. unary_arr is supposed to be a matrix
+  of unary operations where each line is an operation. axioms
+  should only contain axioms where there is at least one binary
+  operation.
 *)
-let gen_binary n const lu lb axioms unary_arr k =
+let gen_binary n lc lu lb axioms unary_arr k =
   let (simple, complicated) = part_binary_axioms axioms in
 
   (*
@@ -237,7 +237,7 @@ let gen_binary n const lu lb axioms unary_arr k =
   let rec gen_operation o = function
     | _ when o = lb ->
       k { size = n;
-          const = const;
+          const = Util.enumFromTo 0 (lc-1);
           unary =
           begin
             let r = ref [] in
@@ -265,11 +265,12 @@ let gen_binary n const lu lb axioms unary_arr k =
 
 
 (*
-   I'm assuming that unary operations are bijections. This should
-   probably be changed. TODO
-   const, unary and binary are assumed to be a assoc lists
+  I'm assuming that unary operations are bijections. This should
+  probably be changed. TODO
+  Generate binary operation tables. lc, lu and lb are numbers of constants, 
+  unary and binary operations. unary_arr is supposed to be a matrix
 *)
-let gen_unary n const lu lb axioms k =
+let gen_unary n lc lu lb axioms k =
   let (unary_axioms, binary_axioms) = part_axioms axioms in
   (*
      Simple and complicated unary axioms. Simple are the
@@ -337,7 +338,7 @@ let gen_unary n const lu lb axioms k =
       | _ -> true in
   (*
      Global array of already taken symbols. If we don't require bijections
-     then this is useless. It is initialized with with values from simple axioms.
+     then this is useless. It is initialized with values from simple axioms.
   *)
   let taken =
     let used = Array.make_matrix lu n false in
@@ -362,7 +363,7 @@ let gen_unary n const lu lb axioms k =
   let rec
       gen_operation i = function
         | j when j = n && i < lu - 1 -> gen_operation (i+1) 0
-        | j when j = n || i = lu -> gen_binary n const lu lb binary_axioms unary_arr k
+        | j when j = n || i = lu -> gen_binary n lc lu lb binary_axioms unary_arr k
           (* || i = lu is necessary for when there aren't any unary operations *)
         | j when unary_arr.(i).(j) = -1 ->
           for k=0 to n-1 do
@@ -383,4 +384,4 @@ let gen_unary n const lu lb axioms k =
    and pass them to the given continuation.
 *)
 let enum n {signature={sig_const=const; sig_unary=unary; sig_binary=binary}; axioms=axioms} k =
-  gen_unary n (enum_ops const) (List.length unary) (List.length binary) axioms k
+  gen_unary n (List.length const) (List.length unary) (List.length binary) axioms k

@@ -40,7 +40,7 @@ type theory = {
 
 type algebra = {
   size : int;
-  const : (string * int) list;
+  const : operation_index list;
   unary : (operation_index * int array) list;
   binary : (operation_index * int array array) list
 }
