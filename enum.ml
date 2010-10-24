@@ -78,6 +78,17 @@ let part_one_var_binary axioms =
     | _ -> false
   in List.partition is_simple axioms
 
+(* 
+   TODO: This is just a basic version. Should include unary operations. 
+*)
+let select_shallow axioms = 
+  let is_shallow = function 
+    | (Binary (_, Const _, Const _))
+    | (Binary (_, Var _, Var _))
+    | (Binary (_, Const _, Var _)) | (Binary (_, Var _, Const _)) -> true
+    | _ -> false in 
+  List.filter (fun (eq1, eq2) -> is_shallow eq1 && is_shallow eq2) axioms
+
 
 let make_3d_array x y z initial =
   let base = Array.make x initial in
@@ -161,6 +172,12 @@ let gen_binary n lc lu lb axioms unary_arr k =
   let (one_var_shallow, left) = part_one_var_binary complicated in
 
   (*
+    Example of shallow axiom is commutativity.
+    TODO Should also include axioms of the form f_1(f_2(...(m(x,y))..) = ...
+  *)
+  (* let shallow = select_shallow left in *)
+
+  (*
     Apply one variable shallow axioms. Typical example is axioms for
     a unit element in a monoid (forall a: a * e = e)
   *)
@@ -210,7 +227,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
         end
       | (Binary (op, lt, rt)) ->
         begin
-          (* This would be faster if I first checked the left side
+          (* TODO: 
+             This would be faster if I first checked the left side
              and then the right only if left is not None *)
           match (eval_eq i lt, eval_eq i rt) with
             | (None, _) | (_, None) -> None
@@ -274,7 +292,7 @@ let gen_unary n lc lu lb axioms k =
      ones of the form f(c) = d or f(d) = c for c and d constants. These
      can be easily applied.
      TODO: Axioms of the form f(x) = c for x variable and c constant
-     and f(c) = x are also easily dispatched with.
+     are also easily dispatched with.
 
      Complicated are the complement of simple and cannot be so easily applied.
      TODO: The ones of the form f_1(...(f_n(c))) = d for c and d constants create
@@ -289,21 +307,17 @@ let gen_unary n lc lu lb axioms k =
   let path_from_equation e =
     let rec loop acc = function
       | (Unary (op,t)) -> loop (op::acc) t
-      | (Var v) -> v :: acc
-      (* | (Const c) -> c :: acc *)
+      | (Var v) -> (true, v, acc)
+      | (Const c) -> (false, c, acc)
       | _ -> failwith "path_from_equation: Not yet implemented."
     in loop [] e in
 
-  let paths_from_axioms = List.map (function
-    | (eq1, eq2) -> (path_from_equation eq1, path_from_equation eq2)) complicated in
-
-  (* If there is a different variable on the left and right side of the equation,
-     then there is at least one unary operation, that cannot possibly be a bijection.
-     TODO: constants and axioms of the form forall a,b f_1(...(f_n(a))...) = b
+  (* 
+     Unary axioms in "normal form". Each side of the equation is a triple 
+     (is_variable, variable or const index, list of unary operations 
   *)
-  let normal_axioms = List.map (function
-    | (eq1, eq2) -> (List.tl eq1, List.tl eq2))
-    (List.filter (fun (eq1, eq2) -> (List.hd eq1 = List.hd eq2)) paths_from_axioms) in
+  let normal_axioms = List.map 
+    (fun (eq1, eq2) -> (path_from_equation eq1, path_from_equation eq2)) complicated in
 
   (* Main operation tables *)
   let unary_arr = Array.make_matrix lu n (-1) in
@@ -318,36 +332,63 @@ let gen_unary n lc lu lb axioms k =
     simple ;
 
   (*
-     Returns false if there is a conflict with the axiom a, starting with element start.
-     Axiom is assumed to be in "normal form" (list of applications).
+    Traces function applications in equation eq starting with start. If an unknown
+    element comes up, it returns None.
 
-     This can be improved. For example in a situation where we get to the situation
-     where f(c) = d we can set f(c) immediately.
+    This can be improved. For example in a situation where we get the equation
+    f(c) = d we can set f(c) immediately.
   *)
-  let axiom_ok start a =
-    (* Not using foldleft because I possibly need to short circuit. *)
+  let trace start eq =
     let rec result acc = function
       | [] -> Some acc
       | (x::xs) ->  let r = unary_arr.(x).(acc) in
-                   if r = -1 then None else result r xs in
-    match (result start (fst a), result start (snd a)) with
-      | (Some r1, Some r2) -> r1 = r2
-      | _ -> true in
+                    if r = -1 then None else result r xs in
+    result start eq in
   
   (*
     TODO: There are situations where we could deduce from axioms
     that an operation is bijection. E.g. f(f(x)) = x. It may be
     worth the trouble to implement.
   *)
+
+  (* Check if a particular axiom is violated. *)
+  let check_axiom = function 
+    | ((true, id1, left), (true, id2, right)) when id1 = id2 -> 
+      let p = ref true in
+      for i=0 to n-1 do
+        if !p then 
+          match (trace i left, trace i right) with
+            | (Some r1, Some r2) -> p := r1 = r2
+            | _ -> ()
+      done ; !p
+    | ((true, id1, left), (true, id2, right)) -> 
+      let p = ref true in
+      for i=0 to n-1 do
+        for j=0 to n-1 do
+          if !p then 
+            match (trace i left, trace j right) with
+              | (Some r1, Some r2) -> p := r1 = r2
+              | _ -> ()
+        done
+      done ; !p
+    | ((true, id1, left), (false, id2, right))
+    | ((false, id2, right), (true, id1, left)) -> 
+      let p = ref true in
+      for i=0 to n-1 do
+        if !p then 
+          match (trace i left, trace id2 right) with
+            | (Some r1, Some r2) -> p := r1 = r2
+            | _ -> ()
+      done ; !p
+    | ((_, id1, left), (_, id2, right)) -> 
+        match (trace id1 left, trace id2 right) with
+          | (Some r1, Some r2) -> r1 = r2
+          | _ -> true  in
   (* 
-     Check if any of the equations are broken by starting with
+     Check if any of the equations are violated by starting with
      every element and tracing function applications.
-  *)
-  let check () =
-    let p = ref true in
-    for k=0 to n-1 do
-      p := !p && List.for_all (axiom_ok k) normal_axioms
-    done ; !p in
+  *) 
+  let check () = List.for_all check_axiom normal_axioms in 
 
   (*
      Main loop. Baseline.
