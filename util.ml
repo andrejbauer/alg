@@ -84,7 +84,6 @@ let perms n =
             loop (k+1) ;
             used.(i) <- false
           end
-        else ()
       done in loop 0; arr
 
 (* 

@@ -109,9 +109,9 @@ let dist_vars (left, right) =
         | Unary (_,t) -> eq_vars acc t in
   let lv = eq_vars [] left in eq_vars lv right
 
-
 (*
   Number of distinct variables in an axiom.
+  Could also look for maximum variable index.
 *)
 let num_dist_vars a = List.length (dist_vars a)
 
@@ -257,18 +257,15 @@ let gen_binary n lc lu lb axioms unary_arr k =
         binary_arr.(o).(i).(j) <- k ;
         if check () then
           gen_operation o (i,j+1)
-        else () ;
-        binary_arr.(o).(i).(j) <- -1 ;
+        ; binary_arr.(o).(i).(j) <- -1 ;
       done
     | (i,j) ->  gen_operation o (i,j+1) in
   gen_operation 0 (0,0)
 
 
 (*
-  I'm assuming that unary operations are bijections. This should
-  probably be changed. TODO
-  Generate binary operation tables. lc, lu and lb are numbers of constants, 
-  unary and binary operations. unary_arr is supposed to be a matrix
+  Generate unary operation tables. lc, lu and lb are numbers of constants, 
+  unary and binary operations.
 *)
 let gen_unary n lc lu lb axioms k =
   let (unary_axioms, binary_axioms) = part_axioms axioms in
@@ -306,7 +303,7 @@ let gen_unary n lc lu lb axioms k =
   *)
   let normal_axioms = List.map (function
     | (eq1, eq2) -> (List.tl eq1, List.tl eq2))
-    (List.filter (function | (eq1, eq2) -> (List.hd eq1 = List.hd eq2)) paths_from_axioms) in
+    (List.filter (fun (eq1, eq2) -> (List.hd eq1 = List.hd eq2)) paths_from_axioms) in
 
   (* Main operation tables *)
   let unary_arr = Array.make_matrix lu n (-1) in
@@ -336,19 +333,14 @@ let gen_unary n lc lu lb axioms k =
     match (result start (fst a), result start (snd a)) with
       | (Some r1, Some r2) -> r1 = r2
       | _ -> true in
+  
   (*
-     Global array of already taken symbols. If we don't require bijections
-     then this is useless. It is initialized with values from simple axioms.
+    TODO: There are situations where we could deduce from axioms
+    that an operation is bijection. E.g. f(f(x)) = x. It may be
+    worth the trouble to implement.
   *)
-  let taken =
-    let used = Array.make_matrix lu n false in
-    for i=0 to lu-1 do
-      for k=0 to n-1 do
-        used.(i).(k) <- unary_arr.(i).(k) != -1
-      done
-    done ; used in
-
-  (* Check if any of the equations are broken by starting with
+  (* 
+     Check if any of the equations are broken by starting with
      every element and tracing function applications.
   *)
   let check () =
@@ -367,13 +359,10 @@ let gen_unary n lc lu lb axioms k =
           (* || i = lu is necessary for when there aren't any unary operations *)
         | j when unary_arr.(i).(j) = -1 ->
           for k=0 to n-1 do
-            if not taken.(i).(k) then
-              (unary_arr.(i).(j) <- k ; taken.(i).(k) <- true ;
-               if check () then
-                   gen_operation i (j+1)
-               else () ;
-               unary_arr.(i).(j) <- -1 ; taken.(i).(k) <- false)
-            else ()
+            unary_arr.(i).(j) <- k ;
+            if check () then
+              gen_operation i (j+1)
+            ; unary_arr.(i).(j) <- -1 ;
           done
         | j -> gen_operation i (j+1)
   in gen_operation 0 0

@@ -34,7 +34,7 @@ let cook_axioms s a =
           | None ->
             if not (List.mem_assoc x !vars) then
               vars := (x, List.length !vars) :: !vars
-            else () ; Var (List.assoc x !vars)
+            ; Var (List.assoc x !vars)
           | Some Zero -> Const (List.assoc x ec)
           | Some One | Some Two -> Error.fatal "operation %s is used as a constant" x
         end
