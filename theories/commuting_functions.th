@@ -1,0 +1,6 @@
+# The theory of two commuting functions
+signature:
+   f : 1
+   g : 1
+axioms:
+   f(g(x)) = g(f(x));

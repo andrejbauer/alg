@@ -1,10 +1,9 @@
-# Idempotent monoids
+# Monoids
 signature:
    1 : 0
    * : 2
 
 axioms:
-        x * x = x;
         1 * x = x;
         x * 1 = x;
         x * (y * z) = (x * y) * z;

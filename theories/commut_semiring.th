@@ -1,20 +1,18 @@
-# The axioms for a commutative semiring with unit
+# The axioms for a commutative unital semiring
 signature:
-        m : 2 #add
-        n : 2 #mult
-        0 : 0 #additive unit
-        1 : 0 #multiplicative unit
+        + : 2
+        * : 2
+        0 : 0
+        1 : 0
 
 axioms:
-        m(0,x) = x;
-        m(x,0) = x;
-        m(x,m(y,z)) = m(m(x,y),z);
-        m(x,y) = m(y,x);
-
-        n(1,x) = x;
-        n(x,1) = x;
-        n(x,n(y,z)) = n(n(x,y),z);
-        n(x,y) = n(y,x);
-
-        n(m(x,y),z) = m(n(x,z),n(y,z));
-        n(x,m(y,z)) = m(n(x,y),n(x,z));
+   0 + x = x;
+   x + 0 = x;
+   x + (y + z) = (x + y) + z;
+   x + y = y + x;
+   1 * x = x;
+   x * 1 = x;
+   x * (y * z) = (x * y) * z;
+   x * y = y * x;
+   (x + y) * z = x * z + y * z;
+   x * (y + z) = x * y + x * z;
