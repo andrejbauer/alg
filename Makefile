@@ -6,7 +6,7 @@ default: byte
 byte:
 	$(OCAMLBUILD) $(TARGET).byte
 native:
-	$(OCAMLBUILD) $(TARGET).native
+	$(OCAMLBUILD) $(TARGET).p.native
 
 conflicts:
 	menhir --explain parser.mly

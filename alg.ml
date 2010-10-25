@@ -5,7 +5,6 @@ open Iso
 open Util
 
 let size = ref 3
-let isos = ref false
 let irreducible = ref false
 let count_only = ref false
 
@@ -22,9 +21,6 @@ let options = Arg.align [
   ("--count",
     Arg.Set count_only,
     " Just count the models, do not print them out.");
-  ("--isos",
-    Arg.Set isos,
-    " Output all algebras instead of just one for each isomorphism type");
   ("--irreducible",
     Arg.Set irreducible,
     " Output only irreducible algebras (not implemented)");
@@ -57,16 +53,7 @@ try
     let unique = ref [] in
     let names = Print.names !size theory.signature in
     let cont a = 
-      if !isos then
-        begin
-          incr k;
-          if not !count_only then 
-            Print.algebra names 
-                          (Util.invert (Util.enum_ops theory.signature.sig_unary)) 
-                          (Util.invert (Util.enum_ops theory.signature.sig_binary))  
-                          a
-        end
-      else if not (seen theory.signature a !unique) then
+      if not (seen theory.signature a !unique) then
         begin
           incr k;
           unique := (copy_algebra a) :: !unique ;

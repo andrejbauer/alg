@@ -3,6 +3,8 @@ open Util
 
 (* TODO This module is a little messy. *)
 
+exception Undefined
+
 (* Select axioms that refer only to unary operations and constants. *)
 let part_axioms axioms =
   let rec no_binary = function
@@ -213,35 +215,34 @@ let gen_binary n lc lu lb axioms unary_arr k =
      Returns false if there is a conflict.
   *)
   let axiom_ok (num_vars, (left, right)) =
-
     let tuples = all_tuples.(num_vars) in
-    let rec eval_eq i = function
-      | (Const c) -> Some c
-      | (Var v) -> Some (i.(v))
-      | (Unary (op, t)) ->
-        begin
-          match eval_eq i t with
-            | None -> None
-            | Some v when v = -1 -> None
-            | Some v -> Some unary_arr.(op).(v)
-        end
-      | (Binary (op, lt, rt)) ->
-        begin
-          (* TODO: 
-             This would be faster if I first checked the left side
-             and then the right only if left is not None *)
-          match (eval_eq i lt, eval_eq i rt) with
-            | (None, _) | (_, None) -> None
-            | (Some lv, Some rv) when lv = -1 || rv = -1 -> None
-            | (Some lv, Some rv) -> let r = binary_arr.(op).(lv).(rv) in
-                                    if r = -1 then None else (Some r)
-        end in
     let apply_to i =
-      match (eval_eq i left, eval_eq i right) with
-        | (None,_) | (_,None) -> true
-        | (Some v1, Some v2) -> v1 = v2 in
-    Array.fold_left (fun acc c -> acc && apply_to c) true tuples in
-
+      let rec eval_eq = function
+        | Const c -> c
+        | Var v -> i.(v)
+        | Unary (op, t) ->
+            begin match eval_eq t with
+              | -1 -> raise Undefined
+              | v -> unary_arr.(op).(v)
+            end
+        | Binary (op, lt, rt) ->
+            begin match eval_eq lt with
+              | -1 -> raise Undefined
+              | lv ->
+                  begin match eval_eq rt with
+                    | -1 -> raise Undefined
+                    | rv -> binary_arr.(op).(lv).(rv)
+                  end
+            end
+      in
+        try
+          let a = eval_eq left  in
+          let b = eval_eq right in
+            a = -1 || b = -1 || a = b
+        with Undefined -> true
+    in
+      Util.array_for_all apply_to tuples
+  in
 
   (*
     Checks if all axioms are still valid.

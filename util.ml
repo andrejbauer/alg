@@ -1,13 +1,13 @@
 open Type
 
 (* Missing array functions. *)
-let array_forall p a =
+let array_for_all p a =
   let n = Array.length a in
   let rec check k = (k >= n) || (p a.(k) && check (k+1)) in
     check 0
 
 let matrix_forall p a =
-  array_forall (fun r -> array_forall p r) a
+  array_for_all (fun r -> array_for_all p r) a
 
 let array_exists p a =
   let n = Array.length a in
