@@ -6,7 +6,7 @@ let array_for_all p a =
   let rec check k = (k >= n) || (p a.(k) && check (k+1)) in
     check 0
 
-let matrix_forall p a =
+let matrix_for_all p a =
   array_for_all (fun r -> array_for_all p r) a
 
 let array_exists p a =
@@ -24,6 +24,10 @@ let enumFromTo s e =
         | n when n <= e -> n :: loop (n+1)
         | _ -> [] in
   loop s
+
+let fromSome = function 
+  | (Some a) -> a
+  | _ -> failwith "fromSome called with None argument"
 
 (*
   Generating all ntuples.
@@ -61,30 +65,38 @@ let fac n =
     r := !r * i
   done ; !r
 
-(* generate array of all permutations of elements 0..n-1 *)
-let perms n =
-  let arr = Array.make_matrix (fac n) n 0 in
-  let place = ref 0 in
-  let used = Array.make n false in
-  let cur = Array.make n 0 in
-  let rec loop = function
-    | k when k = n -> 
-      begin 
+let permutations = ref None 
+
+(* generate array of all permutations of elements 0..n-1. Cached in permutations. *)
+let perms = function
+  | n when !permutations = None || fst (fromSome !permutations) <> fac n -> 
+    let len = fac n in
+    let arr = Array.make_matrix len n 0 in
+    let place = ref 0 in
+    let used = Array.make n false in
+    let cur = Array.make n 0 in
+    let rec loop = function
+      | k when k = n -> 
+        begin 
+          for i=0 to n-1 do
+            arr.(!place).(i) <- cur.(i);
+          done ;
+          place := !place + 1
+        end
+      | k -> 
         for i=0 to n-1 do
-          arr.(!place).(i) <- cur.(i);
-        done ;
-        place := !place + 1
-      end
-    | k -> 
-      for i=0 to n-1 do
-        if not used.(i) then
-          begin
-            used.(i) <- true;
-            cur.(k) <- i;
-            loop (k+1) ;
-            used.(i) <- false
-          end
-      done in loop 0; arr
+          if not used.(i) then
+            begin
+              used.(i) <- true;
+              cur.(k) <- i;
+              loop (k+1) ;
+              used.(i) <- false
+            end
+        done in 
+    loop 0; 
+    permutations := Some (len, arr) ;
+    arr
+  | _ -> snd (fromSome !permutations)
 
 (* 
    Make fresh copies of operation tables of a given algebra. 
@@ -119,16 +131,12 @@ let next_comb n k cur =
   Generate all k element subsets of 0..n-1 and pass each set to a given continuation.
 *)
 let combs n k cont = 
-  let cur = Array.make k 0 in
-  for i=0 to k-1 do
-    cur.(i) <- i
-  done ; 
+  let cur = Array.init k (fun i -> i) in
   let rec loop = function 
     | None -> ()
     | Some arr -> cont arr ; 
                   loop (next_comb n k cur) 
   in loop (Some cur)
-
 
 (*
   Generate all k element subsets of the given elements and pass each one to a
@@ -158,3 +166,21 @@ let enum_ops op = snd (List.fold_left (fun (k,lst) c -> (k+1, (c,k)::lst)) (0,[]
 (* Invert assoc list. *)
 let invert xs = List.map (fun (a,b) -> (b,a)) xs
 
+(* Various forall's and exists *)
+
+(* Check function for all elements in range i - j *)
+let for_all f i j = 
+  let rec 
+      loop c = (c > j) || f c && loop (c + 1)
+  in loop i
+
+(* Check function for all elements in range i - j and k - l *)
+let for_all2 f i j k l = for_all (fun x -> for_all (f x) k l) i j
+
+(* Dual to for_all *)
+let exists f i j = 
+  let rec loop c = (c <= j) && (f c || loop (c + 1))
+  in loop i
+
+(* Dual to for_all2 *)
+let exists2 f i j k l = exists (fun x -> exists (f x) k l) i j

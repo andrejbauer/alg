@@ -13,23 +13,15 @@ let check_const iso c1 c2 = iso.(c1) = c2
   f(i(a)) = i(f(a)).
 *)
 let check_unary iso u1 u2 =
-  let p = ref true in
   let l = Array.length iso in 
-  for i=0 to l - 1 do
-    p := !p && iso.(u1.(i)) = u2.(iso.(i))
-  done ; !p
+  for_all (fun i -> iso.(u1.(i)) = u2.(iso.(i))) 0 (l-1)
 
 (*
   Checks if binary operation is multiplicative.
 *)
 let check_binary iso b1 b2 = 
-  let p = ref true in
   let l = Array.length iso in
-  for i=0 to l - 1 do
-    for j=0 to l - 1 do
-      p := !p && iso.(b1.(i).(j)) = b2.(iso.(i)).(iso.(j))
-    done
-  done ; !p
+  for_all2 (fun i j -> iso.(b1.(i).(j)) = b2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
 
 (* 
    Check if two algebras are isomorphic.
@@ -55,11 +47,8 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
       List.for_all (fun (i,j) -> check_const x i j) (List.combine c1s c2s) &&
         check_op check_unary u1s u2s &&
         check_op check_binary b1s b2s in
-    let p = ref false in
     let perms = perms n1 in
-      for i=0 to fac n1-1 do
-        p := !p || is_isomorphism perms.(i) 
-      done ; !p
+    array_exists is_isomorphism perms
 
 (* 
    Have we already seen an algebra of this isomorphism type. 
