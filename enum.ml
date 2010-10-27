@@ -80,22 +80,9 @@ let part_one_var_binary axioms =
     | _ -> false
   in List.partition is_simple axioms
 
-(* 
-   TODO: This is just a basic version. Should include unary operations. 
-*)
-let select_shallow axioms = 
-  let is_shallow = function 
-    | (Binary (_, Const _, Const _))
-    | (Binary (_, Var _, Var _))
-    | (Binary (_, Const _, Var _)) | (Binary (_, Var _, Const _)) -> true
-    | _ -> false in 
-  List.filter (fun (eq1, eq2) -> is_shallow eq1 && is_shallow eq2) axioms
-
 
 let make_3d_array x y z initial =
-  let base = Array.make x initial in
-  Array.map (fun _ -> Array.make_matrix y z initial) base
-
+  Array.init x (fun _ -> Array.make_matrix y z initial)
 
 (*
   Depth of an axiom is maximum of the depths of the equations.
@@ -128,6 +115,14 @@ let dist_vars (left, right) =
 *)
 let num_dist_vars a = List.length (dist_vars a)
 
+let partition_shallow axioms = 
+  let is_shallow = function
+    | (Binary (_,(Var _), (Var _))) 
+(* TODO    | (Binary (_,(Var _), (Const _))) 
+    | (Binary (_,(Const _), (Var _)))  *) -> true
+    | _ -> false (* TODO: Think of a simple way to include unary operations. *) in 
+  List.partition (fun (left, right) -> is_shallow left && is_shallow right) axioms
+  
 
 (* ************************************************************************** *)
 (* Main search functions. *)
@@ -162,7 +157,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
         let v1 = get_value t1 in
         let v2 = get_value t2 in
         binary_arr.(op).(v1).(v2) <- c
-
       | _ -> failwith "Not a simple binary axiom."
   in List.iter apply_simple simple ;
 
@@ -172,12 +166,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
   *)
 
   let (one_var_shallow, left) = part_one_var_binary complicated in
-
-  (*
-    Example of shallow axiom is commutativity.
-    TODO Should also include axioms of the form f_1(f_2(...(m(x,y))..) = ...
-  *)
-  (* let shallow = select_shallow left in *)
 
   (*
     Apply one variable shallow axioms. Typical example is axioms for
@@ -203,13 +191,19 @@ let gen_binary n lc lu lb axioms unary_arr k =
     List.iter (fun x -> apply_one_var x i) one_var_shallow
   done ;
 
-  let zipped_axioms = List.map (fun a -> (num_dist_vars a, a)) left in
+  (* Shallow axioms with no more than two variables. These are the easiest. *)
+  (* Zipped means in the form (number of distinct variables, axioms) *)
+  let (shallow, zipped_axioms) = 
+    let (sh, za) = partition_shallow left in
+    let shz = List.map (fun a -> (num_dist_vars a, a)) sh in
+    let zaz = List.map (fun a -> (num_dist_vars a, a)) za in
+    let (good, bad) = List.partition (fun (nd,_) -> nd <= 2) shz in
+    (List.map snd good, bad @ zaz) in
+
   let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in 
 
   (* This could potentially gobble up memory. TODO *)
-  let all_tuples = 
-    let arr = Array.make (max_vars + 1) 0 in
-    Array.mapi (fun i _ -> ntuples n i) arr in
+  let all_tuples = Array.init (max_vars + 1) (fun i -> ntuples n i) in
 
   (*
      Returns false if there is a conflict.
@@ -236,9 +230,10 @@ let gen_binary n lc lu lb axioms unary_arr k =
             end
       in
         try
-          let a = eval_eq left  in
-          let b = eval_eq right in
-            a = -1 || b = -1 || a = b
+          let a = eval_eq left in (* b is not evaluated if a is -1 *)
+            a = -1 || 
+              let b = eval_eq right in
+              (b = -1 || a = b)
         with Undefined -> true
     in
       Util.array_for_all apply_to tuples
@@ -249,7 +244,54 @@ let gen_binary n lc lu lb axioms unary_arr k =
     TODO: Needlessly slow.
   *)
   let check () = List.for_all axiom_ok zipped_axioms in
+  
 
+  let actions_from_shallow = function
+    | (Binary (opl, Var vl1, Var vl2), Binary (opr, Var vr1, Var vr2)) -> 
+    (* x is the index in the stack table, o index of operation. We just set (i,j) to k in o. *)
+    let stack = Stack.create () in 
+    let f o i j = 
+      if o = opl then
+        begin
+          if vl1 <> vl2 then (* We have two distinct variables *)
+            begin 
+              let left = if vr1 = vl1 then i else j in
+              let right = if vr2 = vl2 then j else i in
+              if binary_arr.(opr).(left).(right) = -1 then
+                begin
+                  binary_arr.(opr).(left).(right) <- binary_arr.(opl).(i).(j) ;
+                  Stack.push ((o,i,j), opr, left, right) stack ; true
+                end
+              else binary_arr.(opr).(left).(right) = binary_arr.(opl).(i).(j)
+            end
+          else true (* TODO There is only one variable on the left side of equation *)
+        end
+      else 
+        if o = opr then
+          begin
+            if vr1 <> vr2 then (* We have two distinct variables *)
+              begin 
+                let left = if vl1 = vr1 then i else j in
+                let right = if vl2 = vr2 then j else i in
+                if binary_arr.(opl).(left).(right) = -1 then
+                  begin
+                    binary_arr.(opl).(left).(right) <- binary_arr.(opr).(i).(j) ;
+                    Stack.push ((o,i,j), opl, left, right) stack ; true
+                  end
+                else binary_arr.(opl).(left).(right) = binary_arr.(opr).(i).(j)
+              end
+            else true (* TODO There is only one variable on the left side of equation *)
+          end 
+        else true
+    in
+    let undo o i j = 
+      while not (Stack.is_empty stack) && let ((op, k,l), _, _,_) = Stack.top stack in (op=o && k = i && j = l) do
+        let (_, op, left, right) = Stack.pop stack in
+        binary_arr.(op).(left).(right) <- -1 
+      done in (f, undo)
+    | _ -> failwith "actions_from_shallow not yet implemented" in
+  
+  let (dos, undos) = List.split (List.map actions_from_shallow shallow) in
 
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
@@ -274,9 +316,10 @@ let gen_binary n lc lu lb axioms unary_arr k =
     | (i,j) when binary_arr.(o).(i).(j) = -1 ->
       for k=0 to n-1 do
         binary_arr.(o).(i).(j) <- k ;
-        if check () then
+        if List.for_all (fun f -> f o i j) dos && check () then
           gen_operation o (i,j+1)
-        ; binary_arr.(o).(i).(j) <- -1 ;
+        ; List.iter (fun f -> f o i j) undos
+        ; binary_arr.(o).(i).(j) <- -1
       done
     | (i,j) ->  gen_operation o (i,j+1) in
   gen_operation 0 (0,0)
@@ -388,7 +431,7 @@ let gen_unary n lc lu lb axioms k =
   (* 
      Check if any of the equations are violated by starting with
      every element and tracing function applications.
-  *) 
+  *)
   let check () = List.for_all check_axiom normal_axioms in 
 
   (*
@@ -408,7 +451,6 @@ let gen_unary n lc lu lb axioms k =
           done
         | j -> gen_operation i (j+1)
   in gen_operation 0 0
-
 
 (*
    Enumerate all algebras of a given size for the given theory
