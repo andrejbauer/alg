@@ -25,6 +25,10 @@ let enumFromTo s e =
         | _ -> [] in
   loop s
 
+let is_empty = function 
+  | [] -> true
+  | _ -> false
+
 let fromSome = function 
   | (Some a) -> a
   | _ -> failwith "fromSome called with None argument"
@@ -156,6 +160,7 @@ let print_arr a =
     Printf.printf "%d " a.(i)
   done ; print_endline ""
 
+let print_matrix m = Array.iter print_arr m
 
 
 (* Auxiliary functions. *)
@@ -166,7 +171,7 @@ let enum_ops op = snd (List.fold_left (fun (k,lst) c -> (k+1, (c,k)::lst)) (0,[]
 (* Invert assoc list. *)
 let invert xs = List.map (fun (a,b) -> (b,a)) xs
 
-(* Various forall's and exists *)
+(* Various foralls and exists *)
 
 (* Check function for all elements in range i - j *)
 let for_all f i j = 

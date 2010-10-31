@@ -4,6 +4,7 @@ open Util
 (* TODO This module is a little messy. *)
 
 exception Undefined
+exception Break
 
 (* Select axioms that refer only to unary operations and constants. *)
 let part_axioms axioms =
@@ -79,6 +80,16 @@ let part_one_var_binary axioms =
       end
     | _ -> false
   in List.partition is_simple axioms
+
+(* Select associativity axioms. *)
+
+let partition_assoc axioms = 
+  let is_assoc = function
+    | (Binary (op1, Binary (op2, Var a1, Var b1), Var c1), Binary (op3, Var a2, Binary (op4, Var b2, Var c2)))
+    | (Binary (op3, Var a2, Binary (op4, Var b2, Var c2)), Binary (op1, Binary (op2, Var a1, Var b1), Var c1))
+        when op1 = op2 && op2 = op3 && op3 = op4 && a1 = a2 && b1 = b2 && c1 = c2 -> true
+    | _ -> false
+  in List.partition is_assoc axioms
 
 
 let make_3d_array x y z initial =
@@ -193,13 +204,15 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
   (* Shallow axioms with no more than two variables. These are the easiest. *)
   (* Zipped means in the form (number of distinct variables, axioms) *)
-  let (shallow, zipped_axioms) = 
-    let (sh, za) = partition_shallow left in
+  let (shallow, assoc, zipped_axioms) = 
+    let (assoc, rest) = partition_assoc left in
+    let (sh, za) = partition_shallow rest in
     let shz = List.map (fun a -> (num_dist_vars a, a)) sh in
     let zaz = List.map (fun a -> (num_dist_vars a, a)) za in
     let (good, bad) = List.partition (fun (nd,_) -> nd <= 2) shz in
-    (List.map snd good, bad @ zaz) in
-
+    (* Check axioms with fewer free variables first. *)
+    (List.map snd good, assoc, List.sort (fun (n,_) (m,_) -> compare n m) (bad @ zaz)) in
+  Printf.printf "%d\n" (List.length zipped_axioms) ;
   let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in 
 
   (* This could potentially gobble up memory. TODO *)
@@ -245,12 +258,11 @@ let gen_binary n lc lu lb axioms unary_arr k =
   *)
   let check () = List.for_all axiom_ok zipped_axioms in
   
-
   let actions_from_shallow = function
     | (Binary (opl, Var vl1, Var vl2), Binary (opr, Var vr1, Var vr2)) -> 
     (* x is the index in the stack table, o index of operation. We just set (i,j) to k in o. *)
     let stack = Stack.create () in 
-    let f o i j = 
+    let f id o i j = 
       if o = opl then
         begin
           if vl1 <> vl2 then (* We have two distinct variables *)
@@ -260,7 +272,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
               if binary_arr.(opr).(left).(right) = -1 then
                 begin
                   binary_arr.(opr).(left).(right) <- binary_arr.(opl).(i).(j) ;
-                  Stack.push ((o,i,j), opr, left, right) stack ; true
+                  Stack.push (id, opr, left, right) stack ; true
                 end
               else binary_arr.(opr).(left).(right) = binary_arr.(opl).(i).(j)
             end
@@ -276,7 +288,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
                 if binary_arr.(opl).(left).(right) = -1 then
                   begin
                     binary_arr.(opl).(left).(right) <- binary_arr.(opr).(i).(j) ;
-                    Stack.push ((o,i,j), opl, left, right) stack ; true
+                    Stack.push (id, opl, left, right) stack ; true
                   end
                 else binary_arr.(opl).(left).(right) = binary_arr.(opr).(i).(j)
               end
@@ -284,14 +296,127 @@ let gen_binary n lc lu lb axioms unary_arr k =
           end 
         else true
     in
-    let undo o i j = 
-      while not (Stack.is_empty stack) && let ((op, k,l), _, _,_) = Stack.top stack in (op=o && k = i && j = l) do
+    let undo id = 
+      while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id = id' do
         let (_, op, left, right) = Stack.pop stack in
-        binary_arr.(op).(left).(right) <- -1 
+        binary_arr.(op).(left).(right) <- -1
       done in (f, undo)
     | _ -> failwith "actions_from_shallow not yet implemented" in
-  
-  let (dos, undos) = List.split (List.map actions_from_shallow shallow) in
+
+  let actions_from_assoc = function
+    | (Binary (op1, Binary (op2, Var a1, Var b1), Var c1), Binary (op3, Var a2, Binary (op4, Var b2, Var c2)))
+    | (Binary (op3, Var a2, Binary (op4, Var b2, Var c2)), Binary (op1, Binary (op2, Var a1, Var b1), Var c1))
+        when op1 = op2 && op2 = op3 && op3 = op4 && a1 = a2 && b1 = b2 && c1 = c2 ->
+      let stack = Stack.create () in 
+      let rec f id o i j = 
+        if o <> op1 then true
+        else begin
+          try
+            (* cases a = i, b = j, c arbitrary and b = i, c = j, a arbitrary *)
+            for k = 0 to n-1 do
+              (* case a=i, b=j *)
+              let ab = binary_arr.(o).(i).(j) in
+              let bc = binary_arr.(o).(j).(k) in
+              if bc <> -1 then
+                begin
+                  let ab_c = binary_arr.(o).(ab).(k) in
+                  let a_bc = binary_arr.(o).(i).(bc) in
+                  if ab_c <> -1 && a_bc = -1 then
+                    begin
+                      binary_arr.(o).(i).(bc) <- ab_c ;
+                      Stack.push (id,o,i,bc) stack ;
+                      if not (f id o i bc) then
+                        raise Break
+                    end
+                  else if ab_c = -1 && a_bc <> -1 then
+                    begin
+                      binary_arr.(o).(ab).(k) <- a_bc ;
+                      Stack.push (id, o,ab,k) stack ;
+                      if not (f id o ab k) then
+                        raise Break
+                    end
+                  else if ab_c <> -1 && a_bc <> -1 && ab_c <> a_bc then
+                    raise Break
+                end ;
+              (* case b = i, c = j *)
+              let ab = binary_arr.(o).(k).(i) in
+              let bc = binary_arr.(o).(i).(j) in
+              if ab <> -1 then
+                begin
+                  let ab_c = binary_arr.(o).(ab).(j) in
+                  let a_bc = binary_arr.(o).(k).(bc) in
+                  if ab_c <> -1 && a_bc = -1 then
+                    begin
+                      binary_arr.(o).(k).(bc) <- ab_c ;
+                      Stack.push (id,o,k,bc) stack ;
+                      if not (f id o k bc) then
+                        raise Break
+                    end
+                  else if ab_c = -1 && a_bc <> -1 then
+                    begin
+                      binary_arr.(o).(ab).(j) <- a_bc ;
+                      Stack.push (id, o,ab,j) stack ;
+                      if not (f id o ab j) then
+                        raise Break
+                    end
+                  else if ab_c <> -1 && a_bc <> -1 && ab_c <> a_bc then
+                    raise Break
+                end ;
+            done ; 
+            (* Cases ab = i, c = j and a = i, bc = j *)
+            for a=0 to n-1 do
+              for b=0 to n-1 do
+                (* case ab = i *)
+                if binary_arr.(o).(a).(b) = i then
+                  begin
+                    let bc = binary_arr.(o).(b).(j) in
+                    if bc <> -1 then
+                      begin 
+                        let a_bc = binary_arr.(o).(a).(bc) in
+                        if a_bc = -1 then
+                          begin
+                            binary_arr.(o).(a).(bc) <- binary_arr.(o).(i).(j) ;
+                            Stack.push (id,o,a,bc) stack ;
+                            if not (f id o a bc) then
+                              raise Break
+                          end
+                        else if a_bc <> binary_arr.(o).(i).(j) then
+                          raise Break
+                      end
+                  end ;
+            (* case bc = j *)
+                let (b,c) = (a,b) in
+                if binary_arr.(o).(b).(c) = j then
+                  begin
+                    let ab = binary_arr.(o).(i).(b) in
+                    if ab <> -1 then
+                      begin
+                        let ab_c = binary_arr.(o).(ab).(c) in
+                        if ab_c = -1 then
+                          begin
+                            binary_arr.(o).(ab).(c) <- binary_arr.(o).(i).(j) ;
+                            Stack.push (id, o, ab, c) stack ;
+                            if not (f id o ab c) then
+                              raise Break
+                          end
+                        else if ab_c <> binary_arr.(o).(i).(j) then
+                          raise Break
+                      end
+                  end
+              done
+            done ; true
+          with Break -> false
+        end in 
+      let undo id = 
+        while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
+          let (_, op, left, right) = Stack.pop stack in
+          binary_arr.(op).(left).(right) <- -1 
+        done in (f, undo)
+    | _ -> failwith "actions_from_assoc axiom given is not associativity" in
+
+
+  let (dos, undos) = List.split ((List.map actions_from_shallow shallow) @ 
+                                    List.map actions_from_assoc assoc) in
 
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
@@ -316,9 +441,9 @@ let gen_binary n lc lu lb axioms unary_arr k =
     | (i,j) when binary_arr.(o).(i).(j) = -1 ->
       for k=0 to n-1 do
         binary_arr.(o).(i).(j) <- k ;
-        if List.for_all (fun f -> f o i j) dos && check () then
+        if List.for_all (fun f -> f (o,i,j) o i j) dos && check () then
           gen_operation o (i,j+1)
-        ; List.iter (fun f -> f o i j) undos
+        ; List.iter (fun f -> f (o,i,j)) undos
         ; binary_arr.(o).(i).(j) <- -1
       done
     | (i,j) ->  gen_operation o (i,j+1) in
