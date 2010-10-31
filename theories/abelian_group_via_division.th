@@ -1,0 +1,11 @@
+# Abelian group axiomatized by division.
+
+# Reference:
+# A. Tarski, Ein Beitrag zur Axiomatik der Abelschen Gruppen.
+# Fundamenta Mathematicae 30:253--256, 1938.
+
+signature:
+  / : 2
+
+axioms:
+  (x / (y / (z / (x / y)))) = z;

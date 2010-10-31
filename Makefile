@@ -6,6 +6,8 @@ default: byte
 byte:
 	$(OCAMLBUILD) $(TARGET).byte
 native:
+	$(OCAMLBUILD) $(TARGET).native
+profile:
 	$(OCAMLBUILD) $(TARGET).p.native
 
 conflicts:
