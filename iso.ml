@@ -53,15 +53,20 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
       let f i =
         if iso.(arr1.(i)) = -1 then
           begin
+            if used.(arr2.(iso.(i))) then
+              raise Break ;
+
             iso.(arr1.(i)) <- arr2.(iso.(i)) ;
+            used.(arr2.(iso.(i))) <- true ;
             Stack.push i stack ; true
           end
         else if iso.(arr1.(i)) <> arr2.(iso.(i)) then
           false
         else true in
       let undo i = 
-        while not (Stack.is_empty stack) && let ii = Stack.top stack in i = ii do
-          iso.(arr1.(Stack.pop stack)) <- -1
+        while not (Stack.is_empty stack) && Stack.top stack = i do
+          iso.(arr1.(Stack.pop stack)) <- -1 ;
+          used.(arr2.(iso.(i))) <- false 
         done in (f, undo) in
 
     let actions_from_binary ((_, arr1), (_, arr2)) =
@@ -73,16 +78,24 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
               begin
                 if iso.(arr1.(i).(k)) = -1 then
                   begin
+                    if used.(arr2.(iso.(i)).(iso.(k))) then
+                      raise Break ;
+
                     iso.(arr1.(i).(k)) <- arr2.(iso.(i)).(iso.(k)) ;
-                    Stack.push (i, arr1.(i).(k)) stack
+                    used.(arr2.(iso.(i)).(iso.(k))) <- true ;
+                    Stack.push (i, (arr1.(i).(k), arr2.(iso.(i)).(iso.(k)))) stack
                   end
                 else if iso.(arr1.(i).(k)) <> arr2.(iso.(i)).(iso.(k)) then
                   raise Break ;
 
                 if iso.(arr1.(k).(i)) = -1 then
                   begin
+                    if used.(arr2.(iso.(k)).(iso.(i))) then
+                      raise Break ;
+
                     iso.(arr1.(k).(i)) <- arr2.(iso.(k)).(iso.(i)) ;
-                    Stack.push (i, arr1.(k).(i)) stack
+                    used.(arr2.(iso.(k)).(iso.(i))) <- true ;
+                    Stack.push (i, (arr1.(k).(i), arr2.(iso.(k)).(iso.(i)))) stack
                   end
                 else if iso.(arr1.(k).(i)) <> arr2.(iso.(k)).(iso.(i)) then
                   raise Break
@@ -91,7 +104,9 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
         with Break -> false in
       let undo i = 
         while not (Stack.is_empty stack) && i = fst (Stack.top stack) do
-          iso.(snd (Stack.pop stack)) <- -1
+          let (_, (a,b)) = Stack.pop stack in
+          iso.(a) <- -1 ;
+          used.(b) <- false 
         done in (f, undo) in
     
     let (dos, undos) = List.split (List.map actions_from_unary (List.combine u1s u2s)
