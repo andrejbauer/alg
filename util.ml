@@ -29,6 +29,9 @@ let is_empty = function
   | [] -> true
   | _ -> false
 
+let is_sublist xs ys = 
+  List.for_all (fun x -> List.mem x ys) xs
+
 let fromSome = function 
   | (Some a) -> a
   | _ -> failwith "fromSome called with None argument"

@@ -140,12 +140,13 @@ let partition_shallow axioms =
 (* Amenable axioms are the ones where left and right terms have binary op
    as outermost operation and have exactly the same variables on left and right sides. *)
 let partition_amenable axioms =
-  let is_binary_term = function
-    | (Binary _) -> true
-    | _ -> false in
-  let is_amenable (left, right) = 
-    List.sort compare (eq_vars [] left) = List.sort compare (eq_vars [] right) &&
-    is_binary_term left && is_binary_term right in
+  let is_amenable ((left, right) as axiom) = 
+      match axiom with
+        | (Binary _, Binary _)-> 
+          List.sort compare (eq_vars [] left) = List.sort compare (eq_vars [] right)
+        | ((Binary _), _) -> Util.is_sublist (eq_vars [] right) (eq_vars [] left)
+        | (_, (Binary _)) -> Util.is_sublist (eq_vars [] left) (eq_vars [] right)
+        | _ -> false in
   List.partition is_amenable axioms
   
 
@@ -436,94 +437,102 @@ let gen_binary n lc lu lb axioms unary_arr k =
     | _ -> invalid_arg "actions_from_assoc axiom given is not associativity" in
 
   (* Compute actions from amenable axioms *)
-  let actions_from_axiom nvars = function
-    | (Binary (op1, l1, r1), Binary (op2, l2, r2)) -> 
-      let stack = Stack.create () in
-      let rec f id o i j = 
-        let vars = Array.make nvars (-1) in
-        let rec 
-            (* free fills the rest of the variables with all possible values *)
-            free cont = function
-              | Var v when vars.(v) = -1 -> 
-                for k=0 to n-1 do
-                  vars.(v) <- k ;
-                  cont () ;
-                  vars.(v) <- -1 ;
-                done
-              | Var _ -> cont ()
-              | (Binary (_, l, r)) -> 
-                free (fun () -> free cont r) l
-              | _ -> invalid_arg "Unary or const in free." in
+  let actions_from_axiom nvars axiom = 
+    let rec eval_eq vars = function
+      | Const c -> c
+      | Var v -> vars.(v)
+      | Unary (op, t) ->
+        begin match eval_eq vars t with
+          | -1 -> raise Undefined
+          | v -> unary_arr.(op).(v)
+        end
+      | Binary (op, lt, rt) ->
+        begin match eval_eq vars lt with
+          | -1 -> raise Undefined
+          | lv ->
+            begin match eval_eq vars rt with
+              | -1 -> raise Undefined
+              | rv -> binary_arr.(op).(lv).(rv)
+            end
+        end
+    in
 
-        let rec 
-            (* generate all possible subexpressions so that the term evaluates to k *)
-            gen_all k cont = function 
-              | (Binary (op, l, r)) -> 
-                for u=0 to n-1 do
-                  for v=0 to n-1 do
-                    if binary_arr.(op).(u).(v) = k then
-                      gen_all u (fun () -> gen_all v cont r) l
-                  done
-                done
-              | (Unary (op, t)) -> 
-                for u=0 to n-1 do
-                  if unary_arr.(op).(u) = k then
-                    gen_all u cont t
-                done
-              | Var v when vars.(v) = -1 -> 
-                vars.(v) <- k ; 
-                cont () ; 
-                vars.(v) <- -1
-              | Var v when vars.(v) = k -> cont ()
-              | Const c when c = k -> cont ()
-              | _ -> () in
-        let rec
-            (* We just set (i,j) to some value in o.
-               See where we might use this to violate an axiom or set a new value. *)
-            fill cont = function
-              | (Binary (op, l, r)) when op = o ->
-                (* both are in the left subtree *)
-                fill (fun () -> free cont r) l ;
-                (* case l = i, r = j *)
-                gen_all i (fun () -> gen_all j cont r) l ;
-                (* both are in the right subtree *)
-                fill (fun () -> free cont l) r
-              | (Binary (_, l, r)) -> 
-                (* both are in the left subtree *)
-                fill (fun () -> free cont r) l ;
-                (* both are in the right subtree *)
-                fill (fun () -> free cont l) r
-              | Unary (_, t) -> fill cont t 
-              | _ -> () in
-        (* 
-           Check if an axiom is violated or we can set a new value.
-           This is the end of continuations. It is called when all
-           of the variables have been set.
-        *)
-        let check_other () =
-            let rec eval_eq = function
-              | Const c -> c
-              | Var v -> vars.(v)
-              | Unary (op, t) ->
-                begin match eval_eq t with
-                  | -1 -> raise Undefined
-                  | v -> unary_arr.(op).(v)
-                end
-              | Binary (op, lt, rt) ->
-                begin match eval_eq lt with
-                  | -1 -> raise Undefined
-                  | lv ->
-                    begin match eval_eq rt with
-                      | -1 -> raise Undefined
-                      | rv -> binary_arr.(op).(lv).(rv)
-                    end
-                end
-            in
+    let rec 
+        (* free fills the rest of the variables with all possible values *)
+        free vars cont = function
+          | Var v when vars.(v) = -1 -> 
+            for k=0 to n-1 do
+              vars.(v) <- k ;
+              cont () ;
+              vars.(v) <- -1 ;
+            done
+          | Var _ -> cont ()
+          | (Binary (_, l, r)) -> 
+            free vars (fun () -> free vars cont r) l
+          | _ -> invalid_arg "Unary or const in free." in
+
+    let rec 
+        (* generate all possible subexpressions so that the term evaluates to k *)
+        gen_all vars k cont = function 
+          | (Binary (op, l, r)) -> 
+            for u=0 to n-1 do
+              for v=0 to n-1 do
+                if binary_arr.(op).(u).(v) = k then
+                  gen_all vars u (fun () -> gen_all vars v cont r) l
+              done
+            done
+          | (Unary (op, t)) -> 
+            for u=0 to n-1 do
+              if unary_arr.(op).(u) = k then
+                gen_all vars u cont t
+            done
+          | Var v when vars.(v) = -1 -> 
+            vars.(v) <- k ; 
+            cont () ; 
+            vars.(v) <- -1
+          | Var v when vars.(v) = k -> cont ()
+          | Const c when c = k -> cont ()
+          | _ -> () in
+    let rec
+        (* We just set (i,j) to some value in o.
+           See where we might use this to violate an axiom or set a new value. *)
+        fill (o,i,j) vars cont = function
+          | (Binary (op, l, r)) when op = o ->
+            (* both are in the left subtree *)
+            fill (o,i,j) vars (fun () -> free vars cont r) l ;
+            (* case l = i, r = j *)
+            gen_all vars i (fun () -> gen_all vars j cont r) l ;
+            (* both are in the right subtree *)
+            fill (o,i,j) vars (fun () -> free vars cont l) r
+          | (Binary (_, l, r)) -> 
+            (* both are in the left subtree *)
+            fill (o,i,j) vars (fun () -> free vars cont r) l ;
+            (* both are in the right subtree *)
+            fill (o,i,j) vars (fun () -> free vars cont l) r
+          | Unary (_, t) -> fill (o,i,j) vars cont t 
+          | _ -> () in
+
+    let stack = Stack.create () in
+    let undo id = 
+      while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
+        let (_, op, left, right) = Stack.pop stack in
+        binary_arr.(op).(left).(right) <- -1 
+      done in
+    (* 
+       check_other Check if an axiom is violated or we can set a new value.
+       This is the end of continuations. It is called when all
+       of the variables have been set.
+    *)
+    match axiom with
+      | (Binary (op1, l1, r1), Binary (op2, l2, r2)) ->
+        let rec f id o i j = 
+          let vars = Array.make nvars (-1) in
+          let check_other () =
             try
-              let el1 = eval_eq l1 in
-              let er1 = eval_eq r1 in
-              let el2 = eval_eq l2 in
-              let er2 = eval_eq r2 in
+              let el1 = eval_eq vars l1 in
+              let er1 = eval_eq vars r1 in
+              let el2 = eval_eq vars l2 in
+              let er2 = eval_eq vars r2 in
               if el1 <> -1 && el2 <> -1 && er1 <> -1 && er2 <> -1 then
                 begin
                   let left = binary_arr.(op1).(el1).(er1) in
@@ -548,17 +557,40 @@ let gen_binary n lc lu lb axioms unary_arr k =
                     raise Break
                 end
             with Undefined -> () in
-        try
-          fill check_other (Binary (op2, l2, r2)) ; 
-          fill check_other (Binary (op1, l1, r1)) ;true
-        with Break -> false
-      in 
-      let undo id = 
-        while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
-          let (_, op, left, right) = Stack.pop stack in
-          binary_arr.(op).(left).(right) <- -1 
-        done in (f, undo)
-    | _ -> invalid_arg "actions_from_axiom not amenable axiom" in
+          try
+            fill (o,i,j) vars check_other (Binary (op2, l2, r2)) ; 
+            fill (o,i,j) vars check_other (Binary (op1, l1, r1)) ; true
+          with Break -> false in (f, undo)
+      | (term, Binary (op2, l2, r2)) 
+      | (Binary (op2, l2, r2), term) -> 
+        let rec f id o i j = 
+          let vars = Array.make nvars (-1) in
+          let check_other () =
+            try
+              let el2 = eval_eq vars l2 in
+              let er2 = eval_eq vars r2 in
+              let elt = eval_eq vars term in
+              if elt <> -1 && el2 <> -1 && er2 <> -1 then
+                begin
+                  let left = elt in
+                  let right = binary_arr.(op2).(el2).(er2) in 
+                  if right = -1 then
+                    begin
+                      binary_arr.(op2).(el2).(er2) <- left ;
+                      Stack.push (id, op2, el2, er2) stack ;
+                      (* Try to fill some more or fail trying *)
+                      if not (f id op2 el2 er2) then
+                        raise Break
+                    end
+                  else if left <> right then
+                    raise Break 
+                end
+            with Undefined -> () in
+          try
+            fill (o,i,j) vars check_other (Binary (op2, l2, r2)) ; true
+          with Break -> false in (f, undo)
+      | _ -> invalid_arg "Invalid axiom in actions_from_axiom. At least one term has to be binary." in
+
 
   let (dos, undos) = List.split ((List.map actions_from_shallow shallow) @ 
                                     List.map actions_from_assoc assoc @
