@@ -560,7 +560,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
         done in (f, undo)
     | _ -> invalid_arg "actions_from_axiom not amenable axiom" in
 
-  Printf.printf "%d %d %d %d\n" (List.length shallow) (List.length assoc) (List.length amenable) (List.length left);
   let (dos, undos) = List.split ((List.map actions_from_shallow shallow) @ 
                                     List.map actions_from_assoc assoc @
                                     List.map (Util.uncurry actions_from_axiom) amenable) in
