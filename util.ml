@@ -189,3 +189,8 @@ let exists f i j =
 
 (* Dual to for_all2 *)
 let exists2 f i j k l = exists (fun x -> exists (f x) k l) i j
+
+
+(* Missing function functions :) *)
+let curry f a b = f (a,b)
+let uncurry f (a,b) = f a b

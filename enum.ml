@@ -107,17 +107,20 @@ let axiom_depth (left, right) =
   in max (term_depth 0 left) (term_depth 0 right)
 
 (*
+  List of distinct variables of a term.
+*)
+let rec
+    eq_vars acc = function
+      | Const _ -> acc
+      | Var v -> if List.mem v acc then acc else (v :: acc)
+      | Binary (_,t1,t2) -> let lv = eq_vars acc t1 in
+                            eq_vars lv t2
+      | Unary (_,t) -> eq_vars acc t
+
+(*
   List of distinct variables of an axiom.
-  Obviously quadratic in number of variables. TODO
 *)
 let dist_vars (left, right) =
-  let rec
-      eq_vars acc = function
-        | Const _ -> acc
-        | Var v -> if List.mem v acc then acc else (v :: acc)
-        | Binary (_,t1,t2) -> let lv = eq_vars acc t1 in
-                              eq_vars lv t2
-        | Unary (_,t) -> eq_vars acc t in
   let lv = eq_vars [] left in eq_vars lv right
 
 (*
@@ -133,6 +136,17 @@ let partition_shallow axioms =
     | (Binary (_,(Const _), (Var _)))  *) -> true
     | _ -> false (* TODO: Think of a simple way to include unary operations. *) in 
   List.partition (fun (left, right) -> is_shallow left && is_shallow right) axioms
+
+(* Amenable axioms are the ones where left and right terms have binary op
+   as outermost operation and have exactly the same variables on left and right sides. *)
+let partition_amenable axioms =
+  let is_binary_term = function
+    | (Binary _) -> true
+    | _ -> false in
+  let is_amenable (left, right) = 
+    List.sort compare (eq_vars [] left) = List.sort compare (eq_vars [] right) &&
+    is_binary_term left && is_binary_term right in
+  List.partition is_amenable axioms
   
 
 (* ************************************************************************** *)
@@ -204,15 +218,17 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
   (* Shallow axioms with no more than two variables. These are the easiest. *)
   (* Zipped means in the form (number of distinct variables, axioms) *)
-  let (shallow, assoc, zipped_axioms) = 
+  let (shallow, assoc, amenable, zipped_axioms) = 
     let (assoc, rest) = partition_assoc left in
-    let (sh, za) = partition_shallow rest in
-    let shz = List.map (fun a -> (num_dist_vars a, a)) sh in
-    let zaz = List.map (fun a -> (num_dist_vars a, a)) za in
-    let (good, bad) = List.partition (fun (nd,_) -> nd <= 2) shz in
-    (* Check axioms with fewer free variables first. *)
-    (List.map snd good, assoc, List.sort (fun (n,_) (m,_) -> compare n m) (bad @ zaz)) in
-  Printf.printf "%d\n" (List.length zipped_axioms) ;
+    let (sh, rest) = partition_shallow rest in
+    let (amenable, rest) = partition_amenable rest in
+    let good = List.filter (fun a -> num_dist_vars a <= 2) sh in
+    (good,
+     assoc,
+     List.map (fun a -> num_dist_vars a, a) amenable, 
+     (* Check axioms with fewer free variables first. *)
+     List.sort (fun (n,_) (m,_) -> compare n m) (List.map (fun a -> (num_dist_vars a, a)) left)) in
+
   let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in 
 
   (* This could potentially gobble up memory. TODO *)
@@ -253,11 +269,13 @@ let gen_binary n lc lu lb axioms unary_arr k =
   in
 
   (*
-    Checks if all axioms are still valid.
-    TODO: Needlessly slow.
+    Checks if all axioms are still valid. It is still necessary to check for
+    all the axioms (not the simple ones), even the ones where we predict new
+    members, because previous axioms may be violated with new element.
   *)
   let check () = List.for_all axiom_ok zipped_axioms in
   
+  (* Special case of actions_from_axiom for shallow axioms *)
   let actions_from_shallow = function
     | (Binary (opl, Var vl1, Var vl2), Binary (opr, Var vr1, Var vr2)) -> 
     (* x is the index in the stack table, o index of operation. We just set (i,j) to k in o. *)
@@ -303,6 +321,9 @@ let gen_binary n lc lu lb axioms unary_arr k =
       done in (f, undo)
     | _ -> failwith "actions_from_shallow not yet implemented" in
 
+  (* Special case of actions_from_axiom for associativity axioms.
+     It is ugly, but much faster. 
+  *)
   let actions_from_assoc = function
     | (Binary (op1, Binary (op2, Var a1, Var b1), Var c1), Binary (op3, Var a2, Binary (op4, Var b2, Var c2)))
     | (Binary (op3, Var a2, Binary (op4, Var b2, Var c2)), Binary (op1, Binary (op2, Var a1, Var b1), Var c1))
@@ -384,7 +405,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
                           raise Break
                       end
                   end ;
-            (* case bc = j *)
+                (* case bc = j *)
                 let (b,c) = (a,b) in
                 if binary_arr.(o).(b).(c) = j then
                   begin
@@ -412,11 +433,137 @@ let gen_binary n lc lu lb axioms unary_arr k =
           let (_, op, left, right) = Stack.pop stack in
           binary_arr.(op).(left).(right) <- -1 
         done in (f, undo)
-    | _ -> failwith "actions_from_assoc axiom given is not associativity" in
+    | _ -> invalid_arg "actions_from_assoc axiom given is not associativity" in
 
+  (* Compute actions from amenable axioms *)
+  let actions_from_axiom nvars = function
+    | (Binary (op1, l1, r1), Binary (op2, l2, r2)) -> 
+      let stack = Stack.create () in
+      let rec f id o i j = 
+        let vars = Array.make nvars (-1) in
+        let rec 
+            (* free fills the rest of the variables with all possible values *)
+            free cont = function
+              | Var v when vars.(v) = -1 -> 
+                for k=0 to n-1 do
+                  vars.(v) <- k ;
+                  cont () ;
+                  vars.(v) <- -1 ;
+                done
+              | Var _ -> cont ()
+              | (Binary (_, l, r)) -> 
+                free (fun () -> free cont r) l
+              | _ -> invalid_arg "Unary or const in free." in
 
+        let rec 
+            (* generate all possible subexpressions so that the term evaluates to k *)
+            gen_all k cont = function 
+              | (Binary (op, l, r)) -> 
+                for u=0 to n-1 do
+                  for v=0 to n-1 do
+                    if binary_arr.(op).(u).(v) = k then
+                      gen_all u (fun () -> gen_all v cont r) l
+                  done
+                done
+              | (Unary (op, t)) -> 
+                for u=0 to n-1 do
+                  if unary_arr.(op).(u) = k then
+                    gen_all u cont t
+                done
+              | Var v when vars.(v) = -1 -> 
+                vars.(v) <- k ; 
+                cont () ; 
+                vars.(v) <- -1
+              | Var v when vars.(v) = k -> cont ()
+              | Const c when c = k -> cont ()
+              | _ -> () in
+        let rec
+            (* We just set (i,j) to some value in o.
+               See where we might use this to violate an axiom or set a new value. *)
+            fill cont = function
+              | (Binary (op, l, r)) when op = o ->
+                (* both are in the left subtree *)
+                fill (fun () -> free cont r) l ;
+                (* case l = i, r = j *)
+                gen_all i (fun () -> gen_all j cont r) l ;
+                (* both are in the right subtree *)
+                fill (fun () -> free cont l) r
+              | (Binary (_, l, r)) -> 
+                (* both are in the left subtree *)
+                fill (fun () -> free cont r) l ;
+                (* both are in the right subtree *)
+                fill (fun () -> free cont l) r
+              | Unary (_, t) -> fill cont t 
+              | _ -> () in
+        (* 
+           Check if an axiom is violated or we can set a new value.
+           This is the end of continuations. It is called when all
+           of the variables have been set.
+        *)
+        let check_other () =
+            let rec eval_eq = function
+              | Const c -> c
+              | Var v -> vars.(v)
+              | Unary (op, t) ->
+                begin match eval_eq t with
+                  | -1 -> raise Undefined
+                  | v -> unary_arr.(op).(v)
+                end
+              | Binary (op, lt, rt) ->
+                begin match eval_eq lt with
+                  | -1 -> raise Undefined
+                  | lv ->
+                    begin match eval_eq rt with
+                      | -1 -> raise Undefined
+                      | rv -> binary_arr.(op).(lv).(rv)
+                    end
+                end
+            in
+            try
+              let el1 = eval_eq l1 in
+              let er1 = eval_eq r1 in
+              let el2 = eval_eq l2 in
+              let er2 = eval_eq r2 in
+              if el1 <> -1 && el2 <> -1 && er1 <> -1 && er2 <> -1 then
+                begin
+                  let left = binary_arr.(op1).(el1).(er1) in
+                  let right = binary_arr.(op2).(el2).(er2) in 
+                  if left <> -1 && right = -1 then
+                    begin
+                      binary_arr.(op2).(el2).(er2) <- left ;
+                      Stack.push (id, op2, el2, er2) stack ;
+                      (* Try to fill some more or fail trying *)
+                      if not (f id op2 el2 er2) then
+                        raise Break
+                    end
+                  else if left = -1 && right <> -1 then
+                    begin
+                      binary_arr.(op1).(el1).(er1) <- right ;
+                      Stack.push (id, op1, el1, er1) stack ;
+                      (* Try to fill some more or fail trying *)
+                      if not (f id op1 el1 er1) then
+                        raise Break
+                    end
+                  else if (* left <> -1 && right <> -1 &&  *)left <> right then
+                    raise Break
+                end
+            with Undefined -> () in
+        try
+          fill check_other (Binary (op2, l2, r2)) ; 
+          fill check_other (Binary (op1, l1, r1)) ;true
+        with Break -> false
+      in 
+      let undo id = 
+        while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
+          let (_, op, left, right) = Stack.pop stack in
+          binary_arr.(op).(left).(right) <- -1 
+        done in (f, undo)
+    | _ -> invalid_arg "actions_from_axiom not amenable axiom" in
+
+  Printf.printf "%d %d %d %d\n" (List.length shallow) (List.length assoc) (List.length amenable) (List.length left);
   let (dos, undos) = List.split ((List.map actions_from_shallow shallow) @ 
-                                    List.map actions_from_assoc assoc) in
+                                    List.map actions_from_assoc assoc @
+                                    List.map (Util.uncurry actions_from_axiom) amenable) in
 
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
