@@ -466,10 +466,9 @@ let gen_binary n lc lu lb axioms unary_arr k =
               cont () ;
               vars.(v) <- -1 ;
             done
-          | Var _ -> cont ()
           | (Binary (_, l, r)) -> 
             free vars (fun () -> free vars cont r) l
-          | _ -> invalid_arg "Unary or const in free." in
+          | _ -> cont () in
 
     let rec 
         (* generate all possible subexpressions so that the term evaluates to k *)
