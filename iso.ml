@@ -4,6 +4,7 @@ open Type
 open Util
 
 exception Break
+exception Found
 
 (*
   Checks if permutation preserves constants.
@@ -54,11 +55,13 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
         if iso.(arr1.(i)) = -1 then
           begin
             if used.(arr2.(iso.(i))) then
-              raise Break ;
-
-            iso.(arr1.(i)) <- arr2.(iso.(i)) ;
-            used.(arr2.(iso.(i))) <- true ;
-            Stack.push i stack ; true
+              false
+            else 
+              begin
+                iso.(arr1.(i)) <- arr2.(iso.(i)) ;
+                used.(arr2.(iso.(i))) <- true ;
+                Stack.push i stack ; true
+              end
           end
         else if iso.(arr1.(i)) <> arr2.(iso.(i)) then
           false
@@ -121,7 +124,7 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
       let check_op f a1 a2 = 
         List.for_all (fun ((_,i), (_,j)) -> f iso i j) (List.combine a1 a2) in
       if check_op check_unary u1s u2s && check_op check_binary b1s b2s then
-        raise Break in
+        raise Found in
 
     let rec gen_iso = function
       | i when i = n -> check ()
@@ -141,7 +144,7 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
         done in
     try
       gen_iso 0 ; false
-    with Break -> true
+    with Found -> true
     
 (* 
    Have we already seen an algebra of this isomorphism type. 
