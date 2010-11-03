@@ -129,14 +129,6 @@ let dist_vars (left, right) =
 *)
 let num_dist_vars a = List.length (dist_vars a)
 
-let partition_shallow axioms = 
-  let is_shallow = function
-    | (Binary (_,(Var _), (Var _))) 
-(* TODO    | (Binary (_,(Var _), (Const _))) 
-    | (Binary (_,(Const _), (Var _)))  *) -> true
-    | _ -> false (* TODO: Think of a simple way to include unary operations. *) in 
-  List.partition (fun (left, right) -> is_shallow left && is_shallow right) axioms
-
 (* Amenable axioms are the ones where left and right terms have binary op
    as outermost operation and have exactly the same variables on left and right sides. *)
 let partition_amenable axioms =
@@ -217,16 +209,15 @@ let gen_binary n lc lu lb axioms unary_arr k =
     List.iter (fun x -> apply_one_var x i) one_var_shallow
   done ;
 
-  (* Shallow axioms with no more than two variables. These are the easiest. *)
+  (* Partition axioms. Assoc are naturally associativity axioms, amenable_check
+     are all the amenable axioms, amenable are amenable_check sans associativity.
+     Zipped are the rest that have to be checked differently than amenable. *)
   (* Zipped means in the form (number of distinct variables, axioms) *)
-  let (shallow, assoc, amenable, amenable_check, zipped_axioms) = 
+  let (assoc, amenable, amenable_check, zipped_axioms) = 
     let (assoc, rest) = partition_assoc left in
-    let (sh, rest) = partition_shallow rest in
     let (amenable, rest) = partition_amenable rest in
-    let good = List.filter (fun a -> num_dist_vars a <= 2) sh in
     let (amenable_check, rest) = partition_amenable left in
-    (good,
-     assoc,
+    (assoc,
      List.map (fun a -> num_dist_vars a, a) amenable,
      List.map (fun a -> (num_dist_vars a, a)) amenable_check,
      (* Check axioms with fewer free variables first. *)
@@ -647,60 +638,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
         done in (f, undo)
     | _ -> invalid_arg "actions_from_assoc axiom given is not associativity" in
 
-  (* Special case of actions_from_axiom for shallow axioms *)
-  let actions_from_shallow = function
-    | (Binary (opl, Var vl1, Var vl2), Binary (opr, Var vr1, Var vr2)) -> 
-    (* x is the index in the stack table, o index of operation. We just set (i,j) to k in o. *)
-    let stack = Stack.create () in 
-    let f id o i j = 
-      if o = opl then
-        begin
-          if vl1 <> vl2 then (* We have two distinct variables *)
-            begin 
-              let left = if vr1 = vl1 then i else j in
-              let right = if vr2 = vl2 then j else i in
-              if binary_arr.(opr).(left).(right) = -1 then
-                begin
-                  binary_arr.(opr).(left).(right) <- binary_arr.(opl).(i).(j) ;
-
-                  Stack.push (id, opr, left, right) stack ;
-
-                  check_after_add opr left right
-                end
-              else binary_arr.(opr).(left).(right) = binary_arr.(opl).(i).(j)
-            end
-          else true (* TODO There is only one variable on the left side of equation *)
-        end
-      else 
-        if o = opr then
-          begin
-            if vr1 <> vr2 then (* We have two distinct variables *)
-              begin 
-                let left = if vl1 = vr1 then i else j in
-                let right = if vl2 = vr2 then j else i in
-                if binary_arr.(opl).(left).(right) = -1 then
-                  begin
-                    binary_arr.(opl).(left).(right) <- binary_arr.(opr).(i).(j) ;
-
-                    Stack.push (id, opl, left, right) stack ;
-
-                    check_after_add opl left right
-                  end
-                else binary_arr.(opl).(left).(right) = binary_arr.(opr).(i).(j)
-              end
-            else true (* TODO There is only one variable on the left side of equation *)
-          end 
-        else true
-    in
-    let undo id = 
-      while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id = id' do
-        let (_, op, left, right) = Stack.pop stack in
-        binary_arr.(op).(left).(right) <- -1
-      done in (f, undo)
-    | _ -> failwith "actions_from_shallow not yet implemented" in
-
-
-
   (*
     Checks if all axioms are still valid. It is still necessary to check for
     all the axioms (not the simple ones), even the ones where we predict new
@@ -708,9 +645,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
   *)
   let check () = List.for_all axiom_ok zipped_axioms in
 
-  let (dos, undos) = List.split ((List.map actions_from_shallow shallow) @ 
-                                    List.map actions_from_assoc assoc @
-                                    List.map (actions_from_axiom) amenable) in
+  let (dos, undos) = List.split (List.map actions_from_assoc assoc @
+                                 List.map (actions_from_axiom) amenable) in
 
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
