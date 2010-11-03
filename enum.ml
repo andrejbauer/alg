@@ -674,7 +674,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
     | (i,j) when binary_arr.(o).(i).(j) = -1 ->
       for k=0 to n-1 do
         binary_arr.(o).(i).(j) <- k ;
-        if List.for_all (fun f -> f (o,i,j) o i j) dos && check () then
+        if List.for_all (fun f -> f (o,i,j) o i j) dos && check_after_add o i j && check () then
           gen_operation o (i,j+1)
         ; List.iter (fun f -> f (o,i,j)) undos
         ; binary_arr.(o).(i).(j) <- -1
