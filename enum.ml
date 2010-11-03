@@ -395,6 +395,10 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
   let checks = List.map check_from_amenable_axiom amenable_check in
 
+  (* 
+     Check after add should be called after an element is added to the operation table.
+     It checks if all amenable axioms are still valid.
+  *)
   let check_after_add o i j = 
     List.for_all (fun f -> f o i j) checks in
 
@@ -639,9 +643,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
     | _ -> invalid_arg "actions_from_assoc axiom given is not associativity" in
 
   (*
-    Checks if all axioms are still valid. It is still necessary to check for
-    all the axioms (not the simple ones), even the ones where we predict new
-    members, because previous axioms may be violated with new element.
+    Checks if all axioms are still valid. This is for axioms that are not amenable.
+    Amenable are checked immediately after adding each element.
   *)
   let check () = List.for_all axiom_ok zipped_axioms in
 
@@ -700,15 +703,18 @@ let gen_unary n lc lu lb axioms k =
   *)
   let (simple, complicated) = part_unary_axioms unary_axioms in
   (*
-     Preliminary version. Equation consists only of unary operations and variables.
-     TODO: If we don't require bijections then f_1(...f_n(x)...) = c are also valid.
+    Equation must not contain any binary operations.
+    path_from_equation returns a pair (indicator, index, list of indices
+    of unary operations. indicator is true if term starts with a variable
+    and false if it starts with a constant. Index is index of variable
+    or constant.
   *)
   let path_from_equation e =
     let rec loop acc = function
       | (Unary (op,t)) -> loop (op::acc) t
       | (Var v) -> (true, v, acc)
       | (Const c) -> (false, c, acc)
-      | _ -> failwith "path_from_equation: Not yet implemented."
+      | _ -> invalid_arg "path_from_equation: Binary operation."
     in loop [] e in
 
   (* 
