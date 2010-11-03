@@ -372,7 +372,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
           with Break -> false in f
       | (term, Binary (op2, l2, r2)) 
       | (Binary (op2, l2, r2), term) -> 
-        let rec f o i j = 
+        let f o i j = 
           let vars = Array.make nvars (-1) in
           let check_other () =
             try
@@ -417,7 +417,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
     *)
     match axiom with
       | (Binary (op1, l1, r1), Binary (op2, l2, r2)) ->
-        let rec f id o i j = 
+        let f cont id o i j = 
           let vars = Array.make nvars (-1) in
           let check_other () =
             try
@@ -435,11 +435,9 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id, op2, el2, er2) stack ;
 
-                      if not (check_after_add op2 el2 er2) then
-                        raise Break ;
 
                       (* Try to fill some more or fail trying *)
-                      if not (f id op2 el2 er2) then
+                      if not (cont id op2 el2 er2) then
                         raise Break
                     end
                   else if left = -1 && right <> -1 then
@@ -448,11 +446,9 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id, op1, el1, er1) stack ;
 
-                      if not (check_after_add op1 el1 er1) then
-                        raise Break ;
 
                       (* Try to fill some more or fail trying *)
-                      if not (f id op1 el1 er1) then
+                      if not (cont id op1 el1 er1) then
                         raise Break
                     end
                   else if (* left <> -1 && right <> -1 &&  *)left <> right then
@@ -465,7 +461,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
           with Break -> false in (f, undo)
       | (term, Binary (op2, l2, r2)) 
       | (Binary (op2, l2, r2), term) -> 
-        let rec f id o i j = 
+        let f cont id o i j = 
           let vars = Array.make nvars (-1) in
           let check_other () =
             try
@@ -482,11 +478,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id, op2, el2, er2) stack ;
 
-                      if not (check_after_add op2 el2 er2) then
-                        raise Break ;
-
                       (* Try to fill some more or fail trying *)
-                      if not (f id op2 el2 er2) then
+                      if not (cont id op2 el2 er2) then
                         raise Break
                     end
                   else if left <> right then
@@ -506,7 +499,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
     | (Binary (op3, Var a2, Binary (op4, Var b2, Var c2)), Binary (op1, Binary (op2, Var a1, Var b1), Var c1))
         when op1 = op2 && op2 = op3 && op3 = op4 && a1 = a2 && b1 = b2 && c1 = c2 ->
       let stack = Stack.create () in 
-      let rec f id o i j = 
+      let f cont id o i j = 
         if o <> op1 then true
         else begin
           try
@@ -525,10 +518,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id,o,i,bc) stack ;
 
-                      if not (check_after_add o i bc) then
-                        raise Break ;
 
-                      if not (f id o i bc) then
+                      if not (cont id o i bc) then
                         raise Break
                     end
                   else if ab_c = -1 && a_bc <> -1 then
@@ -537,10 +528,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id, o,ab,k) stack ;
 
-                      if not (check_after_add o ab k) then
-                        raise Break ;
 
-                      if not (f id o ab k) then
+                      if not (cont id o ab k) then
                         raise Break
                     end
                   else if ab_c <> -1 && a_bc <> -1 && ab_c <> a_bc then
@@ -559,10 +548,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id,o,k,bc) stack ;
 
-                      if not (check_after_add o k bc) then
-                        raise Break ;
 
-                      if not (f id o k bc) then
+                      if not (cont id o k bc) then
                         raise Break
                     end
                   else if ab_c = -1 && a_bc <> -1 then
@@ -571,10 +558,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id, o,ab,j) stack ;
 
-                      if not (check_after_add o ab j) then
-                        raise Break ;
 
-                      if not (f id o ab j) then
+                      if not (cont id o ab j) then
                         raise Break
                     end
                   else if ab_c <> -1 && a_bc <> -1 && ab_c <> a_bc then
@@ -597,10 +582,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                             Stack.push (id,o,a,bc) stack ;
 
-                            if not (check_after_add o a bc) then
-                              raise Break ;
 
-                            if not (f id o a bc) then
+                            if not (cont id o a bc) then
                               raise Break
                           end
                         else if a_bc <> binary_arr.(o).(i).(j) then
@@ -621,10 +604,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                             Stack.push (id, o, ab, c) stack ;
 
-                            if not (check_after_add o ab c) then
-                              raise Break ;
 
-                            if not (f id o ab c) then
+                            if not (cont id o ab c) then
                               raise Break
                           end
                         else if ab_c <> binary_arr.(o).(i).(j) then
@@ -651,6 +632,16 @@ let gen_binary n lc lu lb axioms unary_arr k =
   let (dos, undos) = List.split (List.map actions_from_assoc assoc @
                                  List.map (actions_from_axiom) amenable) in
 
+  (* 
+     Use all the functions from dos. Continuation passed is dodos itself.
+     The idea is that once we set a new element in f we immediately call
+     dodos again to check validity of other axioms and maybe add some more
+     elements. This sequence of calls to dodos will eventually end. If not
+     sooner than at least when all operation tables are full. 
+  *)
+  let rec 
+      dodos id o i j = List.for_all (fun f -> f dodos id o i j) dos in
+
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
   let rec gen_operation o = function
@@ -674,8 +665,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
     | (i,j) when binary_arr.(o).(i).(j) = -1 ->
       for k=0 to n-1 do
         binary_arr.(o).(i).(j) <- k ;
-        (* check_after_add isn't needed here because f's report back instead *)
-        if List.for_all (fun f -> f (o,i,j) o i j) dos && check () then
+        (* check_after_add isn't needed here because fs report back instead *)
+        if dodos (o,i,j) o i j && check () then
           gen_operation o (i,j+1)
         ; List.iter (fun f -> f (o,i,j)) undos
         ; binary_arr.(o).(i).(j) <- -1
