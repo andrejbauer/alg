@@ -209,17 +209,16 @@ let gen_binary n lc lu lb axioms unary_arr k =
     List.iter (fun x -> apply_one_var x i) one_var_shallow
   done ;
 
-  (* Partition axioms. Assoc are naturally associativity axioms, amenable_check
-     are all the amenable axioms, amenable are amenable_check sans associativity.
-     Zipped are the rest that have to be checked differently than amenable. *)
-  (* Zipped means in the form (number of distinct variables, axioms) *)
-  let (assoc, amenable, amenable_check, zipped_axioms) = 
+  (* 
+     Partition axioms. Assoc and amenable are naturally associativity and amenable axioms.
+     zippep_axioms are the rest that have to be checked differently than amenable.
+     Zipped means in the form (number of distinct variables, axioms) 
+  *)
+  let (assoc, amenable, zipped_axioms) = 
     let (assoc, rest) = partition_assoc left in
     let (amenable, rest) = partition_amenable rest in
-    let (amenable_check, rest) = partition_amenable left in
     (assoc,
      List.map (fun a -> num_dist_vars a, a) amenable,
-     List.map (fun a -> (num_dist_vars a, a)) amenable_check,
      (* Check axioms with fewer free variables first. *)
      List.sort (fun (n,_) (m,_) -> compare n m) (List.map (fun a -> (num_dist_vars a, a)) rest)) in
 
@@ -341,67 +340,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
         | Unary (_, t) -> fill (o,i,j) vars cont t 
         | _ -> () in
 
-  let check_from_amenable_axiom (nvars, axiom) = 
-    (* 
-       check_other is the same as in actions_from_axiom but doesn't set
-       anything.
-       This is the end of continuations. It is called when all
-       of the variables have been set.
-    *)
-    match axiom with
-      | (Binary (op1, l1, r1), Binary (op2, l2, r2)) ->
-        let f o i j = 
-          let vars = Array.make nvars (-1) in
-          let check_other () =
-            try
-              let el1 = eval_eq vars l1 in
-              let er1 = eval_eq vars r1 in
-              let el2 = eval_eq vars l2 in
-              let er2 = eval_eq vars r2 in
-              if el1 <> -1 && el2 <> -1 && er1 <> -1 && er2 <> -1 then
-                begin
-                  let left = binary_arr.(op1).(el1).(er1) in
-                  let right = binary_arr.(op2).(el2).(er2) in 
-                  if left <> -1 && right <> -1 && left <> right then
-                    raise Break
-                end
-            with Undefined -> () in
-          try
-            fill (o,i,j) vars check_other (Binary (op2, l2, r2)) ; 
-            fill (o,i,j) vars check_other (Binary (op1, l1, r1)) ; true
-          with Break -> false in f
-      | (term, Binary (op2, l2, r2)) 
-      | (Binary (op2, l2, r2), term) -> 
-        let f o i j = 
-          let vars = Array.make nvars (-1) in
-          let check_other () =
-            try
-              let el2 = eval_eq vars l2 in
-              let er2 = eval_eq vars r2 in
-              let elt = eval_eq vars term in
-              if elt <> -1 && el2 <> -1 && er2 <> -1 then
-                begin
-                  let left = elt in
-                  let right = binary_arr.(op2).(el2).(er2) in 
-                  if left <> -1 && right <> -1 && left <> right then
-                    raise Break 
-                end
-            with Undefined -> () in
-          try
-            fill (o,i,j) vars check_other (Binary (op2, l2, r2)) ; true
-          with Break -> false in f
-      | _ -> invalid_arg "Invalid axiom in check_from_amenable_axiom. At least one term has to be binary." in
-
-
-  let checks = List.map check_from_amenable_axiom amenable_check in
-
-  (* 
-     Check after add should be called after an element is added to the operation table.
-     It checks if all amenable axioms are still valid.
-  *)
-  let check_after_add o i j = 
-    List.for_all (fun f -> f o i j) checks in
-
   (* Compute actions from amenable axioms *)
   let actions_from_axiom (nvars, axiom) = 
     let stack = Stack.create () in
@@ -435,7 +373,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id, op2, el2, er2) stack ;
 
-
                       (* Try to fill some more or fail trying *)
                       if not (cont id op2 el2 er2) then
                         raise Break
@@ -445,7 +382,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
                       binary_arr.(op1).(el1).(er1) <- right ;
 
                       Stack.push (id, op1, el1, er1) stack ;
-
 
                       (* Try to fill some more or fail trying *)
                       if not (cont id op1 el1 er1) then
@@ -518,7 +454,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id,o,i,bc) stack ;
 
-
                       if not (cont id o i bc) then
                         raise Break
                     end
@@ -527,7 +462,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
                       binary_arr.(o).(ab).(k) <- a_bc ;
 
                       Stack.push (id, o,ab,k) stack ;
-
 
                       if not (cont id o ab k) then
                         raise Break
@@ -548,7 +482,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                       Stack.push (id,o,k,bc) stack ;
 
-
                       if not (cont id o k bc) then
                         raise Break
                     end
@@ -557,7 +490,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
                       binary_arr.(o).(ab).(j) <- a_bc ;
 
                       Stack.push (id, o,ab,j) stack ;
-
 
                       if not (cont id o ab j) then
                         raise Break
@@ -582,7 +514,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
                             Stack.push (id,o,a,bc) stack ;
 
-
                             if not (cont id o a bc) then
                               raise Break
                           end
@@ -603,7 +534,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
                             binary_arr.(o).(ab).(c) <- binary_arr.(o).(i).(j) ;
 
                             Stack.push (id, o, ab, c) stack ;
-
 
                             if not (cont id o ab c) then
                               raise Break
