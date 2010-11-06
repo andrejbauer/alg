@@ -227,44 +227,9 @@ let gen_binary n lc lu lb axioms unary_arr k =
   (* This could potentially gobble up memory. TODO *)
   let all_tuples = Array.init (max_vars + 1) (fun i -> ntuples n i) in
 
-  (*
-     Returns false if there is a conflict.
-  *)
-  let axiom_ok (num_vars, (left, right)) =
-    let tuples = all_tuples.(num_vars) in
-    let apply_to i =
-      let rec eval_eq = function
-        | Const c -> c
-        | Var v -> i.(v)
-        | Unary (op, t) ->
-            begin match eval_eq t with
-              | -1 -> raise Undefined
-              | v -> unary_arr.(op).(v)
-            end
-        | Binary (op, lt, rt) ->
-            begin match eval_eq lt with
-              | -1 -> raise Undefined
-              | lv ->
-                  begin match eval_eq rt with
-                    | -1 -> raise Undefined
-                    | rv -> binary_arr.(op).(lv).(rv)
-                  end
-            end
-      in
-        try
-          let a = eval_eq left in (* b is not evaluated if a is -1 *)
-            a = -1 || 
-              let b = eval_eq right in
-              (b = -1 || a = b)
-        with Undefined -> true
-    in
-      Util.array_for_all apply_to tuples
-  in
-
-
-  (* ********************************************************************* *)
-  (* Auxiliary functions for computing actions from axioms and 
-     checking axiom validity after adding one element 
+  (* 
+     evaluate term in the context of vars. Raises Undefined if there is
+     insufficient information to fully evaluate.
   *)
   let rec eval_eq vars = function
     | Const c -> c
@@ -285,78 +250,120 @@ let gen_binary n lc lu lb axioms unary_arr k =
       end
   in
 
-  (* free fills the rest of the variables with all possible values *)
-  let rec 
-      free vars cont = function
-        | Var v when vars.(v) = -1 -> 
-          for k=0 to n-1 do
-            vars.(v) <- k ;
-            cont () ;
-            vars.(v) <- -1 ;
-          done
-        | (Binary (_, l, r)) -> 
-          free vars (fun () -> free vars cont r) l
-        | _ -> cont () in
 
-  let rec 
-      (* generate all possible subexpressions so that the term evaluates to k *)
-      gen_all vars k cont = function 
-        | (Binary (op, l, r)) -> 
-          for u=0 to n-1 do
-            for v=0 to n-1 do
-              if binary_arr.(op).(u).(v) = k then
-                gen_all vars u (fun () -> gen_all vars v cont r) l
-            done
-          done
-        | (Unary (op, t)) -> 
-          for u=0 to n-1 do
-            if unary_arr.(op).(u) = k then
-              gen_all vars u cont t
-          done
-        | Var v when vars.(v) = -1 -> 
-          vars.(v) <- k ; 
-          cont () ; 
-          vars.(v) <- -1
-        | Var v when vars.(v) = k -> cont ()
-        | Const c when c = k -> cont ()
-        | _ -> () in
+  (*
+     Returns false if there is a conflict.
+  *)
+  let axiom_ok (num_vars, (left, right)) =
+    let tuples = all_tuples.(num_vars) in
+    let apply_to i =
+      try
+        let a = eval_eq i left in (* b is not evaluated if a is -1 *)
+        a = -1 || 
+            let b = eval_eq i right in
+            (b = -1 || a = b)
+      with Undefined -> true
+    in
+      Util.array_for_all apply_to tuples
+  in
 
-  (* We just set (i,j) to some value in o.
-     See where we might use this to violate an axiom or set a new value. *)
-  let rec
-      fill (o,i,j) vars cont = function
-        | (Binary (op, l, r)) when op = o ->
-          (* both are in the left subtree *)
-          fill (o,i,j) vars (fun () -> free vars cont r) l ;
-          (* case l = i, r = j *)
-          gen_all vars i (fun () -> gen_all vars j cont r) l ;
-          (* both are in the right subtree *)
-          fill (o,i,j) vars (fun () -> free vars cont l) r
-        | (Binary (_, l, r)) -> 
-          (* both are in the left subtree *)
-          fill (o,i,j) vars (fun () -> free vars cont r) l ;
-          (* both are in the right subtree *)
-          fill (o,i,j) vars (fun () -> free vars cont l) r
-        | Unary (_, t) -> fill (o,i,j) vars cont t 
-        | _ -> () in
+
+  (* ********************************************************************* *)
+  (* Auxiliary functions for computing actions from axioms and 
+     checking axiom validity after adding one element 
+  *)
 
   (* Compute actions from amenable axioms *)
   let actions_from_axiom (nvars, axiom) = 
     let stack = Stack.create () in
+    let vars = Array.make nvars (-1) in
+    let nfill = ref 0 in
     let undo id = 
       while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
         let (_, op, left, right) = Stack.pop stack in
         binary_arr.(op).(left).(right) <- -1 
       done in
+
+
+    (* free fills the rest of the variables with all possible values *)
+    let rec 
+        free cont term = 
+      if !nfill = nvars then cont ()
+      else begin
+        match term with 
+          | Var v when vars.(v) = -1 -> 
+            for k=0 to n-1 do
+              vars.(v) <- k ;
+              incr nfill ;
+              cont () ;
+              decr nfill ;
+              vars.(v) <- -1 ;
+            done
+          | (Binary (_, l, r)) -> 
+            free (fun () -> free cont r) l
+          | _ -> cont () 
+      end in
+
+    let rec 
+        (* generate all possible subexpressions so that the term evaluates to k *)
+        gen_all k cont term = 
+          if !nfill = nvars then cont ()
+          else begin
+            match term with 
+              | (Binary (op, l, r)) -> 
+                for u=0 to n-1 do
+                  for v=0 to n-1 do
+                    if binary_arr.(op).(u).(v) = k then
+                      gen_all u (fun () -> gen_all v cont r) l
+                  done
+                done
+              | (Unary (op, t)) -> 
+                for u=0 to n-1 do
+                  if unary_arr.(op).(u) = k then
+                    gen_all u cont t
+                done
+              | Var v when vars.(v) = -1 -> 
+                vars.(v) <- k ; 
+                incr nfill ;
+                cont () ; 
+                decr nfill ;
+                vars.(v) <- -1
+              | Var v when vars.(v) = k -> cont ()
+              | Const c when c = k -> cont ()
+              | _ -> ()
+          end in
+
+    (* We just set (i,j) to some value in o.
+       See where we might use this to violate an axiom or set a new value. *)
+    let rec
+        fill (o,i,j) cont = function
+          | (Binary (op, l, r)) when op = o ->
+          (* both are in the left subtree *)
+            fill (o,i,j) (fun () -> free cont r) l ;
+          (* case l = i, r = j *)
+            gen_all i (fun () -> gen_all j cont r) l ;
+          (* both are in the right subtree *)
+            fill (o,i,j)  (fun () -> free cont l) r
+          | (Binary (_, l, r)) -> 
+          (* both are in the left subtree *)
+            fill (o,i,j) (fun () -> free cont r) l ;
+          (* both are in the right subtree *)
+            fill (o,i,j) (fun () -> free cont l) r
+          | Unary (_, t) -> fill (o,i,j) cont t 
+          | _ -> () in
+
     (* 
-       check_other Check if an axiom is violated or we can set a new value.
+       check_other: Check if an axiom is violated or we can set a new value.
        This is the end of continuations. It is called when all
        of the variables have been set.
     *)
     match axiom with
       | (Binary (op1, l1, r1), Binary (op2, l2, r2)) ->
         let f cont id o i j = 
-          let vars = Array.make nvars (-1) in
+          for k = 0 to nvars - 1 do
+            vars.(k) <- -1
+          done ;
+          nfill := 0 ;
           let check_other () =
             try
               let el1 = eval_eq vars l1 in
@@ -392,13 +399,16 @@ let gen_binary n lc lu lb axioms unary_arr k =
                 end
             with Undefined -> () in
           try
-            fill (o,i,j) vars check_other (Binary (op2, l2, r2)) ; 
-            fill (o,i,j) vars check_other (Binary (op1, l1, r1)) ; true
+            fill (o,i,j) check_other (Binary (op2, l2, r2)) ; 
+            fill (o,i,j) check_other (Binary (op1, l1, r1)) ; true
           with Break -> false in (f, undo)
       | (term, Binary (op2, l2, r2)) 
       | (Binary (op2, l2, r2), term) -> 
         let f cont id o i j = 
-          let vars = Array.make nvars (-1) in
+          for k = 0 to nvars - 1 do
+            vars.(k) <- -1
+          done ;
+          nfill := 0 ;
           let check_other () =
             try
               let el2 = eval_eq vars l2 in
@@ -423,7 +433,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
                 end
             with Undefined -> () in
           try
-            fill (o,i,j) vars check_other (Binary (op2, l2, r2)) ; true
+            fill (o,i,j) check_other (Binary (op2, l2, r2)) ; true
           with Break -> false in (f, undo)
       | _ -> invalid_arg "Invalid axiom in actions_from_axiom. At least one term has to be binary." in
 
@@ -572,6 +582,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
   let rec 
       dodos id o i j = List.for_all (fun f -> f dodos id o i j) dos in
 
+  let doundos id = List.iter (fun f -> f id) undos in 
+
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
   let rec gen_operation o = function
@@ -598,7 +610,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
         (* check_after_add isn't needed here because fs report back instead *)
         if dodos (o,i,j) o i j && check () then
           gen_operation o (i,j+1)
-        ; List.iter (fun f -> f (o,i,j)) undos
+        ; doundos (o,i,j)
         ; binary_arr.(o).(i).(j) <- -1
       done
     | (i,j) ->  gen_operation o (i,j+1) in
@@ -619,9 +631,6 @@ let gen_unary n lc lu lb axioms k =
      are also easily dispatched with.
 
      Complicated are the complement of simple and cannot be so easily applied.
-     TODO: The ones of the form f_1(...(f_n(c))) = d for c and d constants create
-     connections between tables. If c and d are variables this is the same as
-     n^2 pairs of constant.
   *)
   let (simple, complicated) = part_unary_axioms unary_axioms in
   (*
@@ -640,14 +649,13 @@ let gen_unary n lc lu lb axioms k =
       | (var, start, []) -> (var, start, None, [])
       | (var, start, os) -> (var, start, Some (List.nth os (List.length os - 1)), Util.init os) in
 
-
   (* 
      Unary axioms in "normal form". Each side of the equation is a 4-tuple
      (is_variable, variable or const index, last operation or None, list of unary operations)
   *)
   let normal_axioms = List.map 
     (fun (eq1, eq2) -> (path_from_equation eq1, path_from_equation eq2)) complicated in
-
+  
   (* Main operation tables *)
   let unary_arr = Array.make_matrix lu n (-1) in
 
@@ -679,7 +687,6 @@ let gen_unary n lc lu lb axioms k =
     that an operation is bijection. E.g. f(f(x)) = x. It may be
     worth the trouble to implement.
   *)
-
   let actions_from_axiom axiom = 
     let stack = Stack.create () in 
 
@@ -733,7 +740,7 @@ let gen_unary n lc lu lb axioms k =
           end
         | _ -> true in
 
-    match axiom with 
+    match axiom with
       | ((true, id1, l1, left), (true, id2, l2, right)) when id1 = id2 -> 
         let check_axiom cont id = 
           let p = ref true in
@@ -769,9 +776,7 @@ let gen_unary n lc lu lb axioms k =
       dodos id = List.for_all (fun f -> f dodos id) dos in
   let doundos id = List.iter (fun f -> f id) undos in
 
-  (*
-     Main loop. Baseline.
-  *)
+  (* Main loop. *)
   let rec
       gen_operation i = function
         | j when j = n && i < lu - 1 -> gen_operation (i+1) 0
