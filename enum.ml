@@ -1,10 +1,11 @@
 open Type
 open Util
 
-(* TODO This module is a little messy. *)
-
 exception Undefined
 exception Break
+
+(* General helper functions for partitioning axioms. *)
+
 
 (* Select axioms that refer only to unary operations and constants. *)
 let part_axioms axioms =
@@ -14,7 +15,6 @@ let part_axioms axioms =
     | Var _ | Const _ -> true in
   let no_binary_axiom (eq1, eq2) = no_binary eq1 && no_binary eq2 in
   List.partition no_binary_axiom axioms
-
 
 (*
    Partition unary axioms. In the first part are the axioms of the form
@@ -91,7 +91,6 @@ let partition_assoc axioms =
     | _ -> false
   in List.partition is_assoc axioms
 
-
 let make_3d_array x y z initial =
   Array.init x (fun _ -> Array.make_matrix y z initial)
 
@@ -141,25 +140,11 @@ let partition_amenable axioms =
         | _ -> false in
   List.partition is_amenable axioms
 
+(* ************************************************************** *)
+(* Auxiliary functions for binary axioms. *)
 
-(* ************************************************************************** *)
-(* Main search functions. *)
-
-(*
-  Generate binary operation tables. lc, lu and lb are numbers of constants,
-  unary and binary operations. unary_arr is supposed to be a matrix
-  of unary operations where each line is an operation. axioms
-  should only contain axioms where there is at least one binary
-  operation.
-*)
-let gen_binary n lc lu lb axioms unary_arr k =
-  let (simple, complicated) = part_binary_axioms axioms in
-
-  (*
-     Main operation tables.
-  *)
-  let binary_arr = make_3d_array lb n n (-1) in
-
+(* Apply simple axioms to the binary operation tables. *)
+let apply_simple_binary simple unary_arr binary_arr =
   (*
      Applies simple axioms to the main operation tables.
      If axioms aren't simple it fails miserably.
@@ -168,7 +153,8 @@ let gen_binary n lc lu lb axioms unary_arr k =
     let rec get_value = function
       | (Const c) -> c
       | (Unary (op,v)) -> unary_arr.(op).(get_value v)
-      | _ -> invalid_arg "Ooops, binary operation or variable in apply_simple.get_value. This shouldn't happen!"
+      | _ -> invalid_arg "Ooops, binary operation or variable in apply_simple.get_value.
+                          This shouldn't happen!"
     in match axiom with
       | (Binary (op, t1, t2), Const c)
       | (Const c, Binary (op, t1, t2)) ->
@@ -176,20 +162,14 @@ let gen_binary n lc lu lb axioms unary_arr k =
         let v2 = get_value t2 in
         binary_arr.(op).(v1).(v2) <- c
       | _ -> invalid_arg "Not a simple binary axiom."
-  in List.iter apply_simple simple ;
+  in List.iter apply_simple simple
 
-  (*
-     left are the axioms which cannot be immediately applied
-     These include axioms of depth > 1 and those with more variables.
-  *)
-
-  let (one_var_shallow, left) = part_one_var_binary complicated in
-
+(* Apply one variable shallow axioms to the binary_arr operation tables. *)
+let apply_one_var_shallow n one_var_shallow unary_arr binary_arr =
   (*
     Apply one variable shallow axioms. Typical example is axioms for
     a unit element in a monoid (forall a: a * e = e)
   *)
-
   let apply_one_var axiom elem =
     let rec get_value = function
       | (Const c) -> c
@@ -207,72 +187,59 @@ let gen_binary n lc lu lb axioms unary_arr k =
   in
   for i=0 to n-1 do
     List.iter (fun x -> apply_one_var x i) one_var_shallow
-  done ;
+  done
 
-  (*
-     Partition axioms. Assoc and amenable are naturally associativity and amenable axioms.
-     zippep_axioms are the rest that have to be checked differently than amenable.
-     Zipped means in the form (number of distinct variables, axioms)
-  *)
-  let (assoc, amenable, zipped_axioms) =
-    let (assoc, rest) = partition_assoc left in
-    let (amenable, rest) = partition_amenable rest in
-    (assoc,
-     List.map (fun a -> num_dist_vars a, a) amenable,
-     (* Check axioms with fewer free variables first. *)
-     List.sort (fun (n,_) (m,_) -> compare n m) (List.map (fun a -> (num_dist_vars a, a)) rest)) in
-
-  let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in
-
-  (* This could potentially gobble up memory. TODO *)
-  let all_tuples = Array.init (max_vars + 1) (fun i -> ntuples n i) in
-
-  (*
-     evaluate term in the context of vars. Raises Undefined if there is
-     insufficient information to fully evaluate.
-  *)
-  let rec eval_eq vars = function
+(*
+  evaluate term in the context of vars. Raises Undefined if there is
+  insufficient information to fully evaluate.
+*)
+let eval_eq unary_arr binary_arr vars =
+  let rec eval_eq' = function
     | Const c -> c
     | Var v -> vars.(v)
     | Unary (op, t) ->
-      begin match eval_eq vars t with
+      begin match eval_eq' t with
         | -1 -> raise Undefined
         | v -> unary_arr.(op).(v)
       end
     | Binary (op, lt, rt) ->
-      begin match eval_eq vars lt with
+      begin match eval_eq' lt with
         | -1 -> raise Undefined
         | lv ->
-          begin match eval_eq vars rt with
+          begin match eval_eq' rt with
             | -1 -> raise Undefined
             | rv -> binary_arr.(op).(lv).(rv)
           end
-      end
-  in
+      end in eval_eq'
 
-
+let get_checks all_tuples unary_arr binary_arr zipped_axioms =
   (*
      Returns false if there is a conflict.
   *)
   let axiom_ok (num_vars, (left, right)) =
     let tuples = all_tuples.(num_vars) in
-    let apply_to i =
+    let apply_to vars =
       try
-        let a = eval_eq i left in (* b is not evaluated if a is -1 *)
+        let a = eval_eq unary_arr binary_arr vars left in (* b is not evaluated if a is -1 *)
         a = -1 ||
-            let b = eval_eq i right in
+            let b = eval_eq unary_arr binary_arr vars right in
             (b = -1 || a = b)
       with Undefined -> true
     in
-      Util.array_for_all apply_to tuples
-  in
-
-
-  (* ********************************************************************* *)
-  (* Auxiliary functions for computing actions from axioms and
-     checking axiom validity after adding one element
+      Util.array_for_all apply_to tuples in
+  (*
+    Checks if all axioms are still valid. This is for axioms that are not amenable.
+    Amenable are checked immediately after adding each element.
   *)
+  let check () = List.for_all axiom_ok zipped_axioms in check
 
+
+(* ********************************************************************* *)
+(*
+   Auxiliary functions for computing actions from binary axioms and
+   checking axiom validity after adding one element.
+*)
+let get_binary_actions n unary_arr binary_arr assoc amenable =
   (* Compute actions from amenable axioms *)
   let actions_from_axiom (nvars, axiom) =
     let stack = Stack.create () in
@@ -366,10 +333,10 @@ let gen_binary n lc lu lb axioms unary_arr k =
           nfill := 0 ;
           let check_other () =
             try
-              let el1 = eval_eq vars l1 in
-              let er1 = eval_eq vars r1 in
-              let el2 = eval_eq vars l2 in
-              let er2 = eval_eq vars r2 in
+              let el1 = eval_eq unary_arr binary_arr vars l1 in
+              let er1 = eval_eq unary_arr binary_arr vars r1 in
+              let el2 = eval_eq unary_arr binary_arr vars l2 in
+              let er2 = eval_eq unary_arr binary_arr vars r2 in
               if el1 <> -1 && el2 <> -1 && er1 <> -1 && er2 <> -1 then
                 begin
                   let left = binary_arr.(op1).(el1).(er1) in
@@ -411,9 +378,9 @@ let gen_binary n lc lu lb axioms unary_arr k =
           nfill := 0 ;
           let check_other () =
             try
-              let el2 = eval_eq vars l2 in
-              let er2 = eval_eq vars r2 in
-              let elt = eval_eq vars term in
+              let el2 = eval_eq unary_arr binary_arr vars l2 in
+              let er2 = eval_eq unary_arr binary_arr vars r2 in
+              let elt = eval_eq unary_arr binary_arr vars term in
               if elt <> -1 && el2 <> -1 && er2 <> -1 then
                 begin
                   let left = elt in
@@ -563,12 +530,6 @@ let gen_binary n lc lu lb axioms unary_arr k =
         done in (f, undo)
     | _ -> invalid_arg "actions_from_assoc axiom given is not associativity" in
 
-  (*
-    Checks if all axioms are still valid. This is for axioms that are not amenable.
-    Amenable are checked immediately after adding each element.
-  *)
-  let check () = List.for_all axiom_ok zipped_axioms in
-
   let (dos, undos) = List.split (List.map actions_from_assoc assoc @
                                  List.map (actions_from_axiom) amenable) in
 
@@ -582,83 +543,16 @@ let gen_binary n lc lu lb axioms unary_arr k =
   let rec
       dodos id o i j = List.for_all (fun f -> f dodos id o i j) dos in
 
-  let doundos id = List.iter (fun f -> f id) undos in
+  let doundos id = List.iter (fun f -> f id) undos in (dodos, doundos)
 
-  (* Main loop. *)
-  (* o is index of operation, (i,j) current element *)
-  let rec gen_operation o = function
-    | _ when o = lb ->
-      k { size = n;
-          const = Util.enumFromTo 0 (lc-1);
-          unary =
-          begin
-            let r = ref [] in
-            for i=0 to lu - 1 do
-              r := (i, unary_arr.(i)) :: !r
-            done ; !r
-          end ;
-          binary = let r = ref [] in
-                   for i=0 to lb-1 do
-                     r := (i, binary_arr.(i)) :: !r
-                  done ; !r
-        }
-    | (i,_) when i = n -> gen_operation (o+1) (0,0)
-    | (i,j) when j = n -> gen_operation o (i+1,0)
-    | (i,j) when binary_arr.(o).(i).(j) = -1 ->
-      for k=0 to n-1 do
-        binary_arr.(o).(i).(j) <- k ;
-        (* check_after_add isn't needed here because fs report back instead *)
-        if dodos (o,i,j) o i j && check () then
-          gen_operation o (i,j+1)
-        ; doundos (o,i,j)
-        ; binary_arr.(o).(i).(j) <- -1
-      done
-    | (i,j) ->  gen_operation o (i,j+1) in
-  gen_operation 0 (0,0)
+(* ******************************************************************************* *)
+(* End of auxiliary functions for binary axioms *)
 
+(* ******************************************************************************* *)
+(* Auxiliary functions for unary axioms. *)
 
-(*
-  Generate unary operation tables. lc, lu and lb are numbers of constants,
-  unary and binary operations.
-*)
-let gen_unary n lc lu lb axioms k =
-  let (unary_axioms, binary_axioms) = part_axioms axioms in
-  (*
-     Simple and complicated unary axioms. Simple are the
-     ones of the form f(c) = d or f(d) = c for c and d constants. These
-     can be easily applied.
-     TODO: Axioms of the form f(x) = c for x variable and c constant
-     are also easily dispatched with.
-
-     Complicated are the complement of simple and cannot be so easily applied.
-  *)
-  let (simple, complicated) = part_unary_axioms unary_axioms in
-  (*
-    Equation must not contain any binary operations.
-    path_from_equation returns a 4-tuple (indicator, index, index of last operation,
-    list of indices of unary operations). indicator is true if term starts with a variable
-    and false if it starts with a constant. Index is index of variable or constant.
-  *)
-  let path_from_equation e =
-    let rec loop acc = function
-      | (Unary (op,t)) -> loop (op::acc) t
-      | (Var v) -> (true, v, acc)
-      | (Const c) -> (false, c, acc)
-      | _ -> invalid_arg "path_from_equation: Binary operation." in
-    match loop [] e with
-      | (var, start, []) -> (var, start, None, [])
-      | (var, start, os) -> (var, start, Some (List.nth os (List.length os - 1)), Util.init os) in
-
-  (*
-     Unary axioms in "normal form". Each side of the equation is a 4-tuple
-     (is_variable, variable or const index, last operation or None, list of unary operations)
-  *)
-  let normal_axioms = List.map
-    (fun (eq1, eq2) -> (path_from_equation eq1, path_from_equation eq2)) complicated in
-
-  (* Main operation tables *)
-  let unary_arr = Array.make_matrix lu n (-1) in
-
+(* Apply simple axioms to operation tables unary_arr *)
+let apply_simple simple unary_arr =
   (* Apply simple axioms *)
   List.iter
     (function
@@ -666,8 +560,11 @@ let gen_unary n lc lu lb axioms k =
       | (Const c2, Unary (op, Const c1))
         -> unary_arr.(op).(c1) <- c2
       | _ -> invalid_arg "Something went terribly wrong in applying simple axioms.")
-    simple ;
+    simple
 
+
+(* Get do and undo actions from axioms in normal form for use in main loop of gen_unary. *)
+let get_unary_actions n normal_axioms unary_arr =
   (*
     Traces function applications in equation eq starting with start. If an unknown
     element comes up, it returns None.
@@ -775,12 +672,90 @@ let gen_unary n lc lu lb axioms k =
   let rec
       dodos id = List.for_all (fun f -> f dodos id) dos in
   let doundos id = List.iter (fun f -> f id) undos in
+  (dodos, doundos)
 
+
+(* Get axioms in normal form from "complicated" axioms. *)
+let get_normal_axioms complicated =
+  (*
+    Equation must not contain any binary operations.
+    path_from_equation returns a 4-tuple (indicator, index, index of last operation,
+    list of indices of unary operations). indicator is true if term starts with a variable
+    and false if it starts with a constant. Index is index of variable or constant.
+  *)
+  let path_from_equation e =
+    let rec loop acc = function
+      | (Unary (op,t)) -> loop (op::acc) t
+      | (Var v) -> (true, v, acc)
+      | (Const c) -> (false, c, acc)
+      | _ -> invalid_arg "path_from_equation: Binary operation." in
+    match loop [] e with
+      | (var, start, []) -> (var, start, None, [])
+      | (var, start, os) -> (var, start, Some (List.nth os (List.length os - 1)), Util.init os) in
+
+  (*
+     Unary axioms in "normal form". Each side of the equation is a 4-tuple
+     (is_variable, variable or const index, last operation or None, list of unary operations)
+  *)
+  List.map (fun (eq1, eq2) -> (path_from_equation eq1, path_from_equation eq2)) complicated
+
+(* ************************************************************************** *)
+(* End of auxiliary functions for unary axioms. *)
+
+
+(* ************************************************************************** *)
+(* Main search functions. *)
+
+(*
+  Generate binary operation tables. lc, lu and lb are numbers of constants,
+  unary and binary operations. unary_arr is supposed to be a matrix
+  of unary operations where each line is an operation. axioms
+  should only contain axioms where there is at least one binary
+  operation.
+*)
+let gen_binary n lc lu lb dodos doundos unary_arr binary_arr check k =
+  (* Main loop. *)
+  (* o is index of operation, (i,j) current element *)
+  let rec gen_operation o = function
+    | _ when o = lb ->
+      k { size = n;
+          const = Util.enumFromTo 0 (lc-1);
+          unary =
+          begin
+            let r = ref [] in
+            for i=0 to lu - 1 do
+              r := (i, unary_arr.(i)) :: !r
+            done ; !r
+          end ;
+          binary = let r = ref [] in
+                   for i=0 to lb-1 do
+                     r := (i, binary_arr.(i)) :: !r
+                  done ; !r
+        }
+    | (i,_) when i = n -> gen_operation (o+1) (0,0)
+    | (i,j) when j = n -> gen_operation o (i+1,0)
+    | (i,j) when binary_arr.(o).(i).(j) = -1 ->
+      for k=0 to n-1 do
+        binary_arr.(o).(i).(j) <- k ;
+        (* check_after_add isn't needed here because fs report back instead *)
+        if dodos (o,i,j) o i j && check () then
+          gen_operation o (i,j+1)
+        ; doundos (o,i,j)
+        ; binary_arr.(o).(i).(j) <- -1
+      done
+    | (i,j) ->  gen_operation o (i,j+1) in
+  gen_operation 0 (0,0)
+
+(*
+  Generate unary operation tables. lc, lu and lb are numbers of constants,
+  unary and binary operations.
+*)
+let gen_unary n lu dodos doundos unary_arr k =
   (* Main loop. *)
   let rec
       gen_operation i = function
         | j when j = n && i < lu - 1 -> gen_operation (i+1) 0
-        | j when j = n || i = lu -> gen_binary n lc lu lb binary_axioms unary_arr k
+        | j when j = n || i = lu -> k ()
           (* || i = lu is necessary for when there aren't any unary operations *)
         | j when unary_arr.(i).(j) = -1 ->
           for k=0 to n-1 do
@@ -793,9 +768,94 @@ let gen_unary n lc lu lb axioms k =
         | j -> gen_operation i (j+1)
   in gen_operation 0 0
 
+
 (*
    Enumerate all algebras of a given size for the given theory
    and pass them to the given continuation.
 *)
 let enum n {signature={sig_const=const; sig_unary=unary; sig_binary=binary}; axioms=axioms} k =
-  gen_unary n (List.length const) (List.length unary) (List.length binary) axioms k
+
+  let lc = List.length const in
+  let lu = List.length unary in
+  let lb = List.length binary in
+
+  (* Auxiliary variables for generation of unary operations. *)
+  (* ******************************************************* *)
+  let (unary_axioms, binary_axioms) = part_axioms axioms in
+  (*
+     Simple and complicated unary axioms. Simple are the
+     ones of the form f(c) = d or f(d) = c for c and d constants. These
+     can be easily applied.
+     TODO: Axioms of the form f(x) = c for x variable and c constant
+     are also easily dispatched with.
+
+     Complicated are the complement of simple and cannot be so easily applied.
+  *)
+  let (simple, complicated) = part_unary_axioms unary_axioms in
+
+  (* Main operation tables for unary operations. *)
+  let unary_arr = Array.make_matrix lu n (-1) in
+
+  let normal_axioms = get_normal_axioms complicated in
+
+  let (unary_dos, unary_undos) = get_unary_actions n normal_axioms unary_arr in
+
+  apply_simple simple unary_arr ;
+
+  (* Auxiliary variables for generation of binary operations. *)
+  (* ******************************************************* *)
+  let (simple_binary, complicated_binary) = part_binary_axioms binary_axioms in
+
+  (*
+     left are the axioms which cannot be immediately applied
+     These include axioms of depth > 1 and those with more variables.
+  *)
+  let (one_var_shallow, left) = part_one_var_binary complicated_binary in
+
+  (*
+     Partition axioms. Assoc and amenable are naturally associativity and amenable axioms.
+     zippep_axioms are the rest that have to be checked differently than amenable.
+     Zipped means in the form (number of distinct variables, axioms)
+  *)
+  let (assoc, amenable, zipped_axioms) =
+    let (assoc, rest) = partition_assoc left in
+    let (amenable, rest) = partition_amenable rest in
+    (assoc,
+     List.map (fun a -> num_dist_vars a, a) amenable,
+     (* Check axioms with fewer free variables first. *)
+     List.sort (fun (n,_) (m,_) -> compare n m) (List.map (fun a -> (num_dist_vars a, a)) rest)) in
+
+  (*
+     Maximum distinct variables in any of the axioms left. This is needed so we can cache
+     all the ntuples.
+  *)
+  let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in
+
+  (* This could potentially gobble up memory. TODO *)
+  let all_tuples = Array.init (max_vars + 1) (fun i -> ntuples n i) in
+
+  (*
+     Main operation tables for binary operations.
+  *)
+  let binary_arr = make_3d_array lb n n (-1) in
+
+  let check = get_checks all_tuples unary_arr binary_arr zipped_axioms in
+
+  let (binary_dos, binary_undos) = get_binary_actions n unary_arr binary_arr assoc amenable in
+
+  let reset_binary_arr () =
+    for o=0 to lb-1 do
+      for i=0 to n-1 do
+        for j=0 to n-1 do
+          binary_arr.(o).(i).(j) <- -1
+        done
+      done
+    done in
+
+  let cont () =
+    reset_binary_arr () ;
+    apply_simple_binary simple_binary unary_arr binary_arr ;
+    apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
+    gen_binary n lc lu lb binary_dos binary_undos unary_arr binary_arr check k in
+
+  gen_unary n lu unary_dos unary_undos unary_arr cont
