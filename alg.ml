@@ -2,6 +2,8 @@ open Type
 
 open Iso
 
+open Irreducible
+
 open Util
 
 let size = ref 3
@@ -23,7 +25,7 @@ let options = Arg.align [
     " Just count the models, do not print them out.");
   ("--irreducible",
     Arg.Set irreducible,
-    " Output only irreducible algebras (not implemented)");
+    " Output only irreducible algebras.");
 ] ;;
 
 (* Main program *)
@@ -52,20 +54,60 @@ try
     let k = ref 0 in
     let unique = ref [] in
     let names = Print.names !size theory.signature in
-    let cont a = 
-      if not (seen theory.signature a !unique) then
-        begin
-          incr k;
-          unique := (copy_algebra a) :: !unique ;
-          if not !count_only then 
-            Print.algebra names 
-                          (Util.invert (Util.enum_ops theory.signature.sig_unary)) 
-                          (Util.invert (Util.enum_ops theory.signature.sig_binary))  
-                          a
-        end
-    in 
-      Enum.enum !size theory cont ;
-      print_endline ("\nTotal count: " ^ string_of_int !k)
+    if not !irreducible then
+      begin
+        let cont a = 
+          if not (seen theory.signature a !unique) then
+            begin
+              incr k;
+              unique := (copy_algebra a) :: !unique ;
+              if not !count_only then 
+                Print.algebra names 
+                  (Util.invert (Util.enum_ops theory.signature.sig_unary)) 
+                  (Util.invert (Util.enum_ops theory.signature.sig_binary))  
+                  a
+            end
+        in 
+        Enum.enum !size theory cont ;
+        print_endline ("\nTotal count: " ^ string_of_int !k)
+      end
+    else
+      begin
+        let start = List.length theory.signature.sig_const in
+        let cont a =
+          if not (seen theory.signature a !unique) then
+              unique := (copy_algebra a) :: !unique in
+        let rec 
+            gen_smaller acc = function
+              | k when 2 * k > !size -> acc
+              | k -> 
+                begin
+                  unique := [] ;
+                  Enum.enum k theory cont ; 
+                  gen_smaller (!unique :: acc) (k+1)
+                end in
+
+        (* There are no algebras with strictly less elements than there are constants. *)
+        let unique_by_size = List.rev (gen_smaller (replicate start []) start) in
+
+        unique := [] ; 
+
+        let cont a = 
+          if not (seen theory.signature a !unique) &&
+             not (is_reducible theory.signature a unique_by_size) then
+            begin
+              incr k;
+              unique := (copy_algebra a) :: !unique ;
+              if not !count_only then 
+                Print.algebra names 
+                  (Util.invert (Util.enum_ops theory.signature.sig_unary)) 
+                  (Util.invert (Util.enum_ops theory.signature.sig_binary))  
+                  a
+            end
+        in 
+        Enum.enum !size theory cont ;
+        print_endline ("\nTotal count: " ^ string_of_int !k)
+      end
 with
     Error.Error (pos, err, msg) -> print_endline (err ^ " error: " ^ msg)
         

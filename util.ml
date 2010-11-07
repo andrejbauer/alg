@@ -38,6 +38,9 @@ let rec
       | [_] -> []
       | (x::xs) -> x :: init xs
 
+let rec replicate n a =
+  if n = 0 then [] else a :: replicate (n-1) a
+
 let fromSome = function 
   | (Some a) -> a
   | _ -> failwith "fromSome called with None argument"
