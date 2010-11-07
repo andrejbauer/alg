@@ -16,13 +16,13 @@ let check_const iso c1 c2 = iso.(c1) = c2
   f(i(a)) = i(f(a)).
 *)
 let check_unary iso u1 u2 =
-  let l = Array.length iso in 
+  let l = Array.length iso in
   for_all (fun i -> iso.(u1.(i)) = u2.(iso.(i))) 0 (l-1)
 
 (*
   Checks if binary operation is multiplicative.
 *)
-let check_binary iso b1 b2 = 
+let check_binary iso b1 b2 =
   let l = Array.length iso in
   for_all2 (fun i j -> iso.(b1.(i).(j)) = b2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
 
@@ -31,7 +31,7 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
             {size=n1; const=c1; unary=u1; binary=b1}
             {size=n2; const=c2; unary=u2; binary=b2} =
   if n1 <> n2 then false
-  else 
+  else
     let sortf (a,_) (b,_) = compare a b in
     let c1s = List.sort compare c1 in
     let c2s = List.sort compare c2 in
@@ -44,8 +44,8 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
     let iso = Array.make n (-1) in
     (* Handle constants *)
     List.iter (fun (i,j) -> used.(j) <- true ; iso.(i) <- j) (List.combine c1s c2s) ;
-    
-    (* 
+
+    (*
        Generate actions from unary and binary operations analogous to generation
        of actions from axioms. Axioms here are implicit from the definition of isomorphism
     *)
@@ -56,7 +56,7 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
           begin
             if used.(arr2.(iso.(i))) then
               false
-            else 
+            else
               begin
                 iso.(arr1.(i)) <- arr2.(iso.(i)) ;
                 used.(arr2.(iso.(i))) <- true ;
@@ -66,10 +66,10 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
         else if iso.(arr1.(i)) <> arr2.(iso.(i)) then
           false
         else true in
-      let undo i = 
+      let undo i =
         while not (Stack.is_empty stack) && Stack.top stack = i do
           iso.(arr1.(Stack.pop stack)) <- -1 ;
-          used.(arr2.(iso.(i))) <- false 
+          used.(arr2.(iso.(i))) <- false
         done in (f, undo) in
 
     let actions_from_binary ((_, arr1), (_, arr2)) =
@@ -105,23 +105,23 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
               end
           done ; true
         with Break -> false in
-      let undo i = 
+      let undo i =
         while not (Stack.is_empty stack) && i = fst (Stack.top stack) do
           let (_, (a,b)) = Stack.pop stack in
           iso.(a) <- -1 ;
-          used.(b) <- false 
+          used.(b) <- false
         done in (f, undo) in
-    
+
     let (dos, undos) = List.split (List.map actions_from_unary (List.combine u1s u2s)
                                    @ List.map actions_from_binary (List.combine b1s b2s)) in
 
 
     (*
-      End check when iso is full. Check that it really is an isomorphism. 
+      End check when iso is full. Check that it really is an isomorphism.
       Constants need not be checked because they are set independently.
     *)
-    let check () = 
-      let check_op f a1 a2 = 
+    let check () =
+      let check_op f a1 a2 =
         List.for_all (fun ((_,i), (_,j)) -> f iso i j) (List.combine a1 a2) in
       if check_op check_unary u1s u2s && check_op check_binary b1s b2s then
         raise Found in
@@ -129,7 +129,7 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
     let rec gen_iso = function
       | i when i = n -> check ()
       | i when iso.(i) <> -1 -> gen_iso (i+1)
-      | i -> 
+      | i ->
         for k=0 to n-1 do
           if not used.(k) then
             begin
@@ -145,8 +145,8 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
     try
       gen_iso 0 ; false
     with Found -> true
-    
-(* 
-   Have we already seen an algebra of this isomorphism type. 
+
+(*
+   Have we already seen an algebra of this isomorphism type.
 *)
 let seen s a lst = List.exists (are_iso s a) lst

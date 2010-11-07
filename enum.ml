@@ -76,14 +76,14 @@ let part_one_var_binary axioms =
           | (Some (Const _), Some (Var v1), Some (Var v2)) -> v1 = v2
           | (Some (Var v1), Some (Var v2), Some (Var v3)) -> v1 = v2 && v2 = v3
           | (None,_,_) | (_,None,_) | (_,_,None) -> false
-          | _ -> failwith "Binary operation creeped in part_one_binary.is_simple."
+          | _ -> invalid_arg "Binary operation creeped in part_one_binary.is_simple."
       end
     | _ -> false
   in List.partition is_simple axioms
 
 (* Select associativity axioms. *)
 
-let partition_assoc axioms = 
+let partition_assoc axioms =
   let is_assoc = function
     | (Binary (op1, Binary (op2, Var a1, Var b1), Var c1), Binary (op3, Var a2, Binary (op4, Var b2, Var c2)))
     | (Binary (op3, Var a2, Binary (op4, Var b2, Var c2)), Binary (op1, Binary (op2, Var a1, Var b1), Var c1))
@@ -132,21 +132,21 @@ let num_dist_vars a = List.length (dist_vars a)
 (* Amenable axioms are the ones where left and right terms have binary op
    as outermost operation and have exactly the same variables on left and right sides. *)
 let partition_amenable axioms =
-  let is_amenable ((left, right) as axiom) = 
+  let is_amenable ((left, right) as axiom) =
       match axiom with
-        | (Binary _, Binary _)-> 
+        | (Binary _, Binary _)->
           List.sort compare (eq_vars [] left) = List.sort compare (eq_vars [] right)
         | ((Binary _), _) -> Util.is_sublist (eq_vars [] right) (eq_vars [] left)
         | (_, (Binary _)) -> Util.is_sublist (eq_vars [] left) (eq_vars [] right)
         | _ -> false in
   List.partition is_amenable axioms
-  
+
 
 (* ************************************************************************** *)
 (* Main search functions. *)
 
 (*
-  Generate binary operation tables. lc, lu and lb are numbers of constants, 
+  Generate binary operation tables. lc, lu and lb are numbers of constants,
   unary and binary operations. unary_arr is supposed to be a matrix
   of unary operations where each line is an operation. axioms
   should only contain axioms where there is at least one binary
@@ -168,14 +168,14 @@ let gen_binary n lc lu lb axioms unary_arr k =
     let rec get_value = function
       | (Const c) -> c
       | (Unary (op,v)) -> unary_arr.(op).(get_value v)
-      | _ -> failwith "Ooops, binary operation or variable in apply_simple.get_value. This shouldn't happen!"
+      | _ -> invalid_arg "Ooops, binary operation or variable in apply_simple.get_value. This shouldn't happen!"
     in match axiom with
       | (Binary (op, t1, t2), Const c)
       | (Const c, Binary (op, t1, t2)) ->
         let v1 = get_value t1 in
         let v2 = get_value t2 in
         binary_arr.(op).(v1).(v2) <- c
-      | _ -> failwith "Not a simple binary axiom."
+      | _ -> invalid_arg "Not a simple binary axiom."
   in List.iter apply_simple simple ;
 
   (*
@@ -195,7 +195,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
       | (Const c) -> c
       | (Var _) -> elem
       | (Unary (op,v)) -> unary_arr.(op).(get_value v)
-      | _ -> failwith "Ooops, binary operation in apply_one_var.get_value. This shouldn't happen!"
+      | _ -> invalid_arg "Ooops, binary operation in apply_one_var.get_value. This shouldn't happen!"
     in match axiom with
       | (Binary (op, t1, t2), t3)
       | (t3, Binary (op, t1, t2)) ->
@@ -203,18 +203,18 @@ let gen_binary n lc lu lb axioms unary_arr k =
         let v2 = get_value t2 in
         let v3 = get_value t3 in
         binary_arr.(op).(v1).(v2) <- v3
-      | _ -> failwith "not a legal axiom in apply_one_var"
+      | _ -> invalid_arg "not a legal axiom in apply_one_var"
   in
   for i=0 to n-1 do
     List.iter (fun x -> apply_one_var x i) one_var_shallow
   done ;
 
-  (* 
+  (*
      Partition axioms. Assoc and amenable are naturally associativity and amenable axioms.
      zippep_axioms are the rest that have to be checked differently than amenable.
-     Zipped means in the form (number of distinct variables, axioms) 
+     Zipped means in the form (number of distinct variables, axioms)
   *)
-  let (assoc, amenable, zipped_axioms) = 
+  let (assoc, amenable, zipped_axioms) =
     let (assoc, rest) = partition_assoc left in
     let (amenable, rest) = partition_amenable rest in
     (assoc,
@@ -222,12 +222,12 @@ let gen_binary n lc lu lb axioms unary_arr k =
      (* Check axioms with fewer free variables first. *)
      List.sort (fun (n,_) (m,_) -> compare n m) (List.map (fun a -> (num_dist_vars a, a)) rest)) in
 
-  let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in 
+  let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in
 
   (* This could potentially gobble up memory. TODO *)
   let all_tuples = Array.init (max_vars + 1) (fun i -> ntuples n i) in
 
-  (* 
+  (*
      evaluate term in the context of vars. Raises Undefined if there is
      insufficient information to fully evaluate.
   *)
@@ -259,7 +259,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
     let apply_to i =
       try
         let a = eval_eq i left in (* b is not evaluated if a is -1 *)
-        a = -1 || 
+        a = -1 ||
             let b = eval_eq i right in
             (b = -1 || a = b)
       with Undefined -> true
@@ -269,29 +269,29 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
 
   (* ********************************************************************* *)
-  (* Auxiliary functions for computing actions from axioms and 
-     checking axiom validity after adding one element 
+  (* Auxiliary functions for computing actions from axioms and
+     checking axiom validity after adding one element
   *)
 
   (* Compute actions from amenable axioms *)
-  let actions_from_axiom (nvars, axiom) = 
+  let actions_from_axiom (nvars, axiom) =
     let stack = Stack.create () in
     let vars = Array.make nvars (-1) in
     let nfill = ref 0 in
-    let undo id = 
+    let undo id =
       while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
         let (_, op, left, right) = Stack.pop stack in
-        binary_arr.(op).(left).(right) <- -1 
+        binary_arr.(op).(left).(right) <- -1
       done in
 
 
     (* free fills the rest of the variables with all possible values *)
-    let rec 
-        free cont term = 
+    let rec
+        free cont term =
       if !nfill = nvars then cont ()
       else begin
-        match term with 
-          | Var v when vars.(v) = -1 -> 
+        match term with
+          | Var v when vars.(v) = -1 ->
             for k=0 to n-1 do
               vars.(v) <- k ;
               incr nfill ;
@@ -299,33 +299,33 @@ let gen_binary n lc lu lb axioms unary_arr k =
               decr nfill ;
               vars.(v) <- -1 ;
             done
-          | (Binary (_, l, r)) -> 
+          | (Binary (_, l, r)) ->
             free (fun () -> free cont r) l
-          | _ -> cont () 
+          | _ -> cont ()
       end in
 
-    let rec 
+    let rec
         (* generate all possible subexpressions so that the term evaluates to k *)
-        gen_all k cont term = 
+        gen_all k cont term =
           if !nfill = nvars then cont ()
           else begin
-            match term with 
-              | (Binary (op, l, r)) -> 
+            match term with
+              | (Binary (op, l, r)) ->
                 for u=0 to n-1 do
                   for v=0 to n-1 do
                     if binary_arr.(op).(u).(v) = k then
                       gen_all u (fun () -> gen_all v cont r) l
                   done
                 done
-              | (Unary (op, t)) -> 
+              | (Unary (op, t)) ->
                 for u=0 to n-1 do
                   if unary_arr.(op).(u) = k then
                     gen_all u cont t
                 done
-              | Var v when vars.(v) = -1 -> 
-                vars.(v) <- k ; 
+              | Var v when vars.(v) = -1 ->
+                vars.(v) <- k ;
                 incr nfill ;
-                cont () ; 
+                cont () ;
                 decr nfill ;
                 vars.(v) <- -1
               | Var v when vars.(v) = k -> cont ()
@@ -344,22 +344,22 @@ let gen_binary n lc lu lb axioms unary_arr k =
             gen_all i (fun () -> gen_all j cont r) l ;
           (* both are in the right subtree *)
             fill (o,i,j)  (fun () -> free cont l) r
-          | (Binary (_, l, r)) -> 
+          | (Binary (_, l, r)) ->
           (* both are in the left subtree *)
             fill (o,i,j) (fun () -> free cont r) l ;
           (* both are in the right subtree *)
             fill (o,i,j) (fun () -> free cont l) r
-          | Unary (_, t) -> fill (o,i,j) cont t 
+          | Unary (_, t) -> fill (o,i,j) cont t
           | _ -> () in
 
-    (* 
+    (*
        check_other: Check if an axiom is violated or we can set a new value.
        This is the end of continuations. It is called when all
        of the variables have been set.
     *)
     match axiom with
       | (Binary (op1, l1, r1), Binary (op2, l2, r2)) ->
-        let f cont id o i j = 
+        let f cont id o i j =
           for k = 0 to nvars - 1 do
             vars.(k) <- -1
           done ;
@@ -373,7 +373,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
               if el1 <> -1 && el2 <> -1 && er1 <> -1 && er2 <> -1 then
                 begin
                   let left = binary_arr.(op1).(el1).(er1) in
-                  let right = binary_arr.(op2).(el2).(er2) in 
+                  let right = binary_arr.(op2).(el2).(er2) in
                   if left <> -1 && right = -1 then
                     begin
                       binary_arr.(op2).(el2).(er2) <- left ;
@@ -399,12 +399,12 @@ let gen_binary n lc lu lb axioms unary_arr k =
                 end
             with Undefined -> () in
           try
-            fill (o,i,j) check_other (Binary (op2, l2, r2)) ; 
+            fill (o,i,j) check_other (Binary (op2, l2, r2)) ;
             fill (o,i,j) check_other (Binary (op1, l1, r1)) ; true
           with Break -> false in (f, undo)
-      | (term, Binary (op2, l2, r2)) 
-      | (Binary (op2, l2, r2), term) -> 
-        let f cont id o i j = 
+      | (term, Binary (op2, l2, r2))
+      | (Binary (op2, l2, r2), term) ->
+        let f cont id o i j =
           for k = 0 to nvars - 1 do
             vars.(k) <- -1
           done ;
@@ -417,7 +417,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
               if elt <> -1 && el2 <> -1 && er2 <> -1 then
                 begin
                   let left = elt in
-                  let right = binary_arr.(op2).(el2).(er2) in 
+                  let right = binary_arr.(op2).(el2).(er2) in
                   if right = -1 then
                     begin
                       binary_arr.(op2).(el2).(er2) <- left ;
@@ -429,7 +429,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
                         raise Break
                     end
                   else if left <> right then
-                    raise Break 
+                    raise Break
                 end
             with Undefined -> () in
           try
@@ -438,14 +438,14 @@ let gen_binary n lc lu lb axioms unary_arr k =
       | _ -> invalid_arg "Invalid axiom in actions_from_axiom. At least one term has to be binary." in
 
   (* Special case of actions_from_axiom for associativity axioms.
-     It is ugly, but much faster. 
+     It is ugly, but much faster.
   *)
   let actions_from_assoc = function
     | (Binary (op1, Binary (op2, Var a1, Var b1), Var c1), Binary (op3, Var a2, Binary (op4, Var b2, Var c2)))
     | (Binary (op3, Var a2, Binary (op4, Var b2, Var c2)), Binary (op1, Binary (op2, Var a1, Var b1), Var c1))
         when op1 = op2 && op2 = op3 && op3 = op4 && a1 = a2 && b1 = b2 && c1 = c2 ->
-      let stack = Stack.create () in 
-      let f cont id o i j = 
+      let stack = Stack.create () in
+      let f cont id o i j =
         if o <> op1 then true
         else begin
           try
@@ -507,7 +507,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
                   else if ab_c <> -1 && a_bc <> -1 && ab_c <> a_bc then
                     raise Break
                 end ;
-            done ; 
+            done ;
             (* Cases ab = i, c = j and a = i, bc = j *)
             for a=0 to n-1 do
               for b=0 to n-1 do
@@ -516,7 +516,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
                   begin
                     let bc = binary_arr.(o).(b).(j) in
                     if bc <> -1 then
-                      begin 
+                      begin
                         let a_bc = binary_arr.(o).(a).(bc) in
                         if a_bc = -1 then
                           begin
@@ -555,11 +555,11 @@ let gen_binary n lc lu lb axioms unary_arr k =
               done
             done ; true
           with Break -> false
-        end in 
-      let undo id = 
+        end in
+      let undo id =
         while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
           let (_, op, left, right) = Stack.pop stack in
-          binary_arr.(op).(left).(right) <- -1 
+          binary_arr.(op).(left).(right) <- -1
         done in (f, undo)
     | _ -> invalid_arg "actions_from_assoc axiom given is not associativity" in
 
@@ -572,17 +572,17 @@ let gen_binary n lc lu lb axioms unary_arr k =
   let (dos, undos) = List.split (List.map actions_from_assoc assoc @
                                  List.map (actions_from_axiom) amenable) in
 
-  (* 
+  (*
      Use all the functions from dos. Continuation passed is dodos itself.
      The idea is that once we set a new element in f we immediately call
      dodos again to check validity of other axioms and maybe add some more
      elements. This sequence of calls to dodos will eventually end. If not
-     sooner than at least when all operation tables are full. 
+     sooner than at least when all operation tables are full.
   *)
-  let rec 
+  let rec
       dodos id o i j = List.for_all (fun f -> f dodos id o i j) dos in
 
-  let doundos id = List.iter (fun f -> f id) undos in 
+  let doundos id = List.iter (fun f -> f id) undos in
 
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
@@ -618,7 +618,7 @@ let gen_binary n lc lu lb axioms unary_arr k =
 
 
 (*
-  Generate unary operation tables. lc, lu and lb are numbers of constants, 
+  Generate unary operation tables. lc, lu and lb are numbers of constants,
   unary and binary operations.
 *)
 let gen_unary n lc lu lb axioms k =
@@ -649,13 +649,13 @@ let gen_unary n lc lu lb axioms k =
       | (var, start, []) -> (var, start, None, [])
       | (var, start, os) -> (var, start, Some (List.nth os (List.length os - 1)), Util.init os) in
 
-  (* 
+  (*
      Unary axioms in "normal form". Each side of the equation is a 4-tuple
      (is_variable, variable or const index, last operation or None, list of unary operations)
   *)
-  let normal_axioms = List.map 
+  let normal_axioms = List.map
     (fun (eq1, eq2) -> (path_from_equation eq1, path_from_equation eq2)) complicated in
-  
+
   (* Main operation tables *)
   let unary_arr = Array.make_matrix lu n (-1) in
 
@@ -665,7 +665,7 @@ let gen_unary n lc lu lb axioms k =
       | (Unary (op, Const c1), Const c2)
       | (Const c2, Unary (op, Const c1))
         -> unary_arr.(op).(c1) <- c2
-      | _ -> failwith "Something went terribly wrong!")
+      | _ -> invalid_arg "Something went terribly wrong in applying simple axioms.")
     simple ;
 
   (*
@@ -681,28 +681,28 @@ let gen_unary n lc lu lb axioms k =
       | (x::xs) ->  let r = unary_arr.(x).(acc) in
                     if r = -1 then None else result r xs in
     result start eq in
-  
+
   (*
     TODO: There are situations where we could deduce from axioms
     that an operation is bijection. E.g. f(f(x)) = x. It may be
     worth the trouble to implement.
   *)
-  let actions_from_axiom axiom = 
-    let stack = Stack.create () in 
+  let actions_from_axiom axiom =
+    let stack = Stack.create () in
 
-    let undo id = 
+    let undo id =
       while not (Stack.is_empty stack) && let (id', _, _) = Stack.top stack in id' = id do
         let (_, o, i) = Stack.pop stack in
-        unary_arr.(o).(i) <- -1 
+        unary_arr.(o).(i) <- -1
       done in
 
-    let trace_with cont id left i right j l1 l2 = 
+    let trace_with cont id left i right j l1 l2 =
       match (trace i left, trace j right) with
-        | (Some r1, Some r2) -> 
+        | (Some r1, Some r2) ->
           begin
-            match (l1,l2) with 
+            match (l1,l2) with
               | (None, None) -> r1 = r2
-              | (None, Some op) -> 
+              | (None, Some op) ->
                 if unary_arr.(op).(r2) = -1 then
                   begin
                     unary_arr.(op).(r2) <- r1 ;
@@ -711,44 +711,44 @@ let gen_unary n lc lu lb axioms k =
                   end
                 else
                   unary_arr.(op).(r2) = r1
-              | (Some op, None) -> 
+              | (Some op, None) ->
                 if unary_arr.(op).(r1) = -1 then
                   begin
                     unary_arr.(op).(r1) <- r2 ;
-                    Stack.push (id, op, r1) stack ; 
+                    Stack.push (id, op, r1) stack ;
                     cont id
                   end
                 else
                   unary_arr.(op).(r1) = r2
-              | (Some op1, Some op2) -> 
+              | (Some op1, Some op2) ->
                 let left = unary_arr.(op1).(r1) in
                 let right = unary_arr.(op2).(r2) in
                 if left = -1 && right <> -1 then
                   begin
                     unary_arr.(op1).(r1) <- right ;
-                    Stack.push (id, op1, r1) stack ; 
+                    Stack.push (id, op1, r1) stack ;
                     cont id
                   end
                 else if left <> -1 && right = -1 then
                   begin
                     unary_arr.(op2).(r2) <- left ;
-                    Stack.push (id, op2, r2) stack ; 
+                    Stack.push (id, op2, r2) stack ;
                     cont id
                   end
-                else 
+                else
                   left = right
           end
         | _ -> true in
 
     match axiom with
-      | ((true, id1, l1, left), (true, id2, l2, right)) when id1 = id2 -> 
-        let check_axiom cont id = 
+      | ((true, id1, l1, left), (true, id2, l2, right)) when id1 = id2 ->
+        let check_axiom cont id =
           let p = ref true in
           for i=0 to n-1 do
             p := !p && trace_with cont id left i right i l1 l2
           done ; !p in (check_axiom, undo)
-      | ((true, id1, l1, left), (true, id2, l2, right)) -> 
-        let check_axiom cont id = 
+      | ((true, id1, l1, left), (true, id2, l2, right)) ->
+        let check_axiom cont id =
           let p = ref true in
           for i=0 to n-1 do
             for j=0 to n-1 do
@@ -756,22 +756,22 @@ let gen_unary n lc lu lb axioms k =
             done
           done ; !p in (check_axiom, undo)
       | ((true, id1, l1, left), (false, id2, l2, right))
-      | ((false, id2, l2, right), (true, id1, l1, left)) -> 
-        let check_axiom cont id = 
+      | ((false, id2, l2, right), (true, id1, l1, left)) ->
+        let check_axiom cont id =
           let p = ref true in
           for i=0 to n-1 do
             p := !p && trace_with cont id left i right id2 l1 l2
           done ; !p in (check_axiom, undo)
-      | ((_, id1, l1, left), (_, id2, l2, right)) -> 
-        let check_axiom cont id = 
+      | ((_, id1, l1, left), (_, id2, l2, right)) ->
+        let check_axiom cont id =
           trace_with cont id left id1 right id2 l1 l2  in (check_axiom, undo) in
 
-  (* 
+  (*
      Check if any of the equations are violated by starting with
      every element and tracing function applications.
   *)
   let (dos, undos) = List.split (List.map actions_from_axiom normal_axioms) in
-  
+
   let rec
       dodos id = List.for_all (fun f -> f dodos id) dos in
   let doundos id = List.iter (fun f -> f id) undos in

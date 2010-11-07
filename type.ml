@@ -22,7 +22,7 @@ type raw_term =
   | RawVar of variable
   | RawApply of operation * raw_term list
 
-type term = 
+type term =
   | Var of var_index
   | Const of operation_index
   | Unary of operation_index * term
