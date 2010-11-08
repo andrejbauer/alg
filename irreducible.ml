@@ -63,3 +63,17 @@ let is_reducible s a lst =
     let ls = List.nth lst l in
     List.exists (fun left -> List.exists (fun right -> are_iso s a (product left right)) ls) ks in
   List.exists exist_factors factors
+
+(* lst is a list of smaller algebras. It is assumed that List.nth lst k are algebras of size k. *)
+let gen_reducible s n lst = 
+  let factors = factor n in
+
+  let use_all_pairs l1 l2 start =
+    let maybe_add a algs = 
+      if seen s a algs then algs else (a::algs) in
+    List.fold_left (fun acc left -> 
+      List.fold_left (fun acc' right ->
+        maybe_add (product left right) acc') 
+        acc l2) 
+      start l1 in
+  List.fold_left (fun acc (k,l) -> use_all_pairs (List.nth lst k) (List.nth lst l) acc) [] factors
