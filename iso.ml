@@ -110,7 +110,6 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
     let (dos, undos) = List.split (List.map actions_from_unary (List.combine u1 u2)
                                    @ List.map actions_from_binary (List.combine b1 b2)) in
 
-
     (*
       End check when iso is full. Check that it really is an isomorphism.
       Constants need not be checked because they are set independently.
