@@ -11,6 +11,7 @@ let product {size=n1; const=c1; unary=u1; binary=b1}
   let size = n1 * n2 in
   let mapping i j = n2 * i + j in
 
+  (* IMPORTANT: combine_unary and combine_binary assume that algebras are "synced". *)
   let combine_unary ((op1, arr1), (op2, arr2)) =
     let arr = Array.make size 0 in
     for k=0 to n1-1 do
@@ -32,20 +33,11 @@ let product {size=n1; const=c1; unary=u1; binary=b1}
       done
     done ; (op1, arr) in
 
-  (* This is just a safeguard. Lists should already be sorted. *)
-  let sortf (a,_) (b,_) = compare a b in
-  let c1s = List.sort compare c1 in
-  let c2s = List.sort compare c2 in
-  let u1s = List.sort sortf u1 in
-  let u2s = List.sort sortf u2 in
-  let b1s = List.sort sortf b1 in
-  let b2s = List.sort sortf b2 in
+  let const = List.map (uncurry mapping) (List.combine c1 c2) in
 
-  let const = List.map (uncurry mapping) (List.combine c1s c2s) in
+  let unary = List.map combine_unary (List.combine u1 u2) in
 
-  let unary = List.map combine_unary (List.combine u1s u2s) in
-
-  let binary = List.map combine_binary (List.combine b1s b2s) in
+  let binary = List.map combine_binary (List.combine b1 b2) in
   {size=size; const=const; unary=unary; binary=binary}
 
 let factor n =

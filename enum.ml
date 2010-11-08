@@ -725,12 +725,12 @@ let gen_binary n lc lu lb dodos doundos unary_arr binary_arr check k =
             let r = ref [] in
             for i=0 to lu - 1 do
               r := (i, unary_arr.(i)) :: !r
-            done ; !r
+            done ; List.rev !r (* So they are in ascending order. *)
           end ;
           binary = let r = ref [] in
                    for i=0 to lb-1 do
                      r := (i, binary_arr.(i)) :: !r
-                  done ; !r
+                   done ; List.rev !r (* So they are in ascending order. *)
         }
     | (i,_) when i = n -> gen_operation (o+1) (0,0)
     | (i,j) when j = n -> gen_operation o (i+1,0)
