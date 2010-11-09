@@ -36,7 +36,7 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
     let used = Array.make n false in
     let iso = Array.make n (-1) in
     (* Handle constants *)
-    List.iter (fun (i,j) -> used.(j) <- true ; iso.(i) <- j) (List.combine c1 c2) ;
+    iter_pairs (fun (i,j) -> used.(j) <- true ; iso.(i) <- j) c1 c2 ;
 
     (*
        Generate actions from unary and binary operations analogous to generation
@@ -107,8 +107,8 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
           used.(b) <- false
         done in (f, undo) in
 
-    let (dos, undos) = List.split (List.map actions_from_unary (List.combine u1 u2)
-                                   @ List.map actions_from_binary (List.combine b1 b2)) in
+    let (dos, undos) = List.split (map_combine actions_from_unary u1 u2
+                                   @ map_combine actions_from_binary b1 b2) in
 
     (*
       End check when iso is full. Check that it really is an isomorphism.
@@ -116,7 +116,7 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
     *)
     let check () =
       let check_op f a1 a2 =
-        List.for_all (fun ((_,i), (_,j)) -> f iso i j) (List.combine a1 a2) in
+        for_all_pairs (fun ((_,i), (_,j)) -> f iso i j) a1 a2 in
       if check_op check_unary u1 u2 && check_op check_binary b1 b2 then
         raise Found in
 

@@ -33,11 +33,11 @@ let product {size=n1; const=c1; unary=u1; binary=b1}
       done
     done ; (op1, arr) in
 
-  let const = List.map (uncurry mapping) (List.combine c1 c2) in
+  let const = map_combine (uncurry mapping) c1 c2 in
 
-  let unary = List.map combine_unary (List.combine u1 u2) in
+  let unary = map_combine combine_unary u1 u2 in
 
-  let binary = List.map combine_binary (List.combine b1 b2) in
+  let binary = map_combine combine_binary b1 b2 in
   {size=size; const=const; unary=unary; binary=binary}
 
 let factor n =

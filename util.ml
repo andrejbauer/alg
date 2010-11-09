@@ -41,6 +41,21 @@ let rec
 let rec replicate n a =
   if n = 0 then [] else a :: replicate (n-1) a
 
+let rev_combine xs ys = 
+  let rec rev_combine' acc xs ys =
+    match (xs,ys) with
+      | ([],_) | (_,[]) -> acc
+      | (x::xs',y::ys') -> rev_combine' ((x,y) :: acc) xs' ys'
+  in rev_combine' [] xs ys
+
+(* Zipwith *)
+let map_combine f xs ys =
+  let rec map_combine' xs ys =
+    match xs, ys with
+      | ([],_) | (_,[]) -> []
+      | (x::xs',y::ys') -> f (x,y) :: map_combine' xs' ys'
+  in map_combine' xs ys
+
 let fromSome = function
   | (Some a) -> a
   | _ -> invalid_arg "fromSome called with None argument"
@@ -202,7 +217,26 @@ let exists f i j =
 (* Dual to for_all2 *)
 let exists2 f i j k l = exists (fun x -> exists (f x) k l) i j
 
+(* Equivalent to List.for_all f (List.combine xs ys) *)
+let for_all_pairs f =
+  let rec for_all_pairs' xs ys = 
+    match (xs,ys) with
+      | ([],_) | (_,[]) -> true
+      | (x::xs', y::ys') -> 
+        f (x,y) && for_all_pairs' xs' ys'
+  in for_all_pairs' 
 
+(* Equivalent to List.iter f (List.combine xs ys) *)
+let iter_pairs f =
+  let rec iter_pairs' xs ys = 
+    match (xs,ys) with
+      | ([],_) | (_,[]) -> ()
+      | (x::xs', y::ys') -> 
+        f (x,y) ; iter_pairs' xs' ys'
+  in iter_pairs'
+          
 (* Missing function functions :) *)
 let curry f a b = f (a,b)
 let uncurry f (a,b) = f a b
+
+
