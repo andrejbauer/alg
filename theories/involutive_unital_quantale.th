@@ -22,7 +22,7 @@ axioms:
    x & (y | z) = (x & y) | (x & z);
    ### involution
    i(i(x)) = x;
-   i(x & y) = i(x) & i(y);
+   i(x & y) = i(y) & i(x);
    i(x | y) = i(x) | i(y);
    ### consequences
    i(1) = 1;
