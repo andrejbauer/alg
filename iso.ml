@@ -32,22 +32,17 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
             {size=n2; const=c2; unary=u2; binary=b2} =
   if n1 <> n2 then false
   else
-    let sortf (a,_) (b,_) = compare a b in
-    let c1s = List.sort compare c1 in
-    let c2s = List.sort compare c2 in
-    let u1s = List.sort sortf u1 in
-    let u2s = List.sort sortf u2 in
-    let b1s = List.sort sortf b1 in
-    let b2s = List.sort sortf b2 in
     let n = n1 in
     let used = Array.make n false in
     let iso = Array.make n (-1) in
     (* Handle constants *)
-    List.iter (fun (i,j) -> used.(j) <- true ; iso.(i) <- j) (List.combine c1s c2s) ;
+    iter_pairs (fun (i,j) -> used.(j) <- true ; iso.(i) <- j) c1 c2 ;
 
     (*
        Generate actions from unary and binary operations analogous to generation
        of actions from axioms. Axioms here are implicit from the definition of isomorphism
+      IMPORTANT: actions_from_unary and actions_from_binary assume that algebras
+      are "synced".
     *)
     let actions_from_unary ((_, arr1), (_, arr2)) =
       let stack = Stack.create () in
@@ -112,9 +107,8 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
           used.(b) <- false
         done in (f, undo) in
 
-    let (dos, undos) = List.split (List.map actions_from_unary (List.combine u1s u2s)
-                                   @ List.map actions_from_binary (List.combine b1s b2s)) in
-
+    let (dos, undos) = List.split (map_combine actions_from_unary u1 u2
+                                   @ map_combine actions_from_binary b1 b2) in
 
     (*
       End check when iso is full. Check that it really is an isomorphism.
@@ -122,8 +116,8 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
     *)
     let check () =
       let check_op f a1 a2 =
-        List.for_all (fun ((_,i), (_,j)) -> f iso i j) (List.combine a1 a2) in
-      if check_op check_unary u1s u2s && check_op check_binary b1s b2s then
+        for_all_pairs (fun ((_,i), (_,j)) -> f iso i j) a1 a2 in
+      if check_op check_unary u1 u2 && check_op check_binary b1 b2 then
         raise Found in
 
     let rec gen_iso = function

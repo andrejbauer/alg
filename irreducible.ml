@@ -11,6 +11,7 @@ let product {size=n1; const=c1; unary=u1; binary=b1}
   let size = n1 * n2 in
   let mapping i j = n2 * i + j in
 
+  (* IMPORTANT: combine_unary and combine_binary assume that algebras are "synced". *)
   let combine_unary ((op1, arr1), (op2, arr2)) =
     let arr = Array.make size 0 in
     for k=0 to n1-1 do
@@ -32,20 +33,11 @@ let product {size=n1; const=c1; unary=u1; binary=b1}
       done
     done ; (op1, arr) in
 
-  (* This is just a safeguard. Lists should already be sorted. *)
-  let sortf (a,_) (b,_) = compare a b in
-  let c1s = List.sort compare c1 in
-  let c2s = List.sort compare c2 in
-  let u1s = List.sort sortf u1 in
-  let u2s = List.sort sortf u2 in
-  let b1s = List.sort sortf b1 in
-  let b2s = List.sort sortf b2 in
+  let const = map_combine (uncurry mapping) c1 c2 in
 
-  let const = List.map (uncurry mapping) (List.combine c1s c2s) in
+  let unary = map_combine combine_unary u1 u2 in
 
-  let unary = List.map combine_unary (List.combine u1s u2s) in
-
-  let binary = List.map combine_binary (List.combine b1s b2s) in
+  let binary = map_combine combine_binary b1 b2 in
   {size=size; const=const; unary=unary; binary=binary}
 
 let factor n =
@@ -63,3 +55,17 @@ let is_reducible s a lst =
     let ls = List.nth lst l in
     List.exists (fun left -> List.exists (fun right -> are_iso s a (product left right)) ls) ks in
   List.exists exist_factors factors
+
+(* lst is a list of smaller algebras. It is assumed that List.nth lst k are algebras of size k. *)
+let gen_reducible s n lst = 
+  let factors = factor n in
+
+  let use_all_pairs l1 l2 start =
+    let maybe_add a algs = 
+      if seen s a algs then algs else (a::algs) in
+    List.fold_left (fun acc left -> 
+      List.fold_left (fun acc' right ->
+        maybe_add (product left right) acc') 
+        acc l2) 
+      start l1 in
+  List.fold_left (fun acc (k,l) -> use_all_pairs (List.nth lst k) (List.nth lst l) acc) [] factors

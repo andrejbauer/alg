@@ -90,11 +90,10 @@ try
         (* There are no algebras with strictly less elements than there are constants. *)
         let unique_by_size = List.rev (gen_smaller (replicate start []) start) in
 
-        unique := [] ;
+        unique := gen_reducible theory.signature !size unique_by_size ;
 
         let cont a =
-          if not (seen theory.signature a !unique) &&
-             not (is_reducible theory.signature a unique_by_size) then
+          if not (seen theory.signature a !unique) then
             begin
               incr k;
               unique := (copy_algebra a) :: !unique ;
