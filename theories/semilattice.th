@@ -1,0 +1,11 @@
+# The theory of a join semilattice
+signature:
+   0 : 0 # bottom
+   | : 2 # join
+
+axioms:
+   0 | x = x;
+   x | 0 = x;
+   x | y = y | x;
+   x | (y | z) = (x | y) | z;
+   x | x = x;

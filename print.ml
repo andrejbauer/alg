@@ -53,3 +53,4 @@ let algebra names unary_names binary_names {size=n; const=const; unary=unary; bi
                done ;
                Printf.printf "\n"
             ) binary ;
+  Printf.printf "%!"
