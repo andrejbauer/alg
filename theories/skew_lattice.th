@@ -1,6 +1,6 @@
 signature:
-  & : 2
-  | : 2
+  & : 2 # conjunction
+  | : 2 # disjunction
 
 axioms:
    # properties of meet
