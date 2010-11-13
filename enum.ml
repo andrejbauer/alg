@@ -160,7 +160,10 @@ let apply_simple_binary simple unary_arr binary_arr =
       | (Const c, Binary (op, t1, t2)) ->
         let v1 = get_value t1 in
         let v2 = get_value t2 in
-        binary_arr.(op).(v1).(v2) <- c
+        if binary_arr.(op).(v1).(v2) <> -1 && binary_arr.(op).(v1).(v2) <> c then
+          Error.fatal "You supplied contradicting axioms."
+        else
+          binary_arr.(op).(v1).(v2) <- c
       | _ -> invalid_arg "Not a simple binary axiom."
   in List.iter apply_simple simple
 
@@ -182,7 +185,10 @@ let apply_one_var_shallow n one_var_shallow unary_arr binary_arr =
         let v1 = get_value t1 in
         let v2 = get_value t2 in
         let v3 = get_value t3 in
-        binary_arr.(op).(v1).(v2) <- v3
+        if binary_arr.(op).(v1).(v2) <> -1 && binary_arr.(op).(v1).(v2) <> v3 then
+          Error.fatal "You supplied contradicting axioms."
+        else
+          binary_arr.(op).(v1).(v2) <- v3
       | _ -> invalid_arg "not a legal axiom in apply_one_var"
   in
   for i=0 to n-1 do
@@ -558,7 +564,9 @@ let apply_simple simple unary_arr =
     (function
       | (Unary (op, Const c1), Const c2)
       | (Const c2, Unary (op, Const c1))
-        -> unary_arr.(op).(c1) <- c2
+        -> if unary_arr.(op).(c1) <> -1 && unary_arr.(op).(c1) <> c2 then 
+            Error.fatal "You supplied contradicting axioms."
+          else unary_arr.(op).(c1) <- c2
       | _ -> invalid_arg "Something went terribly wrong in applying simple axioms.")
     simple
 
@@ -568,9 +576,6 @@ let get_unary_actions n normal_axioms unary_arr =
   (*
     Traces function applications in equation eq starting with start. If an unknown
     element comes up, it returns None.
-
-    This can be improved. For example in a situation where we get the equation
-    f(c) = d we can set f(c) immediately.
   *)
   let trace start eq =
     let rec result acc = function
