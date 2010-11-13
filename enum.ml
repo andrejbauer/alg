@@ -6,7 +6,6 @@ exception Break
 
 (* General helper functions for partitioning axioms. *)
 
-
 (* Select axioms that refer only to unary operations and constants. *)
 let part_axioms axioms =
   let rec no_binary = function
@@ -82,7 +81,6 @@ let part_one_var_binary axioms =
   in List.partition is_simple axioms
 
 (* Select associativity axioms. *)
-
 let partition_assoc axioms =
   let is_assoc = function
     | (Binary (op1, Binary (op2, Var a1, Var b1), Var c1), Binary (op3, Var a2, Binary (op4, Var b2, Var c2)))
@@ -256,7 +254,6 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
         let (_, op, left, right) = Stack.pop stack in
         binary_arr.(op).(left).(right) <- -1
       done in
-
 
     (* free fills the rest of the variables with all possible values *)
     let rec
@@ -714,9 +711,10 @@ let get_normal_axioms complicated =
 (*
   Generate binary operation tables. lc, lu and lb are numbers of constants,
   unary and binary operations. unary_arr is supposed to be a matrix
-  of unary operations where each line is an operation. axioms
-  should only contain axioms where there is at least one binary
-  operation.
+  of unary operations where each line is an operation, binary_arr is assumed to
+  be a 3d array of binary operations, dodos and doundos are actions for
+  amenable axioms, check checks if non-amenable axioms are still valid. 
+  k is the continuation.
 *)
 let gen_binary n lc lu lb dodos doundos unary_arr binary_arr check k =
   (* Main loop. *)
@@ -725,17 +723,8 @@ let gen_binary n lc lu lb dodos doundos unary_arr binary_arr check k =
     | _ when o = lb ->
       k { size = n;
           const = Util.enumFromTo 0 (lc-1);
-          unary =
-          begin
-            let r = ref [] in
-            for i=0 to lu - 1 do
-              r := (i, unary_arr.(i)) :: !r
-            done ; List.rev !r (* So they are in ascending order. *)
-          end ;
-          binary = let r = ref [] in
-                   for i=0 to lb-1 do
-                     r := (i, binary_arr.(i)) :: !r
-                   done ; List.rev !r (* So they are in ascending order. *)
+          unary = List.combine (enumFromTo 0 (lu-1)) (Array.to_list unary_arr) ;
+          binary = List.combine (enumFromTo 0 (lb-1)) (Array.to_list binary_arr)
         }
     | (i,_) when i = n -> gen_operation (o+1) (0,0)
     | (i,j) when j = n -> gen_operation o (i+1,0)

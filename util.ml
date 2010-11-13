@@ -1,5 +1,9 @@
 open Type
 
+(* Missing function functions :) *)
+let curry f a b = f (a,b)
+let uncurry f (a,b) = f a b
+
 (* Missing array functions. *)
 let array_for_all p a =
   let n = Array.length a in
@@ -49,12 +53,8 @@ let rev_combine xs ys =
   in rev_combine' [] xs ys
 
 (* Zipwith *)
-let map_combine f xs ys =
-  let rec map_combine' xs ys =
-    match xs, ys with
-      | ([],_) | (_,[]) -> []
-      | (x::xs',y::ys') -> f (x,y) :: map_combine' xs' ys'
-  in map_combine' xs ys
+let map_combine f = 
+  List.map2 (curry f)
 
 let fromSome = function
   | (Some a) -> a
@@ -234,9 +234,3 @@ let iter_pairs f =
       | (x::xs', y::ys') -> 
         f (x,y) ; iter_pairs' xs' ys'
   in iter_pairs'
-          
-(* Missing function functions :) *)
-let curry f a b = f (a,b)
-let uncurry f (a,b) = f a b
-
-
