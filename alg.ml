@@ -54,58 +54,63 @@ try
     let k = ref 0 in
     let unique = ref [] in
     let names = Print.names !size theory.signature in
-    if not !irreducible then
+    if !size < List.length (theory.signature.sig_const) then
+      Error.fatal "There are more constants than the required size of the models."
+    else 
       begin
-        let cont a =
-          if not (seen theory.signature a !unique) then
-            begin
-              incr k;
-              unique := (copy_algebra a) :: !unique ;
-              if not !count_only then
-                Print.algebra names
-                  (Util.invert (Util.enum_ops theory.signature.sig_unary))
-                  (Util.invert (Util.enum_ops theory.signature.sig_binary))
-                  a
-            end
-        in
-        Enum.enum !size theory cont ;
-        print_endline ("\nTotal count: " ^ string_of_int !k)
-      end
-    else
-      begin
-        let start = List.length theory.signature.sig_const in
-        let cont a =
-          if not (seen theory.signature a !unique) then
-              unique := (copy_algebra a) :: !unique in
-        let rec
-            gen_smaller acc = function
-              | k when 2 * k > !size -> acc
-              | k ->
+        if not !irreducible then
+          begin
+            let cont a =
+              if not (seen theory.signature a !unique) then
                 begin
-                  unique := [] ;
-                  Enum.enum k theory cont ;
-                  gen_smaller (!unique :: acc) (k+1)
-                end in
+                  incr k;
+                  unique := (copy_algebra a) :: !unique ;
+                  if not !count_only then
+                    Print.algebra names
+                      (Util.invert (Util.enum_ops theory.signature.sig_unary))
+                      (Util.invert (Util.enum_ops theory.signature.sig_binary))
+                      a
+                end
+            in
+            Enum.enum !size theory cont ;
+            print_endline ("\nTotal count: " ^ string_of_int !k)
+          end
+        else
+          begin
+            let start = List.length theory.signature.sig_const in
+            let cont a =
+              if not (seen theory.signature a !unique) then
+                unique := (copy_algebra a) :: !unique in
+            let rec
+                gen_smaller acc = function
+                  | k when 2 * k > !size -> acc
+                  | k ->
+                    begin
+                      unique := [] ;
+                      Enum.enum k theory cont ;
+                      gen_smaller (!unique :: acc) (k+1)
+                    end in
 
-        (* There are no algebras with strictly less elements than there are constants. *)
-        let unique_by_size = List.rev (gen_smaller (replicate start []) start) in
+            (* There are no algebras with strictly less elements than there are constants. *)
+            let unique_by_size = List.rev (gen_smaller (replicate start []) start) in
 
-        unique := gen_reducible theory.signature !size unique_by_size ;
+            unique := gen_reducible theory.signature !size unique_by_size ;
 
-        let cont a =
-          if not (seen theory.signature a !unique) then
-            begin
-              incr k;
-              unique := (copy_algebra a) :: !unique ;
-              if not !count_only then
-                Print.algebra names
-                  (Util.invert (Util.enum_ops theory.signature.sig_unary))
-                  (Util.invert (Util.enum_ops theory.signature.sig_binary))
-                  a
-            end
-        in
-        Enum.enum !size theory cont ;
-        print_endline ("\nTotal count: " ^ string_of_int !k)
+            let cont a =
+              if not (seen theory.signature a !unique) then
+                begin
+                  incr k;
+                  unique := (copy_algebra a) :: !unique ;
+                  if not !count_only then
+                    Print.algebra names
+                      (Util.invert (Util.enum_ops theory.signature.sig_unary))
+                      (Util.invert (Util.enum_ops theory.signature.sig_binary))
+                      a
+                end
+            in
+            Enum.enum !size theory cont ;
+            print_endline ("\nTotal count: " ^ string_of_int !k)
+          end
       end
 with
     Error.Error (pos, err, msg) -> print_endline (err ^ " error: " ^ msg)
