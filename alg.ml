@@ -75,26 +75,32 @@ try
             Enum.enum !size theory cont ;
             print_endline ("\nTotal count: " ^ string_of_int !k)
           end
-        else
+        else (* Irreducible only. *)
           begin
+            let irreducible = ref 0 in
             let start = List.length theory.signature.sig_const in
             let cont a =
               if not (seen theory.signature a !unique) then
-                unique := (copy_algebra a) :: !unique in
+                begin
+                  let aa = copy_algebra a in
+                  unique := aa :: !unique ;
+                  incr irreducible
+                end in
             let rec
                 gen_smaller acc = function
                   | k when 2 * k > !size -> acc
                   | k ->
                     begin
-                      unique := [] ;
+                      unique := gen_reducible theory.signature k acc ;
+                      irreducible := 0 ;
                       Enum.enum k theory cont ;
-                      gen_smaller (!unique :: acc) (k+1)
+                      gen_smaller (Util.rev_take !irreducible !unique :: acc) (k+1)
                     end in
 
             (* There are no algebras with strictly less elements than there are constants. *)
-            let unique_by_size = List.rev (gen_smaller (replicate start []) start) in
+            let irreducible_by_size = List.rev (gen_smaller (replicate start []) start) in
 
-            unique := gen_reducible theory.signature !size unique_by_size ;
+            unique := gen_reducible theory.signature !size irreducible_by_size ;
 
             let cont a =
               if not (seen theory.signature a !unique) then
