@@ -2,6 +2,9 @@ open Type
 open Util
 
 exception Undefined
+
+exception Contradiction
+
 exception Break
 
 (* General helper functions for partitioning axioms. *)
@@ -161,7 +164,7 @@ let apply_simple_binary simple unary_arr binary_arr =
         let v1 = get_value t1 in
         let v2 = get_value t2 in
         if binary_arr.(op).(v1).(v2) <> -1 && binary_arr.(op).(v1).(v2) <> c then
-          Error.fatal "You supplied contradicting axioms."
+          raise Contradiction
         else
           binary_arr.(op).(v1).(v2) <- c
       | _ -> invalid_arg "Not a simple binary axiom."
@@ -186,7 +189,7 @@ let apply_one_var_shallow n one_var_shallow unary_arr binary_arr =
         let v2 = get_value t2 in
         let v3 = get_value t3 in
         if binary_arr.(op).(v1).(v2) <> -1 && binary_arr.(op).(v1).(v2) <> v3 then
-          Error.fatal "You supplied contradicting axioms."
+          raise Contradiction
         else
           binary_arr.(op).(v1).(v2) <- v3
       | _ -> invalid_arg "not a legal axiom in apply_one_var"
@@ -858,9 +861,11 @@ let enum n {signature={sig_const=const; sig_unary=unary; sig_binary=binary}; axi
     done in
 
   let cont () =
-    reset_binary_arr () ;
-    apply_simple_binary simple_binary unary_arr binary_arr ;
-    apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
-    gen_binary n lc lu lb binary_dos binary_undos unary_arr binary_arr check k in
+    try 
+      reset_binary_arr () ;
+      apply_simple_binary simple_binary unary_arr binary_arr ;
+      apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
+      gen_binary n lc lu lb binary_dos binary_undos unary_arr binary_arr check k
+    with Contradiction -> () in
 
   gen_unary n lu unary_dos unary_undos unary_arr cont
