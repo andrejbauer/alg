@@ -56,16 +56,42 @@ let is_reducible s a lst =
     List.exists (fun left -> List.exists (fun right -> are_iso s a (product left right)) ls) ks in
   List.exists exist_factors factors
 
-(* lst is a list of smaller algebras. It is assumed that List.nth lst k are algebras of size k. *)
+(* lst is a list of smaller __irreducible__ algebras. It is assumed that List.nth lst k are algebras of size k. *)
 let gen_reducible s n lst = 
-  let factors = factor n in
+  if n < 4 then [] (* Avoid undefined behaviour and there are no smaller reducible algebras. *)
+  else
+    begin
+      let arr = Array.map (Array.of_list) (Array.of_list lst) in (* TODO: For faster access. *)
+      
+      (* Generate all products of algebras which partition into algebras of sizes in partition.
+         partition is assumed to be in some order (descending or ascending) order. *)
+      let gen_product cont partition = 
+        (* last is size of last algebra added to product, start is where to start
+           with current algebras (this is only used if we have to multiply two consecutive 
+           algebras of the same size), part is the tail of partition *)
+        let rec gen_p last start acc = function
+          | [] -> cont acc
+          | (p::ps) -> 
+            let start = if last = p then start else 0 in
+            let last = p in
+            let ul = Array.length arr.(last) in
+            for i=start to ul-1 do
+              gen_p last i (product acc arr.(last).(i)) ps
+            done in
+        if partition = [] then (* This shouldn't happen. *)
+          invalid_arg "Empty partition of number."
+        else
+          begin
+            let head = List.hd partition in
+            let tail = List.tl partition in 
+            let first = arr.(head) in
+            Array.iter (fun x -> gen_p head 0 x tail) first
+          end in (* end of gen_product *)
+      
+      let res = ref [] in (* Ugly, I know. *)
 
-  let use_all_pairs l1 l2 start =
-    let maybe_add a algs = 
-      if seen s a algs then algs else (a::algs) in
-    List.fold_left (fun acc left -> 
-      List.fold_left (fun acc' right ->
-        maybe_add (product left right) acc') 
-        acc l2) 
-      start l1 in
-  List.fold_left (fun acc (k,l) -> use_all_pairs (List.nth lst k) (List.nth lst l) acc) [] factors
+      let cont p = 
+        res := p :: !res in
+
+      List.iter (gen_product cont) (Util.partitions n) ; !res
+    end
