@@ -1,9 +1,9 @@
 # Tarski's high school algebra (according to Wikipedia, which is a bit fishy)
 signature:
   1 : 0
-  + : 2
-  * : 2
   ^ : 2
+  * : 2
+  + : 2
 
 axioms:
   ### + is a commutative semigroup

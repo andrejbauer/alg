@@ -1,7 +1,7 @@
 # The axioms for a ring
 signature:
-        m : 2 #add
         n : 2 #mult
+        m : 2 #add
         i : 1 #additive inverse
         0 : 0 #additive unit
 
