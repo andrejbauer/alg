@@ -48,7 +48,7 @@ let factor n =
         | k -> factor' acc (succ k) in
   factor' [] 2
 
-let is_reducible s a lst =
+let is_decomposable s a lst =
   let factors = factor a.size in
   let exist_factors (k,l) =
     let ks = List.nth lst k in
@@ -56,9 +56,9 @@ let is_reducible s a lst =
     List.exists (fun left -> List.exists (fun right -> are_iso s a (product left right)) ls) ks in
   List.exists exist_factors factors
 
-(* lst is a list of smaller __irreducible__ algebras. It is assumed that List.nth lst k are algebras of size k. *)
-let gen_reducible s n lst = 
-  if n < 4 then [] (* Avoid undefined behaviour and there are no smaller reducible algebras. *)
+(* lst is a list of smaller __indecomposable__ algebras. It is assumed that List.nth lst k are algebras of size k. *)
+let gen_decomposable s n lst = 
+  if n < 4 then [] (* Avoid undefined behaviour and there are no smaller decomposable algebras. *)
   else
     begin
       let arr = Array.map (Array.of_list) (Array.of_list lst) in (* TODO: For faster access. *)
