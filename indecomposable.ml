@@ -3,6 +3,8 @@ open Util
 
 open Iso
 
+open First_order
+
 (* It is assumed that the two algebras correspond to the same signature. *)
 (* Note that this returns an algebra not in a form where supplied constants come before
    other elements. TODO: We cannot print this algebra correctly with current implementation of Print module. *)
@@ -57,7 +59,7 @@ let is_decomposable s a lst =
   List.exists exist_factors factors
 
 (* lst is a list of smaller __indecomposable__ algebras. It is assumed that List.nth lst k are algebras of size k. *)
-let gen_decomposable s n lst = 
+let gen_decomposable theory n lst = 
   if n < 4 then [] (* Avoid undefined behaviour and there are no smaller decomposable algebras. *)
   else
     begin
@@ -91,7 +93,8 @@ let gen_decomposable s n lst =
       let res = ref [] in (* Ugly, I know. *)
 
       let cont p = 
-        res := p :: !res in
+        if check_formulas theory p then
+          res := p :: !res in
 
       List.iter (gen_product cont) (Util.partitions n) ; !res
     end

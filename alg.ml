@@ -83,7 +83,7 @@ try
             let indecomposable = ref 0 in
             let start = List.length theory.signature.sig_const in
             let cont a =
-              if not (seen theory.signature a !unique) then
+              if not (seen theory.signature a !unique) && check_formulas theory a then
                 begin
                   let aa = copy_algebra a in
                   unique := aa :: !unique ;
@@ -94,7 +94,7 @@ try
                   | k when 2 * k > !size -> acc
                   | k ->
                     begin
-                      unique := gen_decomposable theory.signature k acc ;
+                      unique := gen_decomposable theory k acc ;
                       indecomposable := 0 ;
                       Enum.enum k theory cont ;
                       gen_smaller (Util.rev_take !indecomposable !unique :: acc) (k+1)
@@ -103,10 +103,10 @@ try
             (* There are no algebras with strictly less elements than there are constants. *)
             let indecomposable_by_size = List.rev (gen_smaller (replicate start []) start) in
 
-            unique := gen_decomposable theory.signature !size indecomposable_by_size ;
+            unique := gen_decomposable theory !size indecomposable_by_size ;
 
             let cont a =
-              if not (seen theory.signature a !unique) then
+              if not (seen theory.signature a !unique) && check_formulas theory a then
                 begin
                   incr k;
                   unique := (copy_algebra a) :: !unique ;
