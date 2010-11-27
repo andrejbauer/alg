@@ -1,0 +1,11 @@
+# Classical axioms for an abelian group
+signature:
+        * : 2
+
+axioms:
+        (x * y) * z = x * (y * z);
+        x * y = y * x;
+
+restrictions:
+        exists e: (forall x: (x * e = x /\ exists y: (x * y = e))).
+

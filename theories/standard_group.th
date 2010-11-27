@@ -1,0 +1,10 @@
+# Classical axioms for a group
+signature:
+        * : 2
+
+axioms:
+        (x * y) * z = x * (y * z);
+
+restrictions:
+        exists e: (forall x: (x * e = x /\ e * x = x /\ exists y: (x * y = e /\ y * x = e))).
+
