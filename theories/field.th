@@ -1,0 +1,25 @@
+# The axioms for a field
+signature:
+    * : 2
+    + : 2
+    0 : 0
+    ! : 1
+
+axioms:
+    0 + x = x;
+    x + 0 = x;
+    !x + x = 0;
+    x + !x = 0;
+    x + (y + z) = (x + y) + z;
+    x + y = y + x;
+
+    x * y = y * x;
+    x * (y * z) = (x * y) * z;
+    (x + y) * z = x * z + y * z;
+    x * (y + z) = x * y + x * z;
+
+restrictions:
+    exists 1: 
+        forall x: 
+            (x <> 0 => x * 1 = x /\ 1 * x = x /\ 
+                           exists y: (x * y = 1 /\ y * x = 1)).

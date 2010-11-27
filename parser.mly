@@ -13,8 +13,6 @@
 %token AND OR IMPLICATION NOT NOTEQUAL 
 
 %right IMPLICATION
-%nonassoc NOTEQUAL
-%left EQUAL
 
 %left OR
 %left AND
@@ -49,24 +47,29 @@ restriction: RESTRICTIONS COLON lst = list(terminated(formula, DOT))
     { lst }
 
 formula: 
-  | f = simple_formula
-    { f }
   | l = formula op = logical_connective r = formula
     { op (l,r) }
   | NOT f = formula
     { Raw_Not f }
-  | FORALL x = name COLON f = formula 
-    { Raw_Forall (x,f) }
-  | EXISTS x = name COLON f = formula 
-    { Raw_Exists (x,f) }
+  | f = simple_formula
+    { f }  
 
 simple_formula:
+  | q = quantified 
+    { q }
   | t1 = term EQUAL t2 = term
     { Raw_Equal (t1,t2) }
   | t1 = term NOTEQUAL t2 = term
     { Raw_Not_Equal (t1,t2) }
   | LPAREN f = formula RPAREN
     { f }
+
+quantified: 
+  | FORALL x = name COLON f = simple_formula
+    { Raw_Forall (x,f) }
+  | EXISTS x = name COLON f = simple_formula
+    { Raw_Exists (x,f) }
+
 
 %inline logical_connective:
   | AND           { fun (a,b) -> Raw_And (a,b) }

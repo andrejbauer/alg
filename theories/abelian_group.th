@@ -1,15 +1,15 @@
 # The axioms for a group
 signature:
         + : 2
-        ~ : 1
+        ! : 1
         0 : 0
 
 axioms:
-        ~0 = 0;
-        ~ (~ x) = x;
+        !0 = 0;
+        ! (! x) = x;
         0 + x = x;
         x + 0 = x;
-        x + ~x = 0;
-        ~x + x = 0;
+        x + !x = 0;
+        !x + x = 0;
         (x + y) + z = x + (y + z);
         x + y = y + x;
