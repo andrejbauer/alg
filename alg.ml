@@ -4,6 +4,8 @@ open Iso
 
 open Irreducible
 
+open First_order
+
 open Util
 
 let size = ref 3
@@ -61,7 +63,7 @@ try
         if not !irreducible then
           begin
             let cont a =
-              if not (seen theory.signature a !unique) then
+              if not (seen theory.signature a !unique) && check_formulas theory a then
                 begin
                   incr k;
                   unique := (copy_algebra a) :: !unique ;
@@ -76,6 +78,7 @@ try
             print_endline ("\nTotal count: " ^ string_of_int !k)
           end
         else (* Irreducible only. *)
+          (* TODO: We don't necessarily have products. *)
           begin
             let irreducible = ref 0 in
             let start = List.length theory.signature.sig_const in

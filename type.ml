@@ -30,12 +30,33 @@ type term =
 
 type equation = term * term
 
+type raw_formula =
+  | Raw_Equal of raw_term * raw_term
+  | Raw_Not_Equal of raw_term * raw_term
+  | Raw_Forall of variable * raw_formula
+  | Raw_Exists of variable * raw_formula
+  | Raw_And of raw_formula * raw_formula
+  | Raw_Or of raw_formula * raw_formula
+  | Raw_Implication of raw_formula * raw_formula
+  | Raw_Not of raw_formula
+
+type formula = 
+  | Equal of term * term
+  | Not_Equal of term * term
+  | Forall of var_index * formula
+  | Exists of var_index * formula
+  | And of formula * formula
+  | Or of formula * formula
+  | Implication of formula * formula
+  | Not of formula
+
 (* Theory as given by the parser. *)
-type raw_theory = signature * (raw_term * raw_term) list
+type raw_theory = signature * (raw_term * raw_term) list * raw_formula list option
 
 type theory = {
   signature : signature;
-  axioms : equation list
+  axioms : equation list;
+  formulas : formula list option
 }
 
 type algebra = {
