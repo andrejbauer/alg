@@ -2,12 +2,14 @@ open Type
 
 open Iso
 
-open Irreducible
+open Indecomposable
+
+open First_order
 
 open Util
 
 let size = ref 3
-let irreducible = ref false
+let indecomposable = ref false
 let count_only = ref false
 
 (* Command-line options and usage *)
@@ -23,9 +25,9 @@ let options = Arg.align [
   ("--count",
     Arg.Set count_only,
     " Just count the models, do not print them out.");
-  ("--irreducible",
-    Arg.Set irreducible,
-    " Output only irreducible algebras.");
+  ("--indecomposable",
+    Arg.Set indecomposable,
+    " Output only indecomposable algebras.");
 ] ;;
 
 (* Main program *)
@@ -54,58 +56,70 @@ try
     let k = ref 0 in
     let unique = ref [] in
     let names = Print.names !size theory.signature in
-    if not !irreducible then
+    if !size < List.length (theory.signature.sig_const) then
+      Error.fatal "There are more constants than the required size of the models."
+    else 
       begin
-        let cont a =
-          if not (seen theory.signature a !unique) then
-            begin
-              incr k;
-              unique := (copy_algebra a) :: !unique ;
-              if not !count_only then
-                Print.algebra names
-                  (Util.invert (Util.enum_ops theory.signature.sig_unary))
-                  (Util.invert (Util.enum_ops theory.signature.sig_binary))
-                  a
-            end
-        in
-        Enum.enum !size theory cont ;
-        print_endline ("\nTotal count: " ^ string_of_int !k)
-      end
-    else
-      begin
-        let start = List.length theory.signature.sig_const in
-        let cont a =
-          if not (seen theory.signature a !unique) then
-              unique := (copy_algebra a) :: !unique in
-        let rec
-            gen_smaller acc = function
-              | k when 2 * k > !size -> acc
-              | k ->
+        if not !indecomposable then
+          begin
+            let cont a =
+              if not (seen theory.signature a !unique) && check_formulas theory a then
                 begin
-                  unique := [] ;
-                  Enum.enum k theory cont ;
-                  gen_smaller (!unique :: acc) (k+1)
+                  incr k;
+                  unique := (copy_algebra a) :: !unique ;
+                  if not !count_only then
+                    Print.algebra names
+                      (Util.invert (Util.enum_ops theory.signature.sig_unary))
+                      (Util.invert (Util.enum_ops theory.signature.sig_binary))
+                      a
+                end
+            in
+            Enum.enum !size theory cont ;
+            print_endline ("\nTotal count: " ^ string_of_int !k)
+          end
+        else (* Indecomposable only. *)
+          (* TODO: We don't necessarily have products. *)
+          begin
+            let indecomposable = ref 0 in
+            let start = List.length theory.signature.sig_const in
+            let cont a =
+              if not (seen theory.signature a !unique) && check_formulas theory a then
+                begin
+                  let aa = copy_algebra a in
+                  unique := aa :: !unique ;
+                  incr indecomposable
                 end in
+            let rec
+                gen_smaller acc = function
+                  | k when 2 * k > !size -> acc
+                  | k ->
+                    begin
+                      unique := gen_decomposable theory k acc ;
+                      indecomposable := 0 ;
+                      Enum.enum k theory cont ;
+                      gen_smaller (Util.rev_take !indecomposable !unique :: acc) (k+1)
+                    end in
 
-        (* There are no algebras with strictly less elements than there are constants. *)
-        let unique_by_size = List.rev (gen_smaller (replicate start []) start) in
+            (* There are no algebras with strictly less elements than there are constants. *)
+            let indecomposable_by_size = List.rev (gen_smaller (replicate start []) start) in
 
-        unique := gen_reducible theory.signature !size unique_by_size ;
+            unique := gen_decomposable theory !size indecomposable_by_size ;
 
-        let cont a =
-          if not (seen theory.signature a !unique) then
-            begin
-              incr k;
-              unique := (copy_algebra a) :: !unique ;
-              if not !count_only then
-                Print.algebra names
-                  (Util.invert (Util.enum_ops theory.signature.sig_unary))
-                  (Util.invert (Util.enum_ops theory.signature.sig_binary))
-                  a
-            end
-        in
-        Enum.enum !size theory cont ;
-        print_endline ("\nTotal count: " ^ string_of_int !k)
+            let cont a =
+              if not (seen theory.signature a !unique) && check_formulas theory a then
+                begin
+                  incr k;
+                  unique := (copy_algebra a) :: !unique ;
+                  if not !count_only then
+                    Print.algebra names
+                      (Util.invert (Util.enum_ops theory.signature.sig_unary))
+                      (Util.invert (Util.enum_ops theory.signature.sig_binary))
+                      a
+                end
+            in
+            Enum.enum !size theory cont ;
+            print_endline ("\nTotal count: " ^ string_of_int !k)
+          end
       end
 with
     Error.Error (pos, err, msg) -> print_endline (err ^ " error: " ^ msg)

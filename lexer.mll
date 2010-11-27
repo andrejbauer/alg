@@ -5,8 +5,8 @@
 
 let ident = ['_' 'a'-'z' 'A'-'Z' '0'-'9']* '\''*
 
-let symbolchar = ['!' '$' '%' '&' '*' '+' '-' '.' '/' '\\' ':' '<' '=' '>' '?' '@' '^' '|' '~']
-let prefixop = ['~' '?' '!']             symbolchar*
+let symbolchar = ['!' '$' '%' '&' '*' '+' '-' '/' '\\' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+let prefixop = ['?' '!']                 symbolchar*
 let infixop0 = ['|' '&' '$']             symbolchar*
 let infixop1 = ['@' '^']                 symbolchar*
 let infixop2 = ['+' '-' '\\']            symbolchar*
@@ -22,6 +22,17 @@ rule token = parse
   | '2'                 { TWO }
   | "signature"         { SIGNATURE }
   | "axioms"            { AXIOMS }
+  | "restrictions"      { RESTRICTIONS }
+
+  | "forall"            { FORALL }
+  | "exists"            { EXISTS }
+  | "/\\"               { AND }
+  | "\\/"               { OR }
+  | "=>"                { IMPLICATION }
+  | "<>"                { NOTEQUAL }
+  | "~"                 { NOT }
+  | "."                 { DOT }
+
   | ident               { IDENT (lexeme lexbuf) }
   | prefixop            { PREFIXOP (Lexing.lexeme lexbuf) }
   | infixop0            { INFIXOP0 (Lexing.lexeme lexbuf) }

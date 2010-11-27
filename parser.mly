@@ -3,12 +3,20 @@
 %}
 
 %token ZERO ONE TWO
-%token SIGNATURE AXIOMS
+%token SIGNATURE AXIOMS RESTRICTIONS EXISTS FORALL
 %token <string> IDENT
 %token <string> PREFIXOP INFIXOP0 INFIXOP1 INFIXOP2 INFIXOP3 INFIXOP4
 %token LPAREN RPAREN
-%token SEMICOLON COLON COMMA EQUAL
+%token SEMICOLON COLON COMMA DOT EQUAL 
 %token EOF
+
+%token AND OR IMPLICATION NOT NOTEQUAL 
+
+%right IMPLICATION
+
+%left OR
+%left AND
+%left NOT
 
 %left  INFIXOP0
 %right INFIXOP1
@@ -21,8 +29,8 @@
 
 %%
 
-theory: s = signature a = axioms EOF
-  { (s,a) }
+theory: s = signature a = axioms r = option(restriction) EOF
+  { (s,a,r) }
 
 signature: SIGNATURE COLON lst = list(op_declaration)
   { List.fold_left (fun s -> function
@@ -34,6 +42,39 @@ signature: SIGNATURE COLON lst = list(op_declaration)
 
 axioms: AXIOMS COLON lst = list(terminated(equation, SEMICOLON))
   { lst }
+
+restriction: RESTRICTIONS COLON lst = list(terminated(formula, DOT))
+    { lst }
+
+formula: 
+  | l = formula op = logical_connective r = formula
+    { op (l,r) }
+  | NOT f = formula
+    { Raw_Not f }
+  | f = simple_formula
+    { f }  
+
+simple_formula:
+  | q = quantified 
+    { q }
+  | t1 = term EQUAL t2 = term
+    { Raw_Equal (t1,t2) }
+  | t1 = term NOTEQUAL t2 = term
+    { Raw_Not_Equal (t1,t2) }
+  | LPAREN f = formula RPAREN
+    { f }
+
+quantified: 
+  | FORALL x = name COLON f = simple_formula
+    { Raw_Forall (x,f) }
+  | EXISTS x = name COLON f = simple_formula
+    { Raw_Exists (x,f) }
+
+
+%inline logical_connective:
+  | AND           { fun (a,b) -> Raw_And (a,b) }
+  | OR            { fun (a,b) -> Raw_Or (a,b) }
+  | IMPLICATION   { fun (a,b) -> Raw_Implication (a,b)}
 
 name:
   | ZERO      { "0" }

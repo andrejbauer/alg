@@ -1,5 +1,9 @@
 open Type
 
+(* Missing function functions :) *)
+let curry f a b = f (a,b)
+let uncurry f (a,b) = f a b
+
 (* Missing array functions. *)
 let array_for_all p a =
   let n = Array.length a in
@@ -48,13 +52,27 @@ let rev_combine xs ys =
       | (x::xs',y::ys') -> rev_combine' ((x,y) :: acc) xs' ys'
   in rev_combine' [] xs ys
 
+let rev_take n xs = 
+  let rec rev_take acc n = function
+    | [] -> acc
+    | (x::xs) when n = 0 -> acc
+    | (x::xs) -> rev_take (x::acc) (n-1) xs in
+  rev_take [] n xs
+
 (* Zipwith *)
-let map_combine f xs ys =
-  let rec map_combine' xs ys =
-    match xs, ys with
-      | ([],_) | (_,[]) -> []
-      | (x::xs',y::ys') -> f (x,y) :: map_combine' xs' ys'
-  in map_combine' xs ys
+let map_combine f = 
+  List.map2 (curry f)
+
+let rec split x = function
+  | [] -> ([],[])
+  | (y::ys) as ys' when y <> x -> ([], ys')
+  | (y::ys) -> let (xs', ys') = split x ys
+               in (y::xs', ys')
+
+let rec group = function
+  | [] -> []
+  | (x::xs) -> let (xs', ys) = split x xs
+               in (x, List.length xs') :: group ys
 
 let fromSome = function
   | (Some a) -> a
@@ -138,6 +156,7 @@ let copy_algebra {size=n; const=const; unary=unary; binary=binary} =
                             (op, Array.copy (Array.map Array.copy arr))) binary in
   {size=n; const=const; unary=unaryc; binary=binaryc}
 
+(* Combinations without repetition. *)
 (*
   Generate next k-combination of elements 0..n-1.
 *)
@@ -167,6 +186,39 @@ let combs n k cont =
     | None -> ()
     | Some arr -> cont arr ;
                   loop (next_comb n k cur)
+  in loop (Some cur)
+
+(* Combination with repetition. *)
+(*
+  Generate next k-combination with repetition of elements 0..n-1.
+*)
+let next_comb_r n k cur =
+  let i = ref 0 in
+  while !i < k && cur.(k - !i - 1) = n-1 do
+    incr i
+  done ;
+  if !i = k then
+    None
+  else
+    begin
+      cur.(k- !i-1) <- cur.(k- !i-1)+1;
+      decr i;
+      for j = !i downto 0 do
+        cur.(k-j-1) <- cur.(k-j-2)
+      done ;
+      Some cur
+    end
+
+(*
+  Generate k-combinations with repetition of elements 0..n-1 and
+  pass each one to the given continuation.
+*)
+let combs_r n k cont =
+  let cur = Array.make k 0 in
+  let rec loop = function
+    | None -> ()
+    | Some arr -> cont arr ;
+                  loop (next_comb_r n k cur)
   in loop (Some cur)
 
 (*
@@ -234,9 +286,12 @@ let iter_pairs f =
       | (x::xs', y::ys') -> 
         f (x,y) ; iter_pairs' xs' ys'
   in iter_pairs'
-          
-(* Missing function functions :) *)
-let curry f a b = f (a,b)
-let uncurry f (a,b) = f a b
 
 
+(* Return all partitions of n into a product of at least two non decreasing numbers. *)
+let partitions n = 
+  let rec partitions' n d =
+    if n = 1 then [[]]
+    else List.concat (List.map (fun k -> List.map (fun ks -> k :: ks) (partitions' (n / k) k))
+                        (List.filter (fun k -> n mod k = 0) (enumFromTo d n))) in
+  init (partitions' n 2)
