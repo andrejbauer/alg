@@ -433,11 +433,11 @@ let gen_binary n lc lu lb dodos doundos unary_arr binary_arr check k =
   (* o is index of operation, (i,j) current element *)
   let rec gen_operation o = function
     | _ when o = lb ->
-      k { size = n;
-          const = Util.enumFromTo 0 (lc-1);
-          unary = List.combine (Util.enumFromTo 0 (lu-1)) (Array.to_list unary_arr) ;
-          binary = List.combine (Util.enumFromTo 0 (lb-1)) (Array.to_list binary_arr)
-        }
+        k { alg_size = n;
+            alg_const = Array.init lc (fun k -> k);
+            alg_unary = Util.matrix_copy unary_arr;
+            alg_binary = Util.array3d_copy binary_arr
+          }
     | (i,_) when i = n -> gen_operation (o+1) (0,0)
     | (i,j) when j = n -> gen_operation o (i+1,0)
     | (i,j) when binary_arr.(o).(i).(j) = -1 ->

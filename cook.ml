@@ -1,113 +1,174 @@
-open Type
+(* A simple compiler from abstract syntax to the internal representation. *)
 
-(* Return a duplicate element in the list, if one exists. *)
-let rec find_duplicate = function
-  | [] -> None
-  | x :: xs -> if List.mem x xs then Some x else find_duplicate xs
+module S = Syntax
+module T = Type
 
+type env = {
+  const : (S.operation * T.operation) list ;
+  unary : (S.operation * T.operation) list ;
+  binary : (S.operation * T.operation) list ;
+  vars : (S.variable * T.variable) list
+}
 
-let lookup x lst =
-  try
-    Some (List.assoc x lst)
-  with Not_found -> None
+let empty_env = { const = []; unary = []; binary = []; vars = [] }
 
-let arity op s =
-  if List.mem op s.sig_const then Some Zero
-  else if List.mem op s.sig_unary then Some One
-  else if List.mem op s.sig_binary then Some Two
-  else None
+let fresh lst = 1 + List.fold_left (fun m (_,k) -> max m k) (-1) lst
 
-(* 
-   Operation indices in axioms are taken from theory signature with enum_ops.
-   !!!!!! This must not change, otherwise we won't get the right results. !!!!!!!
-*)
-let cook_axioms s a =
-  let ec = Util.enum_ops s.sig_const in
-  let eu = Util.enum_ops s.sig_unary in
-  let eb = Util.enum_ops s.sig_binary in
-  let cook_axiom (left, right) =
-    (* This is for enumerating variables inside an axiom for faster access. *)
-    let vars = ref [] in 
-    let rec cook_term = function
-      | RawVar x ->
-        begin match arity x s with
+let extend_const c env = 
+  { env with const = (c, fresh env.const) :: env.const }
+
+let extend_unary u env = 
+  { env with unary = (u, fresh env.unary) :: env.unary }
+
+let extend_binary b env = 
+  { env with binary = (b, fresh env.binary) :: env.binary }
+
+let extend_var x env =
+  let k = fresh env.vars in
+    { env with vars = (x,k) :: env.vars }, k
+
+let lookup_const {const=ec} x = Util.lookup x ec
+
+let lookup_unary {unary=eu} x = Util.lookup x eu
+
+let lookup_binary {binary=eb} x = Util.lookup x eb
+
+let lookup_var {vars=ev} x = Util.lookup x ev
+
+let cook_term env t =
+  let rec cook env = function
+    | S.Var x ->
+        begin match lookup_const env x with
+          | Some c -> env, T.Const c
           | None ->
-            if not (List.mem_assoc x !vars) then
-              vars := (x, List.length !vars) :: !vars
-            ; Var (List.assoc x !vars)
-          | Some Zero -> Const (List.assoc x ec)
-          | Some One | Some Two -> Error.fatal "operation %s is used as a constant" x
+              if List.mem_assoc x env.unary || List.mem_assoc x env.binary then
+                Error.fatal "operation %s is used as a constant" x
+              else
+                begin match lookup_var env x with
+                  | Some i -> env, T.Var i
+                  | None ->
+                      let env, k = extend_var x env in
+                        env, T.Var k
+                end
         end
-      | RawApply (op, lst) ->
-        begin match arity op s, lst with
-          | None, _ -> Error.fatal "unknown operation %s" op
-          | Some Zero, [] -> Const (List.assoc op ec)
-          | Some Zero, _ -> Error.fatal "constant %s used is used as an operation" op
-          | Some One, [t] -> Unary (List.assoc op eu, cook_term t)
-          | Some One, _ -> Error.fatal "improper use of unary operation %s" op
-          | Some Two, [t1;t2] -> Binary (List.assoc op eb, cook_term t1, cook_term t2)
-          | Some Two, _ -> Error.fatal "improper use of binary operation %s" op
-        end in
-    (cook_term left, cook_term right) in
-  List.map cook_axiom a
+      | S.Apply (op, lst) ->
+          begin match lookup_const env op, lst with
+            | Some c, [] -> env, T.Const c
+            | Some c, _::_ -> Error.fatal "constant %s is used as an operation" op
+            | None, _ ->
+                begin match lookup_unary env op, lst with
+                  | Some u, [t] ->
+                      let env, t = cook env t in
+                        env, T.Unary (u, t)
+                  | Some u, lst ->
+                      Error.fatal "unary operation %s applied to %d arguments" op (List.length lst)
+                  | None, _ ->
+                      begin match lookup_binary env op, lst with
+                        | Some b, [t1; t2] ->
+                            let env, t1 = cook env t1 in
+                            let env, t2 = cook env t2 in
+                              env, T.Binary (b, t1, t2)
+                        | Some b, lst ->
+                            Error.fatal "binary operation %s applied to %d arguments" op (List.length lst)
+                        | None, _ ->
+                            Error.fatal "unknown operation %s" op
+                      end
+                end
+          end
+ in
+  cook env t
 
-let cook_formulas s a =
-  let ec = Util.enum_ops s.sig_const in
-  let eu = Util.enum_ops s.sig_unary in
-  let eb = Util.enum_ops s.sig_binary in
-  let rec cook_term vars = function
-    | RawVar x ->
-      begin match arity x s with
-        | None ->
-          if not (List.mem_assoc x vars) then
-            Error.fatal "Unquantified variable in formula."
-          else
-            Var (List.assoc x vars)
-        | Some Zero -> Const (List.assoc x ec)
-        | Some One | Some Two -> Error.fatal "operation %s is used as a constant" x
-      end
-    | RawApply (op, lst) ->
-      begin match arity op s, lst with
-        | None, _ -> Error.fatal "unknown operation %s" op
-        | Some Zero, [] -> Const (List.assoc op ec)
-        | Some Zero, _ -> Error.fatal "constant %s used is used as an operation" op
-        | Some One, [t] -> Unary (List.assoc op eu, cook_term vars t)
-        | Some One, _ -> Error.fatal "improper use of unary operation %s" op
-        | Some Two, [t1;t2] -> Binary (List.assoc op eb, cook_term vars t1, cook_term vars t2)
-        | Some Two, _ -> Error.fatal "improper use of binary operation %s" op
-      end in
-  let rec cook_formula vars = function
-    | Raw_Equal (t1,t2) -> Equal (cook_term vars t1, cook_term vars t2)
-    | Raw_Not_Equal (t1,t2) -> Not_Equal (cook_term vars t1, cook_term vars t2)
-    | Raw_Forall (v, f) -> 
-      if List.mem_assoc v vars then
-        Error.fatal "Variable shadowing in formula."
-      else 
-        let i = List.length vars in
-        Forall (i, (cook_formula ((v,i)::vars) f))
-    | Raw_Exists (v, f) -> 
-      if List.mem_assoc v vars then
-        Error.fatal "Variable shadowing in formula."
-      else 
-        let i = List.length vars in
-        Exists (i, (cook_formula ((v,i)::vars) f))
-    | Raw_And (f1,f2) ->
-      And (cook_formula vars f1, cook_formula vars f2)
-    | Raw_Or (f1,f2) ->
-      Or (cook_formula vars f1, cook_formula vars f2)
-    | Raw_Implication (f1,f2) ->
-      Implication (cook_formula vars f1, cook_formula vars f2)
-    | Raw_Not f ->
-      Not (cook_formula vars f) in
-  List.map (cook_formula []) a
+let cook_equation env (t1, t2) =
+  let env, t1 = cook_term env t1 in
+  let env, t2 = cook_term env t2 in
+    env, (t1, t2)
 
-let cook_theory (s,a,r) =
-  match find_duplicate (s.sig_const @ s.sig_unary @ s.sig_binary) with
-    | Some op -> Error.fatal "operation %s is declared twice" op
-    | None -> 
-      let axioms = cook_axioms s a in
-      match r with
-        | None -> { signature = s; axioms = axioms; formulas=None }
-        | Some lst -> 
-          let restrictions = cook_formulas s lst in
-          { signature = s; axioms = axioms; formulas = Some restrictions }
+let cook_axiom env a =
+  let rec cook env = function
+    | S.True -> env, T.True
+    | S.False -> env, T.False
+    | S.Equal (t1, t2) -> 
+        let env, t1 = cook_term env t1 in
+        let env, t2 = cook_term env t2 in
+          env, Equal (t1, t2)
+    | S.Forall (x, f) -> 
+        let env, k = extend_var x env in
+        let env, f = cook env f in
+          List.remove_assoc x env, S.Forall (k, f)
+    | S.Exists (x, f) -> 
+        let env, k = extend_var x env in
+        let env, f = cook env f in
+          List.remove_assoc x env, S.Exists (k, f)
+    | S.And (f1,f2) ->
+        let env, f1 = cook env f1 in
+        let env, f2 = cook env f2 in
+          env, And (f1, f2)
+    | S.Or (f1,f2) ->
+        let env, f1 = cook env f1 in
+        let env, f2 = cook env f2 in
+          env, Or (f1, f2)
+    | S.Imply (f1,f2) ->
+        let env, f1 = cook env f1 in
+        let env, f2 = cook env f2 in
+          env, Imply (f1, f2)
+    | S.Iff (f1,f2) ->
+        let env, f1 = cook env f1 in
+        let env, f2 = cook env f2 in
+          env, Iff (f1, f2)
+    | S.Not f ->
+        let env, f = cook env f in
+          env, Not f
+  in
+    cook env a
+
+let rec collect_env lst =
+  List.fold_left
+    (fun env -> function
+       | Constant c -> extend_const c env
+       | Unary u -> extend_unary u env
+       | Binary b -> extend_binary b env
+       | Equation _ | Axiom _ -> env)
+    empty_env
+    lst
+
+let collect_equations lst =
+  Util.filter_map
+    (function
+       | Equation (t1,t2) -> Some (t1,t2)
+       | Axiom a -> S.as_equation a
+       | _ -> None)
+    lst
+
+let collect_axioms lst =
+  Util.filter_map
+    (function
+       | Axiom a ->
+           begin match S.as_equation a with
+             | None -> Some a
+             | Some _ -> None
+           end
+       |_ -> None)
+    lst
+
+let cook_theory lst =
+  let env = collect_env lst in
+    match find_duplicate (List.map fst (env.const @ env.unary @ env.binary)) with
+      | Some op -> Error.fatal "operation %s is declared more than once" op
+      | None -> 
+          let env, eqs =
+            List.fold_left
+              (fun (env,eqs) eq -> let env, eq = cook_equation env eq in (env, eq::eqs))
+              (collect_equations lst)
+          in
+          let env, axs =
+            List.fold_left
+              (fun (env,axs) ax -> let env, ax = cook_axiom env ax in (env, ax::axs))
+              (collect_axioms lst)
+          in
+            {
+              th_const = Util.invert env.const;
+              th_unary = Util.invert env.unary;
+              th_binary = Util.invert env.binary;
+              th_equations = eqs;
+              th_axioms = axs;
+            }

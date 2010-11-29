@@ -1,67 +1,42 @@
-type variable = string
+(* Singatures, terms, equations and axioms. *)
 
-type operation = string
-
-type operation_index = int
-
-type var_index = int
-
-type arity =
-  | Zero
-  | One
-  | Two
-
-type signature = {
-  sig_const : operation list;
-  sig_unary: operation list;
-  sig_binary: operation list
-}
-
-(* This is what the parser gives. *)
-type raw_term =
-  | RawVar of variable
-  | RawApply of operation * raw_term list
+(* Variables and operations are represented as integers, but we also keep around
+   the original operation names so that results can be printed. *)
+type operation = int
+type operation_name = string
+type variable = int
 
 type term =
-  | Var of var_index
-  | Const of operation_index
-  | Unary of operation_index * term
-  | Binary of operation_index * term * term
+  | Var of variable
+  | Const of operation
+  | Unary of operation * term
+  | Binary of operation * term * term
 
 type equation = term * term
 
-type raw_formula =
-  | Raw_Equal of raw_term * raw_term
-  | Raw_Not_Equal of raw_term * raw_term
-  | Raw_Forall of variable * raw_formula
-  | Raw_Exists of variable * raw_formula
-  | Raw_And of raw_formula * raw_formula
-  | Raw_Or of raw_formula * raw_formula
-  | Raw_Implication of raw_formula * raw_formula
-  | Raw_Not of raw_formula
-
 type formula = 
+  | True
+  | False
   | Equal of term * term
-  | Not_Equal of term * term
-  | Forall of var_index * formula
-  | Exists of var_index * formula
+  | Forall of variable * formula
+  | Exists of variable * formula
   | And of formula * formula
   | Or of formula * formula
-  | Implication of formula * formula
+  | Imply of formula * formula
+  | Iff of formula * formula
   | Not of formula
 
-(* Theory as given by the parser. *)
-type raw_theory = signature * (raw_term * raw_term) list * raw_formula list option
-
 type theory = {
-  signature : signature;
-  axioms : equation list;
-  formulas : formula list option
+  th_const : (operation * operation_name) list;
+  th_unary : (operation * operation_name) list;
+  th_binary : (operation * operation_name) list;
+  th_equations : equation list;
+  th_axioms : formula list
 }
 
 type algebra = {
-  size : int;
-  const : operation_index list;
-  unary : (operation_index * int array) list;
-  binary : (operation_index * int array array) list
+  alg_size : int;
+  alg_const : int array;
+  alg_unary : int array array;
+  alg_binary : int array array array
 }

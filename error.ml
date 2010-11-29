@@ -1,6 +1,6 @@
 (* Error reporting. *)
 
-exception Error of (Common.position * string * string)
+exception Error of (Util.position * string * string)
 
 let ksprintf k =
   let k _ =

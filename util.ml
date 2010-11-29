@@ -1,8 +1,26 @@
 open Type
 
-(* Missing function functions :) *)
-let curry f a b = f (a,b)
-let uncurry f (a,b) = f a b
+type position = (Lexing.position * Lexing.position) option
+
+(* Return a duplicate element in the list, if one exists. *)
+let rec find_duplicate = function
+  | [] -> None
+  | x :: xs -> if List.mem x xs then Some x else find_duplicate xs
+
+(* Associative list lookup without exceptions. *)
+let lookup x lst =
+  try
+    Some (List.assoc x lst)
+  with Not_found -> None
+
+(* A combination of map and filter *)
+let rec filter_map f = function
+  | [] -> []
+  | x::xs ->
+      begin match f x with
+        | None -> filter_map f xs
+        | Some y -> y :: filter_map f xs
+      end
 
 (* Missing array functions. *)
 let array_for_all p a =
@@ -20,6 +38,12 @@ let array_exists p a =
 
 let matrix_forall p a =
   array_exists (fun r -> array_exists p r) a
+
+let matrix_copy a =
+  Array.init (Array.length a) (fun k -> Array.copy a.(k))
+
+let array3d_copy a =
+  Array.init (Array.length a) (fun k -> matrix_copy a.(k))
 
 (* Missing list functions. *)
 let enumFromTo s e =
@@ -58,10 +82,6 @@ let rev_take n xs =
     | (x::xs) when n = 0 -> acc
     | (x::xs) -> rev_take (x::acc) (n-1) xs in
   rev_take [] n xs
-
-(* Zipwith *)
-let map_combine f = 
-  List.map2 (curry f)
 
 let rec split x = function
   | [] -> ([],[])
@@ -147,14 +167,13 @@ let perms = function
     arr
   | _ -> snd (fromSome !permutations)
 
-(*
-   Make fresh copies of operation tables of a given algebra.
-*)
-let copy_algebra {size=n; const=const; unary=unary; binary=binary} =
-  let unaryc = List.map (fun (op, arr) -> (op, Array.copy arr)) unary in
-  let binaryc = List.map (fun (op, arr) ->
-                            (op, Array.copy (Array.map Array.copy arr))) binary in
-  {size=n; const=const; unary=unaryc; binary=binaryc}
+(* Make fresh copies of operation tables of a given algebra. *)
+let copy_algebra {alg_size=n; alg_const=const; alg_unary=unary; alg_binary=binary} =
+  { alg_size = n;
+    alg_const = const;
+    alg_unary = matrix_copy unary;
+    alg_binary = array3d_copy binary
+  }
 
 (* Combinations without repetition. *)
 (*
@@ -244,8 +263,8 @@ let print_matrix m = Array.iter print_arr m
 
 (* Auxiliary functions. *)
 
-(* Enumerate operations *)
-let enum_ops op = snd (List.fold_left (fun (k,lst) c -> (k+1, (c,k)::lst)) (0,[]) op)
+(* Enumerate a list *)
+let enum lst = snd (List.fold_left (fun (k,lst) c -> (k+1, (k,c)::lst)) (0,[]) lst)
 
 (* Invert assoc list. *)
 let invert xs = List.map (fun (a,b) -> (b,a)) xs
@@ -278,15 +297,10 @@ let for_all_pairs f =
         f (x,y) && for_all_pairs' xs' ys'
   in for_all_pairs' 
 
-(* Equivalent to List.iter f (List.combine xs ys) *)
-let iter_pairs f =
-  let rec iter_pairs' xs ys = 
-    match (xs,ys) with
-      | ([],_) | (_,[]) -> ()
-      | (x::xs', y::ys') -> 
-        f (x,y) ; iter_pairs' xs' ys'
-  in iter_pairs'
-
+let rec array_iter2 f arr1 arr2 =
+  for i = 0 to Array.length arr1 do
+    f arr1.(i) arr2.(i)
+  done
 
 (* Return all partitions of n into a product of at least two non decreasing numbers. *)
 let partitions n = 

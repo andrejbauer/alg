@@ -1,7 +1,4 @@
-
 open Type
-
-open Util
 
 exception Break
 exception Found
@@ -17,26 +14,26 @@ let check_const iso c1 c2 = iso.(c1) = c2
 *)
 let check_unary iso u1 u2 =
   let l = Array.length iso in
-  for_all (fun i -> iso.(u1.(i)) = u2.(iso.(i))) 0 (l-1)
+  Util.for_all (fun i -> iso.(u1.(i)) = u2.(iso.(i))) 0 (l-1)
 
 (*
   Checks if binary operation is multiplicative.
 *)
 let check_binary iso b1 b2 =
   let l = Array.length iso in
-  for_all2 (fun i j -> iso.(b1.(i).(j)) = b2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
+  Util.for_all2 (fun i j -> iso.(b1.(i).(j)) = b2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
 
 
-let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
-            {size=n1; const=c1; unary=u1; binary=b1}
-            {size=n2; const=c2; unary=u2; binary=b2} =
+let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
+            {alg_size=n1; alg_const=c1; alg_unary=u1; alg_binary=b1}
+            {alg_size=n2; alg_const=c2; alg_unary=u2; alg_binary=b2} =
   if n1 <> n2 then false
   else
     let n = n1 in
     let used = Array.make n false in
     let iso = Array.make n (-1) in
     (* Handle constants *)
-    iter_pairs (fun (i,j) -> used.(j) <- true ; iso.(i) <- j) c1 c2 ;
+    Util.array_iter2 (fun i j -> used.(j) <- true ; iso.(i) <- j) c1 c2 ;
 
     (*
        Generate actions from unary and binary operations analogous to generation
@@ -44,7 +41,7 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
       IMPORTANT: actions_from_unary and actions_from_binary assume that algebras
       are "synced".
     *)
-    let actions_from_unary ((_, arr1), (_, arr2)) =
+    let actions_from_unary (_, arr1) (_, arr2) =
       let stack = Stack.create () in
       let f i =
         if iso.(arr1.(i)) = -1 then
@@ -67,7 +64,7 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
           used.(arr2.(iso.(i))) <- false
         done in (f, undo) in
 
-    let actions_from_binary ((_, arr1), (_, arr2)) =
+    let actions_from_binary (_, arr1) (_, arr2) =
       let stack = Stack.create () in
       let f i =
         try
@@ -107,8 +104,8 @@ let are_iso {sig_const=const_op; sig_unary=unary_op; sig_binary=binary_op}
           used.(b) <- false
         done in (f, undo) in
 
-    let (dos, undos) = List.split (map_combine actions_from_unary u1 u2
-                                   @ map_combine actions_from_binary b1 b2) in
+    let (dos, undos) = List.split (List.map2 actions_from_unary u1 u2
+                                   @ List.map2 actions_from_binary b1 b2) in
 
     (*
       End check when iso is full. Check that it really is an isomorphism.

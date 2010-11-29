@@ -1,23 +1,22 @@
 %{
-  open Type
+  open Syntax
 %}
 
-%token ZERO ONE TWO
-%token SIGNATURE AXIOMS RESTRICTIONS EXISTS FORALL
+%token CONSTANT UNARY BINARY
+%token EQUATION AXIOM
 %token <string> IDENT
 %token <string> PREFIXOP INFIXOP0 INFIXOP1 INFIXOP2 INFIXOP3 INFIXOP4
 %token LPAREN RPAREN
-%token SEMICOLON COLON COMMA DOT EQUAL 
+%token COLON COMMA DOT
+%token FALSE TRUE
+%token AND OR IMPLY IFF NOT EQUAL NOTEQUAL EXISTS FORALL
 %token EOF
 
-%token AND OR IMPLICATION NOT NOTEQUAL 
-
-%right IMPLICATION
-
+%nonassoc IFF
+%right IMPLY
 %left OR
 %left AND
-%left NOT
-
+%nonassoc NOT
 %left  INFIXOP0
 %right INFIXOP1
 %left  INFIXOP2
@@ -25,95 +24,60 @@
 %right INFIXOP4
 
 %start theory
-%type <Type.raw_theory> theory
+%type <Syntax.theory> theory
 
 %%
 
-theory: s = signature a = axioms r = option(restriction) EOF
-  { (s,a,r) }
+theory: t = list(terminated(theory_entry, DOT)) EOF
+  { t }
 
-signature: SIGNATURE COLON lst = list(op_declaration)
-  { List.fold_left (fun s -> function
-                      | (Zero, op) -> {s with sig_const = op :: s.sig_const}
-                      | (One, op) -> {s with sig_unary = op :: s.sig_unary}
-                      | (Two, op) -> {s with sig_binary = op :: s.sig_binary})
-      { sig_const = []; sig_unary = []; sig_binary = [] } lst
-  }
-
-axioms: AXIOMS COLON lst = list(terminated(equation, SEMICOLON))
-  { lst }
-
-restriction: RESTRICTIONS COLON lst = list(terminated(formula, DOT))
-    { lst }
-
-formula: 
-  | l = formula op = logical_connective r = formula
-    { op (l,r) }
-  | NOT f = formula
-    { Raw_Not f }
-  | f = simple_formula
-    { f }  
-
-simple_formula:
-  | q = quantified 
-    { q }
-  | t1 = term EQUAL t2 = term
-    { Raw_Equal (t1,t2) }
-  | t1 = term NOTEQUAL t2 = term
-    { Raw_Not_Equal (t1,t2) }
-  | LPAREN f = formula RPAREN
-    { f }
-
-quantified: 
-  | FORALL x = name COLON f = simple_formula
-    { Raw_Forall (x,f) }
-  | EXISTS x = name COLON f = simple_formula
-    { Raw_Exists (x,f) }
-
-
-%inline logical_connective:
-  | AND           { fun (a,b) -> Raw_And (a,b) }
-  | OR            { fun (a,b) -> Raw_Or (a,b) }
-  | IMPLICATION   { fun (a,b) -> Raw_Implication (a,b)}
+theory_entry:
+  | CONSTANT lst = nonempty_list(name)
+    { Constant lst }
+  | UNARY lst = nonempty_list(name_or_prefix)
+    { Unary lst }
+  | BINARY lst = nonempty_list(name_or_op)
+    { Binary lst }
+  | EQUATION n = statement_name e = equation
+    { Equation (n, e) }
+  | AXIOM n = statement_name a = formula
+    { Axiom (n, a) }
 
 name:
-  | ZERO      { "0" }
-  | ONE       { "1" }
-  | TWO       { "2" }
   | x = IDENT { x }
+
+statement_name:
+  | n = option (terminated (IDENT, COLON))
+    { n }
+
+name_or_prefix:
+  | n = name
+    { n }
+  | op = PREFIXOP
+    { op }
 
 name_or_op:
   | n = name
     { n }
   | op = binop
     { op }
-  | op = PREFIXOP
-    { op }
-
-op_declaration: op = name_or_op COLON k = arity
-  { (k, op) }
-
-arity:
-  | ZERO { Zero }
-  | ONE  { One }
-  | TWO  { Two }
 
 equation: t1 = term EQUAL t2 = term
   { (t1, t2) }
 
 term:
   | t1 = term op = binop t2 = term
-    { RawApply(op, [t1;t2]) }
+    { Apply(op, [t1;t2]) }
   | op = PREFIXOP t = simple_term
-    { RawApply(op, [t]) }
+    { Apply(op, [t]) }
   | t = simple_term
     { t}
 
 simple_term:
   | x = name
-    { RawVar x }
+    { Var x }
   | op = name LPAREN lst = args RPAREN
-    { RawApply (op, lst) }
+    { Apply (op, lst) }
   | LPAREN t = term RPAREN
     { t }
 
@@ -136,5 +100,43 @@ args:
     { [t] }
   | t = term COMMA ts = args
     { t :: ts }
+
+formula:
+  | FORALL xs = vars COMMA f = formula
+    { List.fold_right (fun x f -> Forall (x, f)) xs f }
+  | EXISTS xs = vars COMMA f = formula
+    { List.fold_right (fun x f -> Exists (x, f)) xs f }
+  | f = simple_formula
+    { f }
+
+vars:
+  | vs = nonempty_list(name)
+    { vs }
+
+simple_formula:
+  | f1 = simple_formula c = connective f2 = simple_formula
+    { c f1 f2 }
+  | NOT f = simple_formula
+    { Not f }
+  | f = atomic_formula
+    { f }
+
+atomic_formula:
+  | t1 = term EQUAL t2 = term
+    { Equal (t1, t2) }
+  | t1 = term NOTEQUAL t2 = term
+    { Not (Equal (t1, t2)) }
+  | TRUE
+    { True }
+  | FALSE
+    { False }
+  | LPAREN f = formula RPAREN
+    { f }
+
+%inline connective:
+  | AND     { fun a b -> And (a,b) }
+  | OR      { fun a b -> Or (a,b) }
+  | IMPLY   { fun a b -> Imply (a,b)}
+  | IFF     { fun a b -> Iff (a,b)}
 
 %%
