@@ -124,8 +124,7 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
       done in
 
     (* free fills the rest of the variables with all possible values *)
-    let rec
-        free cont term =
+    let rec free cont term =
       if !nfill = nvars then cont ()
       else begin
         match term with

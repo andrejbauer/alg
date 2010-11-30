@@ -1,15 +1,13 @@
-# The axioms for a group
-signature:
-        + : 2
-        ! : 1
-        0 : 0
+# The axioms for abelian group
+Constant 1.
+Unary inv.
+Binary *.
 
-axioms:
-        !0 = 0;
-        ! (! x) = x;
-        0 + x = x;
-        x + 0 = x;
-        x + !x = 0;
-        !x + x = 0;
-        (x + y) + z = x + (y + z);
-        x + y = y + x;
+Equation: 1 * x = x.
+Equation: x * 1 = x.
+Equation: inv(1) = 1.
+Equation: inv(inv(x)) = x.
+Equation: x * inv(x) = 1.
+Equation: inv(x) * x = 1.
+Equation: (x * y) * z = x * (y * z).
+Equation: x * y = y * x.

@@ -41,7 +41,7 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
       IMPORTANT: actions_from_unary and actions_from_binary assume that algebras
       are "synced".
     *)
-    let actions_from_unary (_, arr1) (_, arr2) =
+    let actions_from_unary arr1 arr2 =
       let stack = Stack.create () in
       let f i =
         if iso.(arr1.(i)) = -1 then
@@ -64,7 +64,7 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
           used.(arr2.(iso.(i))) <- false
         done in (f, undo) in
 
-    let actions_from_binary (_, arr1) (_, arr2) =
+    let actions_from_binary arr1 arr2 =
       let stack = Stack.create () in
       let f i =
         try
@@ -104,18 +104,19 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
           used.(b) <- false
         done in (f, undo) in
 
-    let (dos, undos) = List.split (List.map2 actions_from_unary u1 u2
-                                   @ List.map2 actions_from_binary b1 b2) in
+    let (dos, undos) = List.split (Util.array_map2_list actions_from_unary u1 u2
+                                   @ Util.array_map2_list actions_from_binary b1 b2) in
 
     (*
       End check when iso is full. Check that it really is an isomorphism.
       Constants need not be checked because they are set independently.
     *)
     let check () =
-      let check_op f a1 a2 =
-        for_all_pairs (fun ((_,i), (_,j)) -> f iso i j) a1 a2 in
-      if check_op check_unary u1 u2 && check_op check_binary b1 b2 then
-        raise Found in
+      let check_op f a1 a2 = Util.for_all_pairs (fun i j -> f iso i j) a1 a2
+      in
+        if check_op check_unary u1 u2 && check_op check_binary b1 b2 then
+          raise Found
+    in
 
     let rec gen_iso = function
       | i when i = n -> check ()

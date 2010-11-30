@@ -8,39 +8,38 @@ open First_order
 (* It is assumed that the two algebras correspond to the same signature. *)
 (* Note that this returns an algebra not in a form where supplied constants come before
    other elements. TODO: We cannot print this algebra correctly with current implementation of Print module. *)
-let product {size=n1; const=c1; unary=u1; binary=b1}
-            {size=n2; const=c2; unary=u2; binary=b2} =
+let product {alg_size=n1; alg_const=c1; alg_unary=u1; alg_binary=b1}
+            {alg_size=n2; alg_const=c2; alg_unary=u2; alg_binary=b2} =
+
   let size = n1 * n2 in
   let mapping i j = n2 * i + j in
-
   (* IMPORTANT: combine_unary and combine_binary assume that algebras are "synced". *)
-  let combine_unary ((op1, arr1), (op2, arr2)) =
+  let combine_unary arr1 arr2 =
     let arr = Array.make size 0 in
-    for k=0 to n1-1 do
-      for l=0 to n2-1 do
+    for k = 0 to n1 - 1 do
+      for l = 0 to n2 - 1 do
         arr.(mapping k l) <- mapping arr1.(k) arr2.(l)
       done
-    done ; (op1, arr) in
-
-
-  let combine_binary ((op1, arr1), (op2, arr2)) =
+    done ;
+    arr
+  in
+  let combine_binary arr1 arr2 =
     let arr = Array.make_matrix size size 0 in
-    for k=0 to n1-1 do
-      for l=0 to n2-1 do
-        for i=0 to n1-1 do
-          for j=0 to n2-1 do
+    for k = 0 to n1 - 1 do
+      for l = 0 to n2 - 1 do
+        for i = 0 to n1 - 1 do
+          for j = 0 to n2 - 1 do
             arr.(mapping k l).(mapping i j) <- mapping arr1.(k).(i) arr2.(l).(j)
           done
         done
       done
-    done ; (op1, arr) in
-
-  let const = map_combine (uncurry mapping) c1 c2 in
-
-  let unary = map_combine combine_unary u1 u2 in
-
-  let binary = map_combine combine_binary b1 b2 in
-  {size=size; const=const; unary=unary; binary=binary}
+    done ;
+    arr
+  in
+  let const = Util.array_map2 mapping c1 c2 in
+  let unary = Util.array_map2 combine_unary u1 u2 in
+  let binary = Util.array_map2 combine_binary b1 b2 in
+    {alg_size=size; alg_const=const; alg_unary=unary; alg_binary=binary}
 
 let factor n =
   let rec
@@ -51,7 +50,7 @@ let factor n =
   factor' [] 2
 
 let is_decomposable s a lst =
-  let factors = factor a.size in
+  let factors = factor a.alg_size in
   let exist_factors (k,l) =
     let ks = List.nth lst k in
     let ls = List.nth lst l in
@@ -93,7 +92,7 @@ let gen_decomposable theory n lst =
       let res = ref [] in (* Ugly, I know. *)
 
       let cont p = 
-        if check_formulas theory p then
+        if check_axioms theory p then
           res := p :: !res in
 
       List.iter (gen_product cont) (Util.partitions n) ; !res

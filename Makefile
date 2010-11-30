@@ -9,6 +9,8 @@ native:
 	$(OCAMLBUILD) $(TARGET).native
 profile:
 	$(OCAMLBUILD) $(TARGET).p.native
+debug:
+	$(OCAMLBUILD) -cflags -g $(TARGET).native
 
 conflicts:
 	menhir --explain parser.mly

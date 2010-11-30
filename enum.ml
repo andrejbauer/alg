@@ -95,13 +95,12 @@ let make_3d_array x y z initial =
 (*
   List of distinct variables of a term.
 *)
-let rec
-    eq_vars acc = function
-      | Const _ -> acc
-      | Var v -> if List.mem v acc then acc else (v :: acc)
-      | Binary (_,t1,t2) -> let lv = eq_vars acc t1 in
-                            eq_vars lv t2
-      | Unary (_,t) -> eq_vars acc t
+let rec eq_vars acc = function
+  | Const _ -> acc
+  | Var v -> if List.mem v acc then acc else (v :: acc)
+  | Binary (_,t1,t2) -> let lv = eq_vars acc t1 in
+      eq_vars lv t2
+  | Unary (_,t) -> eq_vars acc t
 
 (*
   List of distinct variables of an axiom.
@@ -132,11 +131,11 @@ let partition_amenable axioms =
    Enumerate all algebras of a given size for the given theory
    and pass them to the given continuation.
 *)
-let enum n {signature={sig_const=const; sig_unary=unary; sig_binary=binary}; axioms=axioms} k =
+let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axioms} k =
 
-  let lc = List.length const in
-  let lu = List.length unary in
-  let lb = List.length binary in
+  let lc = Array.length const in
+  let lu = Array.length unary in
+  let lb = Array.length binary in
 
   (* Auxiliary variables for generation of unary operations. *)
   (* ******************************************************* *)

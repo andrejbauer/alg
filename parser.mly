@@ -38,17 +38,13 @@ theory_entry:
     { Unary lst }
   | BINARY lst = nonempty_list(name_or_op)
     { Binary lst }
-  | EQUATION n = statement_name e = equation
+  | EQUATION n = option(IDENT) COLON e = equation
     { Equation (n, e) }
-  | AXIOM n = statement_name a = formula
+  | AXIOM n = option(IDENT) COLON a = formula
     { Axiom (n, a) }
 
 name:
   | x = IDENT { x }
-
-statement_name:
-  | n = option (terminated (IDENT, COLON))
-    { n }
 
 name_or_prefix:
   | n = name

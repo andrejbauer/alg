@@ -22,6 +22,22 @@ let rec filter_map f = function
         | Some y -> y :: filter_map f xs
       end
 
+(* Lists as sets. *)
+let rec union lst1 lst2 =
+  match lst1, lst2 with
+    | [], lst2 -> lst2
+    | lst1, [] -> lst1
+    | x::xs, ys ->
+        if List.mem x ys
+        then union xs ys
+        else x :: union xs ys
+
+let rec remove x = function
+  | [] -> []
+  | y::ys ->
+      if x = y then ys
+      else y :: remove x ys
+
 (* Missing array functions. *)
 let array_for_all p a =
   let n = Array.length a in
@@ -44,6 +60,29 @@ let matrix_copy a =
 
 let array3d_copy a =
   Array.init (Array.length a) (fun k -> matrix_copy a.(k))
+
+let array_map2 f a1 a2 =
+  let n = Array.length a1 in
+    if n <> Array.length a2
+    then failwith "array_map2: invald argument"
+    else
+      Array.init n (fun i -> f a1.(i) a2.(i))
+
+let array_map2_list f a1 a2 =
+  let n = Array.length a1 in
+    if n <> Array.length a2
+    then failwith "array_map2: invald argument"
+    else
+      let lst = ref [] in
+        for i = 0 to n-1 do
+          lst := f a1.(i) a2.(i) :: !lst
+        done ;
+        List.rev !lst
+
+let rec array_iter2 f arr1 arr2 =
+  for i = 0 to Array.length arr1 - 1 do
+    f arr1.(i) arr2.(i)
+  done
 
 (* Missing list functions. *)
 let enumFromTo s e =
@@ -264,7 +303,7 @@ let print_matrix m = Array.iter print_arr m
 (* Auxiliary functions. *)
 
 (* Enumerate a list *)
-let enum lst = snd (List.fold_left (fun (k,lst) c -> (k+1, (k,c)::lst)) (0,[]) lst)
+let enum lst = List.fold_left (fun (k,lst) c -> (k+1, (c,k)::lst)) (0,[]) lst
 
 (* Invert assoc list. *)
 let invert xs = List.map (fun (a,b) -> (b,a)) xs
@@ -288,19 +327,20 @@ let exists f i j =
 (* Dual to for_all2 *)
 let exists2 f i j k l = exists (fun x -> exists (f x) k l) i j
 
-(* Equivalent to List.for_all f (List.combine xs ys) *)
-let for_all_pairs f =
-  let rec for_all_pairs' xs ys = 
-    match (xs,ys) with
-      | ([],_) | (_,[]) -> true
-      | (x::xs', y::ys') -> 
-        f (x,y) && for_all_pairs' xs' ys'
-  in for_all_pairs' 
 
-let rec array_iter2 f arr1 arr2 =
-  for i = 0 to Array.length arr1 do
-    f arr1.(i) arr2.(i)
-  done
+(* Equivalent to List.for_all f (List.combine xs ys) but works with arrays *)
+let for_all_pairs f xs ys =
+  let n = Array.length xs in
+    if n <> Array.length ys then
+      failwith "for_all_pairs: invalid arguments"
+    else 
+      let b = ref true in
+      let i = ref 0 in
+        while !b && !i < n do
+          b := f xs.(!i) ys.(!i) ;
+          incr i
+        done ;
+        ! b
 
 (* Return all partitions of n into a product of at least two non decreasing numbers. *)
 let partitions n = 

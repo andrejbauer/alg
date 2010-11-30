@@ -6,7 +6,7 @@
 let ident = ['_' 'a'-'z' 'A'-'Z' '0'-'9']+ '\''*
 
 let symbolchar = ['!' '$' '%' '&' '*' '+' '-' '/' '\\' ':' '<' '=' '>' '?' '@' '^' '|' '~']
-let prefixop = ['?' '!']      symbolchar*
+let prefixop = ['?' '!'] symbolchar* | '~'  symbolchar+
 let infixop0 = ['|' '&' '$']  symbolchar*
 let infixop1 = ['@' '^']      symbolchar*
 let infixop2 = ['+' '-' '\\'] symbolchar*
@@ -25,12 +25,14 @@ rule token = parse
   | "Axiom"             { AXIOM }
   | "forall"            { FORALL }
   | "exists"            { EXISTS }
-  | "True"              { True }
-  | "False"             { False }
+  | "True"              { TRUE }
+  | "False"             { FALSE }
   | "/\\"               { AND }
   | "\\/"               { OR }
   | "->"                { IMPLY }
   | "<->"               { IFF }
+  | "=>"                { IMPLY }
+  | "<=>"               { IFF }
   | "<>"                { NOTEQUAL }
   | "!="                { NOTEQUAL }
   | "~"                 { NOT }

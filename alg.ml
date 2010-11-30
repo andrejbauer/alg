@@ -1,13 +1,6 @@
 open Type
 
-open Iso
-
-open Indecomposable
-
-open First_order
-
-open Util
-
+(* References that store the command-line options *)
 let size = ref 3
 let indecomposable = ref false
 let count_only = ref false
@@ -42,7 +35,6 @@ Arg.parse options
        | Some _ -> raise (Arg.Bad " only one theory file should be given"))
   usage ;;
 
-
 try
   let fh =
     begin match !file with
@@ -50,28 +42,35 @@ try
       | Some f -> open_in f
     end in
   let lex = Lexing.from_channel fh in
-  let raw_theory = Parser.theory Lexer.token lex in
+  let raw_theory =
+    begin
+      try
+        Parser.theory Lexer.token lex
+      with
+        | Parser.Error ->
+            Error.syntax ~pos:(Lexing.lexeme_start_p lex, Lexing.lexeme_end_p lex) ""
+        | Failure "lexing: empty token" ->
+            Error.syntax ~pos:(Lexing.lexeme_start_p lex, Lexing.lexeme_end_p lex) "Unrecognised symbol."
+    end
+  in
     close_in fh ;
     let theory = Cook.cook_theory raw_theory in
     let k = ref 0 in
     let unique = ref [] in
-    let names = Print.names !size theory.signature in
-    if !size < List.length (theory.signature.sig_const) then
+    let names = Print.names !size theory in
+    if !size < Array.length theory.th_const then
       Error.fatal "There are more constants than the required size of the models."
     else 
       begin
         if not !indecomposable then
           begin
             let cont a =
-              if not (seen theory.signature a !unique) && check_formulas theory a then
+              if not (Iso.seen theory a !unique) && First_order.check_axioms theory a then
                 begin
                   incr k;
-                  unique := (copy_algebra a) :: !unique ;
+                  unique := (Util.copy_algebra a) :: !unique ;
                   if not !count_only then
-                    Print.algebra names
-                      (Util.invert (Util.enum_ops theory.signature.sig_unary))
-                      (Util.invert (Util.enum_ops theory.signature.sig_binary))
-                      a
+                    Print.algebra names theory a
                 end
             in
             Enum.enum !size theory cont ;
@@ -81,12 +80,12 @@ try
           (* TODO: We don't necessarily have products. *)
           begin
             let indecomposable = ref 0 in
-            let start = List.length theory.signature.sig_const in
+            let start = Array.length theory.th_const in
             let cont a =
-              if not (seen theory.signature a !unique) && check_formulas theory a then
+              if not (Iso.seen theory a !unique) && First_order.check_axioms theory a then
                 begin
-                  let aa = copy_algebra a in
-                  unique := aa :: !unique ;
+                  let a' = Util.copy_algebra a in
+                  unique := a' :: !unique ;
                   incr indecomposable
                 end in
             let rec
@@ -94,27 +93,24 @@ try
                   | k when 2 * k > !size -> acc
                   | k ->
                     begin
-                      unique := gen_decomposable theory k acc ;
+                      unique := Indecomposable.gen_decomposable theory k acc ;
                       indecomposable := 0 ;
                       Enum.enum k theory cont ;
                       gen_smaller (Util.rev_take !indecomposable !unique :: acc) (k+1)
                     end in
 
             (* There are no algebras with strictly less elements than there are constants. *)
-            let indecomposable_by_size = List.rev (gen_smaller (replicate start []) start) in
+            let indecomposable_by_size = List.rev (gen_smaller (Util.replicate start []) start) in
 
-            unique := gen_decomposable theory !size indecomposable_by_size ;
+            unique := Indecomposable.gen_decomposable theory !size indecomposable_by_size ;
 
             let cont a =
-              if not (seen theory.signature a !unique) && check_formulas theory a then
+              if not (Iso.seen theory a !unique) && First_order.check_axioms theory a then
                 begin
                   incr k;
-                  unique := (copy_algebra a) :: !unique ;
+                  unique := (Util.copy_algebra a) :: !unique ;
                   if not !count_only then
-                    Print.algebra names
-                      (Util.invert (Util.enum_ops theory.signature.sig_unary))
-                      (Util.invert (Util.enum_ops theory.signature.sig_binary))
-                      a
+                    Print.algebra names theory a
                 end
             in
             Enum.enum !size theory cont ;
@@ -122,5 +118,6 @@ try
           end
       end
 with
-    Error.Error (pos, err, msg) -> print_endline (err ^ " error: " ^ msg)
-
+    Error.Error (pos, err, msg) ->
+      Format.eprintf "%s error: %s %t@." err msg (Error.position pos);
+      exit 1

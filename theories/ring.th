@@ -1,20 +1,18 @@
 # The axioms for a ring
-signature:
-        n : 2 #mult
-        m : 2 #add
-        i : 1 #additive inverse
-        0 : 0 #additive unit
 
-axioms:
-        i(0) = 0;
-        i(i(x)) = x;
-        m(x,i(x)) = 0;
-        m(i(x),x) = 0;
-        m(0,x) = x;
-        m(x,0) = x;
-        m(x,m(y,z)) = m(m(x,y),z);
-        m(x,y) = m(y,x);
-        
-        n(x,n(y,z)) = n(n(x,y),z);
-        n(m(x,y),z) = m(n(x,z),n(y,z));
-        n(x,m(y,z)) = m(n(x,y),n(x,z));
+Constant 0.
+Unary neg.
+Binary + *.
+
+Axiom plus_commutative: x + y = y + x.
+Axiom plus_associative: (x + y) + z = x + (y + z).
+Axiom zero_neutral_left: 0 + x = x.
+Axiom zero_neutral_right: x + 0 = x.
+Axiom negative_inverse: x + neg(x) = 0.
+Axiom negative_inverse: neg(x) + x = 0.
+Axiom zero_inverse: neg(0) = 0.
+Axiom inverse_involution: neg(neg(x)) = x.
+
+Axiom mult_associative: (x * y) * z = x * (y * z).
+Axiom distrutivity_right: (x + y) * z = x * z + y * z.
+Axiom distributivity_left: x * (y + z) = x * y + x * z.

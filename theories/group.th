@@ -1,14 +1,13 @@
 # The axioms for a group
-signature:
-        * : 2
-        i : 1
-        1 : 0
 
-axioms:
-        i(1) = 1;                
-        i(i(x)) = x;
-        1 * x = x;
-        x * 1 = x;
-        x * i(x) = 1;
-        i(x) * x = 1;
-        (x * y) * z = x * (y * z);
+Constant 1.
+Unary inv.
+Binary *.
+
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: inv(1) = 1.
+Axiom: inv(inv(x)) = x.
+Axiom: x * inv(x) = 1.
+Axiom: inv(x) * x = 1.
+Axiom: (x * y) * z = x * (y * z).

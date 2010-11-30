@@ -1,4 +1,4 @@
-# The axioms for a (possibly non-commutative) field.
+# The axioms for a unital ring
 
 Constant 0 1.
 Unary neg.
@@ -23,5 +23,3 @@ Axiom inverse_involution: neg(neg(x)) = x.
 Axiom mult_zero_left: 0 * x = 0.
 Axiom mult_zero_right: x * 0 = 0.
 
-# The field axiom.
-Axiom field: forall x, x <> 0 -> (exists y, x * y = 1 /\ y * x = 1).
