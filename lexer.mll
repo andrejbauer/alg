@@ -17,6 +17,7 @@ rule token = parse
   | '#' [^'\n']* '\n'   { new_line lexbuf; token lexbuf }
   | '\n'                { new_line lexbuf; token lexbuf }
   | [' ' '\t']          { token lexbuf }
+  | "Theory"            { THEORY }
   | "Constants"         { CONSTANT }
   | "Constant"          { CONSTANT }
   | "Unary"             { UNARY }

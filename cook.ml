@@ -134,12 +134,13 @@ let split_entries lst =
     (empty_env, [], [])
     lst
 
-let cook_theory lst =
+let cook_theory th_name lst =
   let (env, eqs, axs) = split_entries lst in
     match Util.find_duplicate (List.map fst (env.const @ env.unary @ env.binary)) with
       | Some op -> Error.fatal "operation %s is declared more than once" op
       | None -> 
           {
+            T.th_name = th_name;
             T.th_const = Array.of_list (List.map fst env.const);
             T.th_unary = Array.of_list (List.map fst env.unary);
             T.th_binary = Array.of_list (List.map fst env.binary);

@@ -1,30 +1,31 @@
 # The theory of an involutive unital quantale
-signature:
-   1 : 0 # one
-   0 : 0 # bottom
-   i : 1 # involution
-   | : 2 # join
-   & : 2 # tensor
+Constant 1. # one
+Constant 0. # bottom
+Unary i.    # involution
+Binary |.   # join
+Binary &.   # tensor
 
-axioms:
-   ### 0 and | form a semilattice
-   0 | x = x;
-   x | 0 = x;
-   x | y = y | x;
-   x | (y | z) = (x | y) | z;
-   x | x = x;
-   ### 1 and & form a monoid
-   1 & x = x;
-   x & 1 = x;
-   x & (y & z) = (x & y) & z;
-   ### & and |
-   x & 0 = 0;
-   0 & x = 0;
-   x & (y | z) = (x & y) | (x & z);
-   (x | y) & z = (x & z) | (y & z);
-   ### involution
-   i(i(x)) = x;
-   i(x & y) = i(y) & i(x);
-   i(x | y) = i(x) | i(y);
-   i(1) = 1;
-   i(0) = 0;
+### 0 and | form a semilattice
+Axiom: 0 | x = x.
+Axiom: x | 0 = x.
+Axiom: x | y = y | x.
+Axiom: x | (y | z) = (x | y) | z.
+Axiom: x | x = x.
+
+### 1 and & form a monoid
+Axiom: 1 & x = x.
+Axiom: x & 1 = x.
+Axiom: x & (y & z) = (x & y) & z.
+
+### & and |
+Axiom: x & 0 = 0.
+Axiom: 0 & x = 0.
+Axiom: x & (y | z) = (x & y) | (x & z).
+Axiom: (x | y) & z = (x & z) | (y & z).
+
+### involution
+Axiom: i(i(x)) = x.
+Axiom: i(x & y) = i(y) & i(x).
+Axiom: i(x | y) = i(x) | i(y).
+Axiom: i(1) = 1.
+Axiom: i(0) = 0.

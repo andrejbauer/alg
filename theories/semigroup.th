@@ -1,6 +1,3 @@
 # Semigroup
-signature:
-   * : 2
-
-axioms:
-   x * (y * z) = (x * y) * z;
+Binary *.
+Axiom: x * (y * z) = (x * y) * z.

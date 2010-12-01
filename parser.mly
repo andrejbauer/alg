@@ -2,6 +2,7 @@
   open Syntax
 %}
 
+%token THEORY
 %token CONSTANT UNARY BINARY
 %token EQUATION AXIOM
 %token <string> IDENT
@@ -28,8 +29,12 @@
 
 %%
 
-theory: t = list(terminated(theory_entry, DOT)) EOF
-  { t }
+theory: n = option(theory_name) t = list(terminated(theory_entry, DOT)) EOF
+  { (n, t) }
+
+theory_name:
+  | THEORY n = IDENT DOT
+    { n }
 
 theory_entry:
   | CONSTANT lst = nonempty_list(name)

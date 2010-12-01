@@ -28,7 +28,9 @@ type theory_entry =
   | Equation of string option * equation
   | Axiom of string option * formula
 
-type theory = theory_entry list
+type theory_name = string
+
+type theory = theory_name option * theory_entry list
 
 (* [as_equation f] tries to convert an axiom to an equation. *)
 let rec as_equation = function

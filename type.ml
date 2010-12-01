@@ -34,6 +34,7 @@ type formula' =
 and formula = int array * formula'
 
 type theory = {
+  th_name : string;
   th_const : operation_name array;
   th_unary : operation_name array;
   th_binary : operation_name array;

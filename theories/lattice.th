@@ -1,18 +1,18 @@
-# The theory of a lattice
-signature:
-   & : 2 # binary meet
-   | : 2 # binary join
+# The theory of a lattice. This theory is inefficient because it does not take into account
+# the fact that in a finite lattice there are always the bottom and top elements. See bounded_lattice instead.
+Binary & |.
 
-axioms:
-   # properties of meet
-   x & x = x;
-   x & y = y & x;
-   x & (y & z) = (x & y) & z;
-   # properties of join
-   x | x = x;
-   x | y = y | x;
-   x | (y | z) = (x | y) | z;
-   # absorption laws
-   x & (x | y) = x;
-   x | (x & y) = x;
+# properties of meet
+Axiom: x & x = x.
+Axiom: x & y = y & x.
+Axiom: x & (y & z) = (x & y) & z.
+
+# properties of join
+Axiom: x | x = x.
+Axiom: x | y = y | x.
+Axiom: x | (y | z) = (x | y) | z.
+
+# absorption laws
+Axiom: x & (x | y) = x.
+Axiom: x | (x & y) = x.
 

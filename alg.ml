@@ -36,13 +36,13 @@ Arg.parse options
   usage ;;
 
 try
-  let fh =
+  let file_name, fh =
     begin match !file with
       | None -> Error.fatal "please provide a theory file on the command line"
-      | Some f -> open_in f
+      | Some f -> f, open_in f
     end in
   let lex = Lexing.from_channel fh in
-  let raw_theory =
+  let theory_name, raw_theory =
     begin
       try
         Parser.theory Lexer.token lex
@@ -54,11 +54,22 @@ try
     end
   in
     close_in fh ;
-    let theory = Cook.cook_theory raw_theory in
+    let theory_name =
+      begin match theory_name with
+        | Some n -> n
+        | None ->
+            begin
+              let n = Filename.basename file_name in
+                try String.sub n 0 (String.index n '.') with Not_found -> n
+            end
+      end
+    in
+    let theory = Cook.cook_theory theory_name raw_theory in
     let k = ref 0 in
     let unique = ref [] in
     let names = Print.names !size theory in
     if !size < Array.length theory.th_const then
+      (* TODO: Should just report 0 models. This is not really an error. *)
       Error.fatal "There are more constants than the required size of the models."
     else 
       begin
@@ -70,11 +81,11 @@ try
                   incr k;
                   unique := (Util.copy_algebra a) :: !unique ;
                   if not !count_only then
-                    Print.algebra names theory a
+                    Print.algebra names !k theory a
                 end
             in
-            Enum.enum !size theory cont ;
-            print_endline ("\nTotal count: " ^ string_of_int !k)
+              Enum.enum !size theory cont ;
+              Printf.printf "The number of models of theory %s of size %d is %d.\n" theory.th_name !size !k
           end
         else (* Indecomposable only. *)
           (* TODO: We don't necessarily have products. *)
@@ -99,7 +110,7 @@ try
                       gen_smaller (Util.rev_take !indecomposable !unique :: acc) (k+1)
                     end in
 
-            (* There are no algebras with strictly less elements than there are constants. *)
+            (* There are no algebras with strictly fewer elements than there are constants. *)
             let indecomposable_by_size = List.rev (gen_smaller (Util.replicate start []) start) in
 
             unique := Indecomposable.gen_decomposable theory !size indecomposable_by_size ;
@@ -110,11 +121,11 @@ try
                   incr k;
                   unique := (Util.copy_algebra a) :: !unique ;
                   if not !count_only then
-                    Print.algebra names theory a
+                    Print.algebra names !k theory a
                 end
             in
-            Enum.enum !size theory cont ;
-            print_endline ("\nTotal count: " ^ string_of_int !k)
+              Enum.enum !size theory cont ;
+              Printf.printf "The number of models of theory %s of size %d is %d.\n" theory.th_name !size !k
           end
       end
 with

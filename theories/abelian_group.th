@@ -1,4 +1,4 @@
-# The axioms for abelian group
+Theory abelian_group.
 Constant 1.
 Unary inv.
 Binary *.

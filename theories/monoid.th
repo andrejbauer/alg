@@ -1,9 +1,6 @@
 # Monoids
-signature:
-   1 : 0
-   * : 2
-
-axioms:
-        1 * x = x;
-        x * 1 = x;
-        x * (y * z) = (x * y) * z;
+Constant 1.
+Binary *.
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: x * (y * z) = (x * y) * z.
