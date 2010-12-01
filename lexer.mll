@@ -36,7 +36,6 @@ rule token = parse
   | "<=>"               { IFF }
   | "<>"                { NOTEQUAL }
   | "!="                { NOTEQUAL }
-  | "~"                 { NOT }
   | "not"               { NOT }
   | "."                 { DOT }
 

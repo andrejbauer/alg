@@ -242,8 +242,8 @@ Note that a Windows precompiled executable may be available at
   \url{http://hg.andrej.com/alg/tip/precompiled/}
 \end{quote}
 
-\chapter{Input Files}
-\label{sec:input-files}
+\chapter{Input}
+\label{sec:input}
 
 An alg input file has extension \texttt{.th} and it describes an
 algebraic theory. The syntax vaguely follows the syntax of the Coq
@@ -257,28 +257,29 @@ Unary inv.
 Binary *.
 Axiom unit_left: 1 * x = x.
 Axiom unit_right: x * 1 = x.
-Axiom: inv(1) = 1.
-Axiom: inv(inv(x)) = x.
 Axiom inverse_left: x * inv(x) = 1.
 Axiom inverse_right: inv(x) * x = 1.
 Axiom associativity: (x * y) * z = x * (y * z).
 \end{alg}
 %
-The precise syntax rules are as follows.
+There is an optional \texttt{Theory} declaration which names the
+theory, then we have declarations of constants, unary and binary
+operations, and after that there are the axioms. The precise
+syntax rules are as follows.
 
-\paragraph{Comments.}
+\section{Comments}
 
 Comments are written as in Python, i.e., a comment begins with the
 \texttt{\#} symbol and includes everything up to the end of line.
 
-\paragraph{General syntactic rules.}
+\section{General syntactic rules}
 
 An alg input file consists of a sequence of declarations
 (\texttt{Theory}, \texttt{Constant}, \texttt{Unary}, \texttt{Binary})
 and axioms (\texttt{Axiom}, \texttt{Equation}). Each declaration and
 axiom is terminated with a period.
 
-\paragraph{The \texttt{Theory} keyword.}
+\section{The \texttt{Theory} keyword}
 
 You may give a name to your theory with the declaration
 %
@@ -291,7 +292,7 @@ comments and whitespace. The theory name consists of letters, numbers,
 and the underscore. If you do not provide a theory name, alg will
 deduce one from the file name.
 
-\paragraph{Declaration of operations.}
+\section{Declaration of operations}
 
 The declarations
 %
@@ -331,13 +332,41 @@ operator is a string of symbols
 where:
 %
 \begin{itemize}
-\item a string beginning with \texttt{\$}, \texttt{!} or
-  \texttt{\char126} is a \emph{prefix} operator. Note that
-  \texttt{\char126} is reserved for negation.
+\item a \emph{prefix operator} is one that starts with \texttt{?},
+  \texttt{!} or \texttt{\char126}. It can be used as a unary operation.
+\item \emph{infix operators} can be used as binary operations and have
+  four levels of precedence, listed from lowest to highest:
+  \begin{itemize}
+    \item left-associative operators starting with \texttt{|}, \texttt{\&}, \texttt{\$}
+    \item right-associative operators starting with \texttt{@} and \texttt{\^}
+    \item left-associative operators starting with \texttt{+}, \texttt{-},
+      and \texttt{\char92}
+    \item left-associative operators starting with \textt{*}, \texttt{/}, and \texttt{\%} 
+    \item right-associative operators starting with \textt{**}.
+  \end{itemize}
+  %
+  An operator $\circ$ is \emph{left-associative} if $x \circ y \circ
+  z$ is understood as $(x \circ y) \circ z$, and
+  \emph{right-associative} if $x \circ y \circ z$ is understood as $x
+  \circ (y \circ z)$. If you look at the above list again, you will
+  notice that operators have the expected precedence and
+  associativity. However, if you are unsure about precedence, it is
+  best to use a couple of extra parentheses.
 \end{itemize}
 
+\section{Axioms}
 
-\chapter{Output Files}
+An axiom has one of the following forms:
+%
+\begin{alg}
+Axiom /@<name>@/: /@<formula>@/.
+Axiom: /@<formula>@/.
+Equation /@<name>@/: /@<equation>@/.
+Equation: /@<equation>@/.
+\end{alg}
+
+
+\chapter{Output}
 \label{sec:output-files}
 
 \chapter{Command-line Options}
@@ -345,5 +374,8 @@ where:
 
 \chapter{Optimization}
 \label{sec:optimization}
+
+\chapter{Examples}
+\label{sec:examples}
 
 \end{document}
