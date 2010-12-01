@@ -1,6 +1,7 @@
-\documentclass{article}
+\documentclass{report}
 
 \usepackage{listings}
+\usepackage{minitoc}
 
 \lstnewenvironment{shell}{\lstset{%
 moredelim=*[is][\itshape]{/@}{@/},
@@ -20,27 +21,33 @@ Faculty of Mathematics and Physics\\
 University of Ljubljana}
 \maketitle
 
-\section{Introduction}
+\dominitoc
+\tableofcontents
+
+\chapter{Introduction}
 \label{sec:introduction}
 
 Alg is a program for enumeration of finite models of algebraic
 theories. An algebraic theory is given by a signature (a list of
-constants and operations) and axioms expressed in first-order logic.
-Alg can do the following:
+constants and operations) and axioms expressed in first-order
+logic.\footnote{Strictly speaking, the axioms of an algebraic theory
+  must be equations, but alg can handle all of first-order logic.}
+Examples of algebraic theories include groups, lattices, rings,
+fields, and many others. Alg can do the following:
 %
-\begin{enumerate}
+\begin{itemize}
 \item list or count all non-isomorphic models of a given theory,
 \item list or count all non-isomorphic indecomposable\footnote{A model
   is indecomposable if it cannot be written as a non-trivial product
   of two smaller models.} models of a given theory.
-\end{enumerate}
+\end{itemize}
 %
 Currently alg has the following limitations:
 %
-\begin{enumerate}
+\begin{itemize}
 \item only unary and binary operations are accepted,
 \item it is assumed that constants denote pairwise distinct elements.
-\end{enumerate}
+\end{itemize}
 %
 This manual describes how to install and use alg. For a quick start
 you need Ocaml 3.12 or higher. Compile alg with
@@ -57,11 +64,51 @@ and run
 %
 For usage information type \texttt{./alg.native -help} and for
 examples of theories see the \texttt{theories} subdirectory.
+%
 
-\section{Installation}
+\chapter{Copyright and License}
+\label{cha:copyr-license}
+
+\noindent
+Copyright {\copyright} 2010, Ale\v{s} Bizjak and Andrej Bauer
+
+\bigskip
+
+\noindent
+All rights reserved.
+
+\bigskip
+
+\noindent
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+%
+\begin{itemize}
+\item Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+\item Redistributions in binary form must reproduce the above
+  copyright notice, this list of conditions and the following
+  disclaimer in the documentation and/or other materials provided with
+  the distribution.
+\end{itemize}
+
+This software is provided by the copyright holders and contributors
+``as is'' and any express or implied warranties, including, but not
+limited to, the implied warranties of merchantability and fitness for
+a particular purpose are disclaimed. In no event shall the copyright
+holder or contributors be liable for any direct, indirect, incidental,
+special, exemplary, or consequential damages (including, but not
+limited to, procurement of substitute goods or services; loss of use,
+data, or profits; or business interruption) however caused and on any
+theory of liability, whether in contract, strict liability, or tort
+(including negligence or otherwise) arising in any way out of the use
+of this software, even if advised of the possibility of such damage.
+
+\chapter{Installation}
 \label{sec:installation}
 
-\subsection{How to obtain alg}
+\section{Downloading alg}
 \label{sec:how-obtain-alg}
 
 Alg is available at \texttt{http://hg.andrej.com/alg/}. You have three
@@ -69,30 +116,33 @@ options:
 %
 \begin{enumerate}
 \item download the ZIP file with source code from
-  \texttt{http://hg.andrej.com/alg/archive/tip.zip}
+  \begin{quote}
+    \texttt{http://hg.andrej.com/alg/archive/tip.zip}
+  \end{quote}
 \item clone the repository with the Mercurial revision control system:
 %
 \begin{shell}
 hg clone http://hg.andrej.com/alg/
 \end{shell}
-
+\item download a precompiled executable for your architecture from
+  \begin{quote}
+    \texttt{http://hg.andrej.com/alg/file/tip/precompiled}
+  \end{quote}
+  %
+  if one is available. If you choose this option, make sure that you
+  still obtain the ZIP file because the \texttt{theories} subdirectory
+  contains a number of useful examples.
 \end{enumerate}
 
-%
-A precompiled executable may be available for your architecture in the
-\texttt{precompiled} subdirectory. Visit
-
-
-
-\subsection{Compilation and Installation for Linux and MacOS}
+\section{Installation for Linux and MacOS}
 \label{sec:comp-under-linux}
 
 To compile alg you need the Make utility and Ocaml 3.12 or
 higher.\footnote{Ocaml is available from \texttt{http://www.ocaml.org/}.}
 Just type \texttt{make} at the command line. If all goes well
-Ocamlbuild will generate a subdirectory \texttt{_build} and in it the
+Ocamlbuild will generate a subdirectory \texttt{\_build} and in it the
 \texttt{alg.native} executable. It will also create a link to
-\texttt{_build/alg.native} from the top directory. To test alg type
+\texttt{\_build/alg.native} from the top directory. To test alg type
 %
 \begin{shell}
 ./alg.native --count --size 8 theories/group.th
@@ -108,8 +158,24 @@ set the directory in which alg should be installed, then run
 sudo make install
 \end{shell}
 %
-This will simply copy \texttt{_build/alg.native} to
+This will simply copy \texttt{\_build/alg.native} to
 \texttt{\$(INSTALL\_DIR)/alg}. You may also wish to stash the
 \texttt{theories} subdirectory somewhere for future reference.
+
+\section{Installation for Microsoft Windows}
+\label{sec:comp-inst-micr}
+
+Sorry, this has not been written yet. But if you have Make and Ocaml
+3.12 or alter, you should be able to just follow the instructions for
+Linux.
+
+\chapter{The Format of Input Files}
+\label{sec:input-files}
+
+\chapter{Command-line Options}
+\label{sec:command-line-options}
+
+\chapter{Optimization}
+\label{sec:optimization}
 
 \end{document}
