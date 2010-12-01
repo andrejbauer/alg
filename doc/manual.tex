@@ -1,11 +1,17 @@
 \documentclass{report}
 
+\usepackage{url}
 \usepackage{listings}
 \usepackage{minitoc}
 
 \lstnewenvironment{shell}{\lstset{%
 moredelim=*[is][\itshape]{/@}{@/},
 numbers=none,xleftmargin=2em,basicstyle=\ttfamily\small}}{}
+
+\lstnewenvironment{alg}{\lstset{%
+moredelim=*[is][\itshape]{/@}{@/},
+numbers=none,mathescape=true,
+xleftmargin=2em,basicstyle=\ttfamily\small}}{}
 
 
 \begin{document}
@@ -50,7 +56,8 @@ Currently alg has the following limitations:
 \end{itemize}
 %
 This manual describes how to install and use alg. For a quick start
-you need Ocaml 3.12 or higher. Compile alg with
+you need Ocaml 3.11 or newer and the menhir parser generator. Compile
+alg with
 %
 \begin{shell}
 make
@@ -66,7 +73,7 @@ For usage information type \texttt{./alg.native -help} and for
 examples of theories see the \texttt{theories} subdirectory.
 
 Alg is released under the open source simplified BSD License, as
-detailed in the next section.
+detailed in the next chapter.
 
 \chapter{Copyright and License}
 \label{cha:copyr-license}
@@ -113,13 +120,13 @@ of this software, even if advised of the possibility of such damage.
 \section{Downloading alg}
 \label{sec:how-obtain-alg}
 
-Alg is available at \texttt{http://hg.andrej.com/alg/}. You have three
+Alg is available at \url{http://hg.andrej.com/alg/}. You have three
 options:
 %
 \begin{enumerate}
 \item download the ZIP file with source code from
   \begin{quote}
-    \texttt{http://hg.andrej.com/alg/archive/tip.zip}
+    \url{http://hg.andrej.com/alg/archive/tip.zip}
   \end{quote}
 \item clone the repository with the Mercurial revision control system:
 %
@@ -128,7 +135,7 @@ hg clone http://hg.andrej.com/alg/
 \end{shell}
 \item download a precompiled executable for your architecture from
   \begin{quote}
-    \texttt{http://hg.andrej.com/alg/file/tip/precompiled}
+    \url{http://hg.andrej.com/alg/file/tip/precompiled}
   \end{quote}
   %
   if one is available. If you choose this option, make sure that you
@@ -139,11 +146,46 @@ hg clone http://hg.andrej.com/alg/
 \section{Installation for Linux and MacOS}
 \label{sec:comp-under-linux}
 
-To compile alg you need the Make utility and Ocaml 3.12 or
-higher.\footnote{Ocaml is available from \texttt{http://www.ocaml.org/}.}
-Just type \texttt{make} at the command line. If all goes well
-Ocamlbuild will generate a subdirectory \texttt{\_build} and in it the
-\texttt{alg.native} executable. It will also create a link to
+\subsection{Prerequisites}
+
+To compile alg you need the Make utility, Ocaml 3.11 or newer, and the
+menhir parser generator higher. We will assume you have Make. You can
+get Ocaml and menhir in several ways:
+%
+\begin{enumerate}
+\item On Ubuntu, install the packages \texttt{ocaml} and
+  \texttt{menhir}:
+  %
+\begin{shell}
+sudo apt-get install ocaml menhir    
+\end{shell}
+  Similar solutions are available on other Linux distributions.
+\item On MacOS the easiest way to install Ocaml and menhir is with
+  the macports utility:
+\begin{shell}
+sudo port install ocaml
+sudo port install caml-menhir
+\end{shell}
+\item If you have GODI installed then you already have Ocaml. Install
+  menhir with the \texttt{godi\_console} command, if you do not have it yet.
+\item Ocaml is also available from
+  %
+  \begin{quote}
+    \url{http://caml.inria.fr/}
+  \end{quote}
+  %
+  and menhir from
+  %
+  \begin{quote}
+    \url{http://pauillac.inria.fr/~fpottier/menhir/}
+  \end{quote}
+\end{enumerate}
+
+\subsection{Compiling to native code}
+
+To compile alg, type \texttt{make} at the command line. If all goes
+well ocamlbuild will generate a subdirectory \texttt{\_build} and in
+it the \texttt{alg.native} executable. It will also create a link to
 \texttt{\_build/alg.native} from the top directory. To test alg type
 %
 \begin{shell}
@@ -164,15 +206,139 @@ This will simply copy \texttt{\_build/alg.native} to
 \texttt{\$(INSTALL\_DIR)/alg}. You may also wish to stash the
 \texttt{theories} subdirectory somewhere for future reference.
 
+\subsection{Compiling to bytecode}
+
+If your version of Ocaml does not compile to native code you can try
+compiling to bytecode with
+%
+\begin{shell}
+make byte
+\end{shell}
+%
+This will generate a (significantly slower) \texttt{alg.byte} executable.
+
+\subsection{Installation without Make}
+
+If you do not have the Make utility (how can that be?) you can compile
+alg directly with ocamlbuild:
+%
+\begin{shell}
+ocamlbuild -use-menhir alg.native
+\end{shell}
+%
+To install alg just copy \texttt{\_build/alg.native} to
+\texttt{/usr/local/bin/alg} or some other reasonable place.
+
 \section{Installation for Microsoft Windows}
 \label{sec:comp-inst-micr}
 
 Sorry, this has not been written yet. But if you have Make and Ocaml
-3.12 or alter, you should be able to just follow the instructions for
-Linux.
+3.11 and menhir, you should be able to just follow the instructions
+for Linux.
 
-\chapter{The Format of Input Files}
+Note that a Windows precompiled executable may be available at
+%
+\begin{quote}
+  \url{http://hg.andrej.com/alg/tip/precompiled/}
+\end{quote}
+
+\chapter{Input Files}
 \label{sec:input-files}
+
+An alg input file has extension \texttt{.th} and it describes an
+algebraic theory. The syntax vaguely follows the syntax of the Coq
+proof assistant. A typical input file might look like this:
+%
+\begin{alg}
+# The axioms of a group.
+Theory group.
+Constant 1.
+Unary inv.
+Binary *.
+Axiom unit_left: 1 * x = x.
+Axiom unit_right: x * 1 = x.
+Axiom: inv(1) = 1.
+Axiom: inv(inv(x)) = x.
+Axiom inverse_left: x * inv(x) = 1.
+Axiom inverse_right: inv(x) * x = 1.
+Axiom associativity: (x * y) * z = x * (y * z).
+\end{alg}
+%
+The precise syntax rules are as follows.
+
+\paragraph{Comments.}
+
+Comments are written as in Python, i.e., a comment begins with the
+\texttt{\#} symbol and includes everything up to the end of line.
+
+\paragraph{General syntactic rules.}
+
+An alg input file consists of a sequence of declarations
+(\texttt{Theory}, \texttt{Constant}, \texttt{Unary}, \texttt{Binary})
+and axioms (\texttt{Axiom}, \texttt{Equation}). Each declaration and
+axiom is terminated with a period.
+
+\paragraph{The \texttt{Theory} keyword.}
+
+You may give a name to your theory with the declaration
+%
+\begin{alg}
+Theory /@theory_name@/.
+\end{alg}
+%
+\emph{at the beginning of the input file}, possibly preceeded by
+comments and whitespace. The theory name consists of letters, numbers,
+and the underscore. If you do not provide a theory name, alg will
+deduce one from the file name.
+
+\paragraph{Declaration of operations.}
+
+The declarations
+%
+\begin{alg}
+Constant /@$c_1$ $c_2$ $\ldots$ $c_k$@/.
+Unary /@$u_1$ $u_2$ $\ldots$ $u_m$@/.
+Binary /@$b_1$ $b_2$ $\ldots$ $b_n$@/.
+\end{alg}
+%
+are used to declare constants, unary, and binary operations
+respectively. You may declare several constants or operations with a
+single declaration, or one at a time. You may mix declarations and
+axioms, although it is probably a good idea to declare the constants
+and operations first.
+
+A constant may be any string of letters, digits and the underscore
+character. In particular, a constant may consist just of digits.
+Popular choices for neutral elements are \texttt{0} or \texttt{1}.
+
+Unary and binary operations may be strings of letters, digits and the
+underscore character. For example, if we declare
+%
+\begin{alg}
+Unary inv.
+Binary mult.
+\end{alg}
+%
+then we can write expressions like \texttt{mult(x, inv(y))}.
+Alternatively, we can use \emph{infix} and \emph{prefix} operators.
+These follow the Ocaml rules for infix and prefix notation. An
+operator is a string of symbols
+%
+\begin{quote}
+  \verb.! $ % & * + - / \ : < = > ? @ \^ | ~.
+\end{quote}
+% $
+where:
+%
+\begin{itemize}
+\item a string beginning with \texttt{\$}, \texttt{!} or
+  \texttt{\char126} is a \emph{prefix} operator. Note that
+  \texttt{\char126} is reserved for negation.
+\end{itemize}
+
+
+\chapter{Output Files}
+\label{sec:output-files}
 
 \chapter{Command-line Options}
 \label{sec:command-line-options}

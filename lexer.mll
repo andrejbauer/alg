@@ -3,7 +3,7 @@
   open Parser
 }
 
-let ident = ['_' 'a'-'z' 'A'-'Z' '0'-'9']+ '\''*
+let ident = ['_' 'a'-'z' 'A'-'Z' '0'-'9']+
 
 let symbolchar = ['!' '$' '%' '&' '*' '+' '-' '/' '\\' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let prefixop = ['?' '!'] symbolchar* | '~'  symbolchar+
