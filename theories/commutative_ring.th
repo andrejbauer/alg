@@ -1,0 +1,19 @@
+# The axioms for a ring
+
+Constant 0.
+Unary neg.
+Binary * +.
+
+Axiom plus_commutative: x + y = y + x.
+Axiom plus_associative: (x + y) + z = x + (y + z).
+Axiom zero_neutral_left: 0 + x = x.
+Axiom zero_neutral_right: x + 0 = x.
+Axiom negative_inverse: x + neg(x) = 0.
+Axiom negative_inverse: neg(x) + x = 0.
+Axiom zero_inverse: neg(0) = 0.
+Axiom inverse_involution: neg(neg(x)) = x.
+
+Axiom mult_commutative: x * y = y * x.
+Axiom mult_associative: (x * y) * z = x * (y * z).
+Axiom distrutivity_right: (x + y) * z = x * z + y * z.
+Axiom distributivity_left: x * (y + z) = x * y + x * z.

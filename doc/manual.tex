@@ -1,0 +1,115 @@
+\documentclass{article}
+
+\usepackage{listings}
+
+\lstnewenvironment{shell}{\lstset{%
+moredelim=*[is][\itshape]{/@}{@/},
+numbers=none,xleftmargin=2em,basicstyle=\ttfamily\small}}{}
+
+
+\begin{document}
+\title{Alg User Manual}
+\author{Ale\v{s} Bizjak\\
+\texttt{Ales.Bizjak@gmail.com}\\
+Faculty of Mathematics and Physics\\
+University of Ljubljana
+\and
+Andrej Bauer\\
+\texttt{Andrej.Bauer@andrej.com}\\
+Faculty of Mathematics and Physics\\
+University of Ljubljana}
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+
+Alg is a program for enumeration of finite models of algebraic
+theories. An algebraic theory is given by a signature (a list of
+constants and operations) and axioms expressed in first-order logic.
+Alg can do the following:
+%
+\begin{enumerate}
+\item list or count all non-isomorphic models of a given theory,
+\item list or count all non-isomorphic indecomposable\footnote{A model
+  is indecomposable if it cannot be written as a non-trivial product
+  of two smaller models.} models of a given theory.
+\end{enumerate}
+%
+Currently alg has the following limitations:
+%
+\begin{enumerate}
+\item only unary and binary operations are accepted,
+\item it is assumed that constants denote pairwise distinct elements.
+\end{enumerate}
+%
+This manual describes how to install and use alg. For a quick start
+you need Ocaml 3.12 or higher. Compile alg with
+%
+\begin{shell}
+make
+\end{shell}
+%
+and run
+%
+\begin{shell}
+./alg.native --size 8 theories/unital_commutative_ring.th
+\end{shell}
+%
+For usage information type \texttt{./alg.native -help} and for
+examples of theories see the \texttt{theories} subdirectory.
+
+\section{Installation}
+\label{sec:installation}
+
+\subsection{How to obtain alg}
+\label{sec:how-obtain-alg}
+
+Alg is available at \texttt{http://hg.andrej.com/alg/}. You have three
+options:
+%
+\begin{enumerate}
+\item download the ZIP file with source code from
+  \texttt{http://hg.andrej.com/alg/archive/tip.zip}
+\item clone the repository with the Mercurial revision control system:
+%
+\begin{shell}
+hg clone http://hg.andrej.com/alg/
+\end{shell}
+
+\end{enumerate}
+
+%
+A precompiled executable may be available for your architecture in the
+\texttt{precompiled} subdirectory. Visit
+
+
+
+\subsection{Compilation and Installation for Linux and MacOS}
+\label{sec:comp-under-linux}
+
+To compile alg you need the Make utility and Ocaml 3.12 or
+higher.\footnote{Ocaml is available from \texttt{http://www.ocaml.org/}.}
+Just type \texttt{make} at the command line. If all goes well
+Ocamlbuild will generate a subdirectory \texttt{_build} and in it the
+\texttt{alg.native} executable. It will also create a link to
+\texttt{_build/alg.native} from the top directory. To test alg type
+%
+\begin{shell}
+./alg.native --count --size 8 theories/group.th
+\end{shell}
+%
+It should tell you within seconds that there are 5 groups of size 8. 
+
+We provided only a very rudimentary installation procedure for alg.
+First edit the \texttt{INSTALL\_DIR} setting in \texttt{Makefile} to
+set the directory in which alg should be installed, then run
+%
+\begin{shell}
+sudo make install
+\end{shell}
+%
+This will simply copy \texttt{_build/alg.native} to
+\texttt{\$(INSTALL\_DIR)/alg}. You may also wish to stash the
+\texttt{theories} subdirectory somewhere for future reference.
+
+\end{document}
