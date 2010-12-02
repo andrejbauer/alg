@@ -1,37 +1,38 @@
 # The theory of a commutative quantale
-signature:
-   ### Lattice structure
-   1 : 0 # top
-   0 : 0 # bottom
-   & : 2 # binary meet
-   | : 2 # binary join
-   ### Multiplication and its unit
-   * : 2
 
-axioms:
-   ### Lattice structure
-   # properties of 0 and 1
-   0 | x = x;
-   x | 0 = x;
-   x | 1 = 1;
-   1 | x = 1;
-   1 & x = x;
-   x & 1 = x;
-   0 & x = 0;
-   x & 0 = 0;
-   # properties of meet
-   x & x = x;
-   x & y = y & x;
-   x & (y & z) = (x & y) & z;
-   # properties of join
-   x | x = x;
-   x | y = y | x;
-   x | (y | z) = (x | y) | z;
-   # absorption laws
-   x & (x | y) = x;
-   x | (x & y) = x;
-   ### Multiplication
-   x * y = y * x;
-   x * (y * z) = (x * y) * z;
-   x * (y | z) = (x | y) * (x | z);
-   (y | z) * x = (y | x) * (z | x);
+Constant 0 1. # bottom and top
+Binary & |. # meet and join
+Binary *. # multiplication
+
+### Lattice structure
+
+# properties of 0 and 1
+Axiom: 0 | x = x.
+Axiom: x | 0 = x.
+Axiom: x | 1 = 1.
+Axiom: 1 | x = 1.
+Axiom: 1 & x = x.
+Axiom: x & 1 = x.
+Axiom: 0 & x = 0.
+Axiom: x & 0 = 0.
+
+# properties of meet
+Axiom: x & x = x.
+Axiom: x & y = y & x.
+Axiom: x & (y & z) = (x & y) & z.
+
+# properties of join
+Axiom: x | x = x.
+Axiom: x | y = y | x.
+Axiom: x | (y | z) = (x | y) | z.
+
+# absorption laws
+Axiom: x & (x | y) = x.
+Axiom: x | (x & y) = x.
+
+### Multiplication
+
+Axiom: x * y = y * x.
+Axiom: x * (y * z) = (x * y) * z.
+Axiom: x * (y | z) = (x | y) * (x | z).
+Axiom: (y | z) * x = (y | x) * (z | x).

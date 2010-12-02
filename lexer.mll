@@ -22,14 +22,16 @@ rule token = parse
   | "Constant"          { CONSTANT }
   | "Unary"             { UNARY }
   | "Binary"            { BINARY }
-  | "Equation"          { EQUATION }
   | "Axiom"             { AXIOM }
+  | "Theorem"           { THEOREM }
   | "forall"            { FORALL }
   | "exists"            { EXISTS }
   | "True"              { TRUE }
   | "False"             { FALSE }
   | "/\\"               { AND }
+  | "and"               { AND }
   | "\\/"               { OR }
+  | "or"                { OR }
   | "->"                { IMPLY }
   | "<->"               { IFF }
   | "=>"                { IMPLY }

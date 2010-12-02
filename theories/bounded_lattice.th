@@ -1,17 +1,18 @@
 # The theory of a bounded lattice.
 
-Constant 1 0.
-Binary & |.
+Constant 0 1.
+Binary &. # meet
+Binary |. # join
 
 # properties of 0 and 1
 Axiom: 0 | x = x.
 Axiom: x | 0 = x.
-Axiom: x | 1 = 1.
-Axiom: 1 | x = 1.
+Theorem: x | 1 = 1.
+Theorem: 1 | x = 1.
 Axiom: 1 & x = x.
 Axiom: x & 1 = x.
-Axiom: 0 & x = 0.
-Axiom: x & 0 = 0.
+Theorem: 0 & x = 0.
+Theorem: x & 0 = 0.
 
 # properties of meet
 Axiom: x & x = x.

@@ -320,7 +320,16 @@ Unary inv.
 Binary mult.
 \end{alg}
 %
-then we can write expressions like \texttt{mult(x, inv(y))}.
+then we can write expressions like \texttt{mult(x, inv(y))}. It is
+even possible to declare operations whose names are strings of digits,
+for example:
+%
+\begin{alg}
+Unary 3 ten.
+Binary +.
+Axiom: 3(3(x)) + x = ten(x).
+\end{alg}
+%
 Alternatively, we can use \emph{infix} and \emph{prefix} operators.
 These follow the Ocaml rules for infix and prefix notation. An
 operator is a string of symbols
@@ -341,8 +350,8 @@ where:
     \item right-associative operators starting with \texttt{@} and \texttt{\^}
     \item left-associative operators starting with \texttt{+}, \texttt{-},
       and \texttt{\char92}
-    \item left-associative operators starting with \textt{*}, \texttt{/}, and \texttt{\%} 
-    \item right-associative operators starting with \textt{**}.
+    \item left-associative operators starting with \texttt{*}, \texttt{/}, and \texttt{\%} 
+    \item right-associative operators starting with \texttt{**}.
   \end{itemize}
   %
   An operator $\circ$ is \emph{left-associative} if $x \circ y \circ
@@ -356,18 +365,70 @@ where:
 
 \section{Axioms}
 
-An axiom has one of the following forms:
+An axiom has the form
 %
 \begin{alg}
-Axiom /@<name>@/: /@<formula>@/.
-Axiom: /@<formula>@/.
-Equation /@<name>@/: /@<equation>@/.
-Equation: /@<equation>@/.
+Axiom /@[name]@/: /@<formula>@/.
 \end{alg}
+%
+or
+%
+\begin{alg}
+Theorem /@[name]@/: /@<formula>@/.
+\end{alg}
+%
+There is no difference between an axiom and a theorem as far as alg is
+concerned. We use \texttt{Axiom} for the actual axioms and
+\texttt{Theorem} for statements that are consequences of axioms and
+are worth including in the theory because they make alg run faster,
+see Chapter~\ref{sec:optimization}.
 
+The optional \texttt{\textit{[name]}} is a string of of
+letters, digits and the underscore chatacters. The
+\texttt{\textit{<formula>}} is a first-order formula built from the
+following logical operations, listed in order of increasing precedence:
+%
+\begin{center}
+  \begin{tabular}{rcl}
+    $\forall x\, .\, \phi$ & is written as & \texttt{forall $x$, $\phi$}, \\
+    $\exists x\, .\, \phi$ & is written as & \texttt{exists $x$, $\phi$}, \\
+    $\phi \Leftrightarrow \psi$ & is written as & \texttt{$\phi$ <-> $\psi$} or \texttt{$\phi$ <=> $\psi$},\\
+    $\phi \Rightarrow \psi$ & is written as & \texttt{$\phi$ -> $\psi$} or \texttt{$\phi$ => $\psi$},\\
+    $\phi \lor \psi$ & is written as & \texttt{$\phi$ {\char92}/ $\psi$} or \texttt{$\phi$ or $\psi$},\\
+    $\phi \land \psi$ & is written as & \texttt{$\phi$ /{\char92} $\psi$} or \texttt{$\phi$ and $\psi$},\\
+    $\lnot \phi$ & is written as & \texttt{not $\phi$},\\
+    $s = t$ & is written as & \texttt{$s$ = $t$},\\
+    $s \neq t$ & is written as & \texttt{$s$ <> $t$} or \texttt{$s$ != $t$},\\
+    $\top$ and $\bot$ & are written as & \texttt{True} and \texttt{False}, respectively.
+  \end{tabular}
+\end{center}
+%
+An iterated quantification $\forall x_1 \,.\, \forall x_2 \,.\, \cdots
+\forall x_n \,.\, \phi$ may be written as
+%
+\begin{center}
+\texttt{forall $x_1$ $x_2$ $\ldots$ $x_n$ , $\phi$.}
+\end{center}
+%
+and similarly for $\exists$.
+
+Axioms may contain free variables. Thus we can write just
+%
+\begin{alg}
+Axiom: x + y = y + x.
+\end{alg}
+%
+instead of
+\begin{alg}
+Axiom: forall x y, x + y = y + x.
+\end{alg}
+%
 
 \chapter{Output}
 \label{sec:output-files}
+
+At the moment alg prints results to standard output in text format. We
+plan to add various other output formats, such as {\LaTeX}, JSON and HMTL.
 
 \chapter{Command-line Options}
 \label{sec:command-line-options}

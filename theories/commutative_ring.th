@@ -1,4 +1,4 @@
-# The axioms for a ring
+# The axioms for a commutative ring
 
 Constant 0.
 Unary neg.

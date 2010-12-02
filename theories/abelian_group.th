@@ -3,11 +3,12 @@ Constant 1.
 Unary inv.
 Binary *.
 
-Equation: 1 * x = x.
-Equation: x * 1 = x.
-Equation: inv(1) = 1.
-Equation: inv(inv(x)) = x.
-Equation: x * inv(x) = 1.
-Equation: inv(x) * x = 1.
-Equation: (x * y) * z = x * (y * z).
-Equation: x * y = y * x.
+Axiom: (x * y) * z = x * (y * z).
+Axiom: x * y = y * x.
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: x * inv(x) = 1.
+Axiom: inv(x) * x = 1.
+
+Theorem: inv(1) = 1.
+Theorem: inv(inv(x)) = x.

@@ -4,7 +4,7 @@
 
 %token THEORY
 %token CONSTANT UNARY BINARY
-%token EQUATION AXIOM
+%token AXIOM THEOREM
 %token <string> IDENT
 %token <string> PREFIXOP INFIXOP0 INFIXOP1 INFIXOP2 INFIXOP3 INFIXOP4
 %token LPAREN RPAREN
@@ -13,11 +13,6 @@
 %token AND OR IMPLY IFF NOT EQUAL NOTEQUAL EXISTS FORALL
 %token EOF
 
-%nonassoc IFF
-%right IMPLY
-%left OR
-%left AND
-%nonassoc NOT
 %left  INFIXOP0
 %right INFIXOP1
 %left  INFIXOP2
@@ -43,9 +38,9 @@ theory_entry:
     { Unary lst }
   | BINARY lst = nonempty_list(name_or_op)
     { Binary lst }
-  | EQUATION n = option(IDENT) COLON e = equation
-    { Equation (n, e) }
   | AXIOM n = option(IDENT) COLON a = formula
+    { Axiom (n, a) }
+  | THEOREM n = option(IDENT) COLON a = formula
     { Axiom (n, a) }
 
 name:
@@ -63,16 +58,13 @@ name_or_op:
   | op = binop
     { op }
 
-equation: t1 = term EQUAL t2 = term
-  { (t1, t2) }
-
 term:
   | t1 = term op = binop t2 = term
-    { Apply(op, [t1;t2]) }
+    { Apply (op, [t1;t2]) }
   | op = PREFIXOP t = simple_term
-    { Apply(op, [t]) }
+    { Apply (op, [t]) }
   | t = simple_term
-    { t}
+    { t }
 
 simple_term:
   | x = name
@@ -107,17 +99,35 @@ formula:
     { List.fold_right (fun x f -> Forall (x, f)) xs f }
   | EXISTS xs = vars COMMA f = formula
     { List.fold_right (fun x f -> Exists (x, f)) xs f }
-  | f = simple_formula
+  | f = iff_formula
+    { f }
+  | f = imply_formula
     { f }
 
-vars:
-  | vs = nonempty_list(name)
-    { vs }
+iff_formula:
+  | f1 = or_formula IFF f2 = or_formula
+    { Iff (f1, f2) }
 
-simple_formula:
-  | f1 = simple_formula c = connective f2 = simple_formula
-    { c f1 f2 }
-  | NOT f = simple_formula
+imply_formula:
+  | f1 = or_formula IMPLY f2 = imply_formula
+    { Imply (f1, f2) }
+  | f = or_formula
+    { f }
+
+or_formula:
+  | f1 = or_formula OR f2 = and_formula
+    { Or (f1, f2) }
+  | f = and_formula
+    { f }
+
+and_formula:
+  | f1 = and_formula AND f2 = negation_formula
+    { And (f1, f2) }
+  | f = negation_formula
+    { f }
+
+negation_formula:
+  | NOT f = negation_formula
     { Not f }
   | f = atomic_formula
     { f }
@@ -134,10 +144,8 @@ atomic_formula:
   | LPAREN f = formula RPAREN
     { f }
 
-%inline connective:
-  | AND     { fun a b -> And (a,b) }
-  | OR      { fun a b -> Or (a,b) }
-  | IMPLY   { fun a b -> Imply (a,b)}
-  | IFF     { fun a b -> Iff (a,b)}
+vars:
+  | vs = nonempty_list(name)
+    { vs }
 
 %%

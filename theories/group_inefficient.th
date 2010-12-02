@@ -1,0 +1,8 @@
+# Inefficient axioms for a group.
+
+Binary *.
+
+Axiom: (x * y) * z = x * (y * z).
+
+Axiom: exists e, forall x, x * e = x /\ e * x = x /\ (exists y, x * y = e /\ y * x = e).
+
