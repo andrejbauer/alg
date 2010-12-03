@@ -1,7 +1,5 @@
 open Type
 
-type position = (Lexing.position * Lexing.position) option
-
 (* Return a duplicate element in the list, if one exists. *)
 let rec find_duplicate = function
   | [] -> None
@@ -349,3 +347,22 @@ let partitions n =
     else List.concat (List.map (fun k -> List.map (fun ks -> k :: ks) (partitions' (n / k) k))
                         (List.filter (fun k -> n mod k = 0) (enumFromTo d n))) in
   init (partitions' n 2)
+
+(* Convert a string given via the --size command-line option to a list of sizes. *)
+let sizes_of_str str =
+  let interval_of_str str =
+    try
+      let k = String.index str '-'
+      in enumFromTo (int_of_string (String.sub str 0 k)) (int_of_string (String.sub str (k+1) (String.length str - k - 1)))
+    with
+      | Not_found -> [int_of_string str]
+      | Failure "int_of_string" -> Error.fatal "Invalid arguments of --size"
+  in
+  let lst = ref [] in
+  let k = ref 0 in
+  while !k < String.length str do
+    let m = (try String.index_from str !k ',' with Not_found -> String.length str) in
+    lst := union !lst (interval_of_str (String.sub str !k (m - !k))) ;
+    k := m + 1
+  done ;
+  !lst

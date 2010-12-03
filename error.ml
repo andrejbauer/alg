@@ -1,6 +1,8 @@
 (* Error reporting. *)
 
-exception Error of (Util.position * string * string)
+type position = (Lexing.position * Lexing.position) option
+
+exception Error of (position * string * string)
 
 let ksprintf k =
   let k _ =
@@ -30,6 +32,11 @@ let position pos ppf =
         end
       else
         Format.fprintf ppf "line %i (char %i) - line %i (char %i)" begin_line begin_char end_line end_char
+
+let report (Error.Error (pos, err, msg)) = 
+  Format.eprintf "%s error: %s %t@." err msg (Error.position pos) ;
+  exit 1
+
 
 let error ?pos err_type =
   ksprintf (fun msg -> raise (Error (pos, err_type, msg)))
