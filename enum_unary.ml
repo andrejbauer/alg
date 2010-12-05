@@ -135,6 +135,12 @@ let get_normal_axioms complicated =
     and false if it starts with a constant. Index is index of variable or constant.
   *)
   let path_from_equation e =
+    (* TODO this function must be a kludge, get rid of it. *)
+    let rec init = function
+      | [] -> []
+      | [_] -> []
+      | x :: xs -> x :: init xs
+    in
     let rec loop acc = function
       | (Unary (op,t)) -> loop (op::acc) t
       | (Var v) -> (true, v, acc)
@@ -142,7 +148,7 @@ let get_normal_axioms complicated =
       | _ -> invalid_arg "path_from_equation: Binary operation." in
     match loop [] e with
       | (var, start, []) -> (var, start, None, [])
-      | (var, start, os) -> (var, start, Some (List.nth os (List.length os - 1)), Util.init os) in
+      | (var, start, os) -> (var, start, Some (List.nth os (List.length os - 1)), init os) in
 
   (*
      Unary axioms in "normal form". Each side of the equation is a 4-tuple

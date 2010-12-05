@@ -11,7 +11,9 @@ native:
 profile:
 	$(OCAMLBUILD) $(TARGET).p.native
 debug:
-	$(OCAMLBUILD) -cflags -g $(TARGET).native
+	$(OCAMLBUILD) -cflags -g -lflags -g $(TARGET).native
+debug-byte:
+	$(OCAMLBUILD) -cflags -g -lflags -g $(TARGET).byte
 
 conflicts:
 	menhir --explain parser.mly

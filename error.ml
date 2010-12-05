@@ -33,8 +33,8 @@ let position pos ppf =
       else
         Format.fprintf ppf "line %i (char %i) - line %i (char %i)" begin_line begin_char end_line end_char
 
-let report (Error.Error (pos, err, msg)) = 
-  Format.eprintf "%s error: %s %t@." err msg (Error.position pos) ;
+let report (pos, err, msg) = 
+  Format.eprintf "%s error: %s %t@." err msg (position pos) ;
   exit 1
 
 

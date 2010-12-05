@@ -1,10 +1,6 @@
 open Type
 open Util
 
-open Iso
-
-open First_order
-
 (* It is assumed that the two algebras correspond to the same signature. *)
 (* Note that this returns an algebra not in a form where supplied constants come before
    other elements. TODO: We cannot print this algebra correctly with current implementation of Print module. *)
@@ -54,46 +50,37 @@ let is_decomposable s a lst =
   let exist_factors (k,l) =
     let ks = List.nth lst k in
     let ls = List.nth lst l in
-    List.exists (fun left -> List.exists (fun right -> are_iso s a (product left right)) ls) ks in
+    List.exists (fun left -> List.exists (fun right -> Iso.are_iso s a (product left right)) ls) ks in
   List.exists exist_factors factors
 
-(* lst is a list of smaller __indecomposable__ algebras. It is assumed that List.nth lst k are algebras of size k. *)
-let gen_decomposable theory n lst = 
-  if n < 4 then [] (* Avoid undefined behaviour and there are no smaller decomposable algebras. *)
-  else
-    begin
-      let arr = Array.map (Array.of_list) (Array.of_list lst) in (* TODO: For faster access. *)
-      
-      (* Generate all products of algebras which partition into algebras of sizes in partition.
-         partition is assumed to be in some order (descending or ascending) order. *)
-      let gen_product cont partition = 
-        (* last is size of last algebra added to product, start is where to start
-           with current algebras (this is only used if we have to multiply two consecutive 
-           algebras of the same size), part is the tail of partition *)
-        let rec gen_p last start acc = function
-          | [] -> cont acc
-          | (p::ps) -> 
-            let start = if last = p then start else 0 in
-            let last = p in
-            let ul = Array.length arr.(last) in
-            for i=start to ul-1 do
-              gen_p last i (product acc arr.(last).(i)) ps
-            done in
-        if partition = [] then (* This shouldn't happen. *)
-          invalid_arg "Empty partition of number."
-        else
-          begin
-            let head = List.hd partition in
-            let tail = List.tl partition in 
-            let first = arr.(head) in
-            Array.iter (fun x -> gen_p head 0 x tail) first
-          end in (* end of gen_product *)
-      
-      let res = ref [] in (* Ugly, I know. *)
+(* factors is a map of possible factors *)
+let gen_decomposable theory n factors output = 
+  let algebras = ref [] in
+    
+  (* Generate all products of algebras which partition into algebras of sizes in partition.
+     partition is assumed to be in some order (descending or ascending). *)
+  let gen_product partition = 
+    (* last is size of last algebra added to product, start is where to start
+       with current algebras (this is only used if we have to multiply two consecutive 
+       algebras of the same size), part is the tail of partition *)
+    let rec gen_p last start acc = function
+      | [] ->
+          if First_order.check_axioms theory acc
+          then begin
+            algebras := acc :: !algebras ;
+            output acc
+          end
+      | (p::ps) -> 
+          let start = if last = p then start else 0 in
+          let last = p in
+            Util.iter_enum
+              (fun i a -> if i >= start then gen_p last i (product acc a) ps)
+              (IntMap.find last factors)
+    in
+      match partition with
+        | [] -> ()
+        | p::ps -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
+  in (* end of gen_product *)
+    List.iter gen_product (Util.partitions n) ;
+    !algebras
 
-      let cont p = 
-        if check_axioms theory p then
-          res := p :: !res in
-
-      List.iter (gen_product cont) (Util.partitions n) ; !res
-    end

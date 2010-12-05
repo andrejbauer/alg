@@ -132,90 +132,92 @@ let partition_amenable axioms =
    and pass them to the given continuation.
 *)
 let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axioms} k =
+  if n >= Array.length const then begin
+    let lc = Array.length const in
+    let lu = Array.length unary in
+    let lb = Array.length binary in
+      
+    (* Auxiliary variables for generation of unary operations. *)
+    (* ******************************************************* *)
+    let (unary_axioms, binary_axioms) = part_axioms axioms in
+      (*
+        Simple and complicated unary axioms. Simple are the
+        ones of the form f(c) = d or f(d) = c for c and d constants. These
+        can be easily applied.
+        TODO: Axioms of the form f(x) = c for x variable and c constant
+        are also easily dispatched with.
 
-  let lc = Array.length const in
-  let lu = Array.length unary in
-  let lb = Array.length binary in
+        Complicated are the complement of simple and cannot be so easily applied.
+      *)
+    let (simple, complicated) = part_unary_axioms unary_axioms in
 
-  (* Auxiliary variables for generation of unary operations. *)
-  (* ******************************************************* *)
-  let (unary_axioms, binary_axioms) = part_axioms axioms in
-  (*
-     Simple and complicated unary axioms. Simple are the
-     ones of the form f(c) = d or f(d) = c for c and d constants. These
-     can be easily applied.
-     TODO: Axioms of the form f(x) = c for x variable and c constant
-     are also easily dispatched with.
+    (* Main operation tables for unary operations. *)
+    let unary_arr = Array.make_matrix lu n (-1) in
+      
+    let normal_axioms = get_normal_axioms complicated in
+      
+    let (unary_dos, unary_undos) = get_unary_actions n normal_axioms unary_arr in
+      
+    apply_simple simple unary_arr ;
 
-     Complicated are the complement of simple and cannot be so easily applied.
-  *)
-  let (simple, complicated) = part_unary_axioms unary_axioms in
+    (* Auxiliary variables for generation of binary operations. *)
+    (* ******************************************************* *)
+    let (simple_binary, complicated_binary) = part_binary_axioms binary_axioms in
 
-  (* Main operation tables for unary operations. *)
-  let unary_arr = Array.make_matrix lu n (-1) in
+    (*
+      left are the axioms which cannot be immediately applied
+      These include axioms of depth > 1 and those with more variables.
+    *)
+    let (one_var_shallow, left) = part_one_var_binary complicated_binary in
 
-  let normal_axioms = get_normal_axioms complicated in
-
-  let (unary_dos, unary_undos) = get_unary_actions n normal_axioms unary_arr in
-
-  apply_simple simple unary_arr ;
-
-  (* Auxiliary variables for generation of binary operations. *)
-  (* ******************************************************* *)
-  let (simple_binary, complicated_binary) = part_binary_axioms binary_axioms in
-
-  (*
-     left are the axioms which cannot be immediately applied
-     These include axioms of depth > 1 and those with more variables.
-  *)
-  let (one_var_shallow, left) = part_one_var_binary complicated_binary in
-
-  (*
-     Partition axioms. Assoc and amenable are naturally associativity and amenable axioms.
-     zippep_axioms are the rest that have to be checked differently than amenable.
+    (*
+      Partition axioms. Assoc and amenable are naturally associativity and amenable axioms.
+      zippep_axioms are the rest that have to be checked differently than amenable.
      Zipped means in the form (number of distinct variables, axioms)
-  *)
-  let (assoc, amenable, zipped_axioms) =
-    let (assoc, rest) = partition_assoc left in
-    let (amenable, rest) = partition_amenable rest in
-    (assoc,
-     List.map (fun a -> num_dist_vars a, a) amenable,
-     (* Check axioms with fewer free variables first. *)
-     List.sort (fun (n,_) (m,_) -> compare n m) (List.map (fun a -> (num_dist_vars a, a)) rest)) in
+    *)
+    let (assoc, amenable, zipped_axioms) =
+      let (assoc, rest) = partition_assoc left in
+      let (amenable, rest) = partition_amenable rest in
+        (assoc,
+         List.map (fun a -> num_dist_vars a, a) amenable,
+         (* Check axioms with fewer free variables first. *)
+         List.sort (fun (n,_) (m,_) -> compare n m) (List.map (fun a -> (num_dist_vars a, a)) rest))
+    in
 
-  (*
-     Maximum distinct variables in any of the axioms left. This is needed so we can cache
-     all the ntuples.
-  *)
-  let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in
+    (*
+      Maximum distinct variables in any of the axioms left. This is needed so we can cache
+      all the ntuples.
+    *)
+    let max_vars = List.fold_left max 0 (List.map num_dist_vars left) in
 
-  (* This could potentially gobble up memory. TODO *)
-  let all_tuples = Array.init (max_vars + 1) (fun i -> ntuples n i) in
+    (* This could potentially gobble up memory. TODO *)
+     let all_tuples = Array.init (max_vars + 1) (fun i -> ntuples n i) in
 
-  (*
-     Main operation tables for binary operations.
-  *)
-  let binary_arr = make_3d_array lb n n (-1) in
+    (*
+      Main operation tables for binary operations.
+    *)
+    let binary_arr = make_3d_array lb n n (-1) in
 
-  let check = get_checks all_tuples unary_arr binary_arr zipped_axioms in
+    let check = get_checks all_tuples unary_arr binary_arr zipped_axioms in
 
-  let (binary_dos, binary_undos) = get_binary_actions n unary_arr binary_arr assoc amenable in
+    let (binary_dos, binary_undos) = get_binary_actions n unary_arr binary_arr assoc amenable in
 
-  let reset_binary_arr () =
-    for o=0 to lb-1 do
-      for i=0 to n-1 do
-        for j=0 to n-1 do
-          binary_arr.(o).(i).(j) <- -1
-        done
+    let reset_binary_arr () =
+      for o=0 to lb-1 do
+        for i=0 to n-1 do
+          for j=0 to n-1 do
+            binary_arr.(o).(i).(j) <- -1
+          done
       done
-    done in
+      done in
 
-  let cont () =
-    try
-      reset_binary_arr () ;
-      apply_simple_binary simple_binary unary_arr binary_arr ;
-      apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
-      gen_binary n lc lu lb binary_dos binary_undos unary_arr binary_arr check k
-    with Contradiction -> () in
-
-  gen_unary n lu unary_dos unary_undos unary_arr cont
+    let cont () =
+      try
+        reset_binary_arr () ;
+        apply_simple_binary simple_binary unary_arr binary_arr ;
+        apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
+        gen_binary n lc lu lb binary_dos binary_undos unary_arr binary_arr check k
+      with Contradiction -> () in
+      
+      gen_unary n lu unary_dos unary_undos unary_arr cont
+  end

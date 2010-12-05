@@ -1,5 +1,11 @@
 open Type
 
+module IntMap =
+  Map.Make(struct
+    type t = int
+    let compare = compare
+  end) ;;
+
 (* Return a duplicate element in the list, if one exists. *)
 let rec find_duplicate = function
   | [] -> None
@@ -89,6 +95,22 @@ let enumFromTo s e =
         | n when n <= e -> n :: loop (n+1)
         | _ -> [] in
   loop s
+
+(* Like List.map with indices. *)
+let map_enum f lst =
+  let rec loop i = function
+    | [] -> []
+    | x::xs -> (f i x) :: loop (i+1) xs
+  in
+    loop 0 lst
+
+(* Like List.iter with indices *)
+let iter_enum f lst =
+  let rec loop i = function
+    | [] -> ()
+    | x::xs -> (f i x) ; loop (i+1) xs
+  in
+    loop 0 lst
 
 let is_empty = function
   | [] -> true
