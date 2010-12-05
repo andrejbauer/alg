@@ -97,12 +97,6 @@ let is_empty = function
 let is_sublist xs ys =
   List.for_all (fun x -> List.mem x ys) xs
 
-let rec
-    init = function
-      | [] -> []
-      | [_] -> []
-      | (x::xs) -> x :: init xs
-
 let rec replicate n a =
   if n = 0 then [] else a :: replicate (n-1) a
 
@@ -340,13 +334,34 @@ let for_all_pairs f xs ys =
         done ;
         ! b
 
-(* Return all partitions of n into a product of at least two non decreasing numbers. *)
-let partitions n = 
-  let rec partitions' n d =
-    if n = 1 then [[]]
-    else List.concat (List.map (fun k -> List.map (fun ks -> k :: ks) (partitions' (n / k) k))
-                        (List.filter (fun k -> n mod k = 0) (enumFromTo d n))) in
-  init (partitions' n 2)
+(* Divisors of a number without the number itself, sorted by size *)
+let divisors n =
+  let rec loop k acc1 acc2 =
+    if k * k > n then List.rev acc1 @ acc2
+    else if k * k = n then List.rev acc1 @ (k :: acc2)
+    else if n mod k = 0 then loop (k+1) (k :: acc1) ((n / k) :: acc2)
+    else loop (k+1) acc1 acc2
+  in
+    loop 2 [] []
+
+(* Small divisors of n larger than 1, i.e., those not exceeding the square root of n. *)
+let rec small_divisors n =
+  let rec loop k =
+    if k * k > n then []
+    else if n mod k = 0 then k :: loop (k+1)
+    else loop (k+1)
+  in
+    loop 2
+      
+(* Return all partitions of n into a product of at least two non-decreasing numbers. *)
+let partitions n =
+  let rec part n = function
+    | [] -> []
+    | (d::ds) as lst when n mod d = 0 && d * d <= n ->
+        let m = n/d in ([d;m] :: (List.map (fun p -> d :: p) (part m lst))) @ (part n ds)
+    | _::ds -> part n ds
+  in
+    part n (small_divisors n)
 
 (* Convert a string given via the --size command-line option to a list of sizes. *)
 let sizes_of_str str =
