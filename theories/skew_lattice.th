@@ -1,17 +1,18 @@
-signature:
-  & : 2 # conjunction
-  | : 2 # disjunction
+Theory skew_lattice.
 
-axioms:
-   # properties of meet
-   x & x = x;
-   x & (y & z) = (x & y) & z;
-   # properties of join
-   x | x = x;
-   x | (y | z) = (x | y) | z;
-   # absorption laws
-   x & (x | y) = x;
-   (x | y) & y = y;
-   x | (x & y) = x;
-   (x & y) | y = y;
+Binary & |.
+
+# properties of meet
+Axiom: x & x = x.
+Axiom: x & (y & z) = (x & y) & z.
+
+# properties of join
+Axiom: x | x = x.
+Axiom: x | (y | z) = (x | y) | z.
+
+# absorption laws
+Axiom: x & (x | y) = x.
+Axiom: (x | y) & y = y.
+Axiom: x | (x & y) = x.
+Axiom: (x & y) | y = y.
 
