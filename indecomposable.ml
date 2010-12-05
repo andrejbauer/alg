@@ -65,7 +65,7 @@ let gen_decomposable theory n factors output =
        algebras of the same size), part is the tail of partition *)
     let rec gen_p last start acc = function
       | [] ->
-          if First_order.check_axioms theory acc
+          if First_order.check_axioms theory acc && not (Iso.seen theory acc !algebras)
           then begin
             algebras := acc :: !algebras ;
             output acc
