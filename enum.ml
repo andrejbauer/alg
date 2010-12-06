@@ -173,7 +173,7 @@ let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axiom
     (*
       Partition axioms. Assoc and amenable are naturally associativity and amenable axioms.
       zippep_axioms are the rest that have to be checked differently than amenable.
-     Zipped means in the form (number of distinct variables, axioms)
+      Zipped means in the form (number of distinct variables, axioms)
     *)
     let (assoc, amenable, zipped_axioms) =
       let (assoc, rest) = partition_assoc left in

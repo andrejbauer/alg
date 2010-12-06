@@ -175,12 +175,11 @@ let gen_unary n lu dodos doundos unary_arr k =
         | j when j = n || i = lu -> k ()
           (* || i = lu is necessary for when there aren't any unary operations *)
         | j when unary_arr.(i).(j) = -1 ->
-          for k=0 to n-1 do
+          for k = 0 to n-1 do
             unary_arr.(i).(j) <- k ;
-            if dodos (i,j) then
-              gen_operation i (j+1)
-            ; doundos (i,j)
-            ; unary_arr.(i).(j) <- -1 ;
+            if dodos (i,j) then gen_operation i (j+1) ;
+            doundos (i,j) ;
+            unary_arr.(i).(j) <- -1 ;
           done
         | j -> gen_operation i (j+1)
   in gen_operation 0 0

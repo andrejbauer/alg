@@ -83,7 +83,7 @@ module IntMap = Util.IntMap ;;
 
     (* Parse the theory. *)
     let theory = Cook.cook_theory theory_name raw_theory in
-      
+
     (* If --indecomposable is given then --no-products makes no sense. *)
     if !indecomposable_only then products := true ;
 

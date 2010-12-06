@@ -2,3 +2,4 @@ Unary src opp.
 Axiom: opp(opp(x)) = x.
 Axiom: src(src(x)) = src(x).
 Axiom: opp(src(x)) = src(x).
+Axiom: opp(x) = x -> src(x) = x.

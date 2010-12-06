@@ -134,6 +134,11 @@ let split_entries lst =
     (empty_env, [], [])
     lst
 
+let env_to_array lst =
+  let a = Array.make (List.length lst) "?" in
+    List.iter (fun (op,k) -> a.(k) <- op) lst ;
+    a
+
 let cook_theory th_name lst =
   let (env, eqs, axs) = split_entries lst in
     match Util.find_duplicate (List.map fst (env.const @ env.unary @ env.binary)) with
@@ -141,9 +146,9 @@ let cook_theory th_name lst =
       | None -> 
           {
             T.th_name = th_name;
-            T.th_const = Array.of_list (List.map fst env.const);
-            T.th_unary = Array.of_list (List.map fst env.unary);
-            T.th_binary = Array.of_list (List.map fst env.binary);
+            T.th_const = env_to_array env.const;
+            T.th_unary = env_to_array env.unary;
+            T.th_binary = env_to_array env.binary;
             T.th_equations = List.map (cook_equation env) eqs;
             T.th_axioms = List.map (cook_formula env) axs;
           }
