@@ -12,9 +12,10 @@ let names n {th_const=const; th_unary=unary; th_binary=binary} =
   in
   let i = Array.length const in
   let j = List.length default_names in
+  let pad = String.make (if n > i + j then 1 else 0) ' ' in
     Array.init n (fun k -> 
-                    if k < i then const.(k)
-                    else if k - i < j then List.nth default_names (k-i)
+                    if k < i then pad ^ const.(k)
+                    else if k - i < j then pad ^ List.nth default_names (k-i)
                     else "x" ^ string_of_int (k-i-j))
 
 (* Print an algebra to standard output, with given names that were
@@ -27,25 +28,25 @@ let algebra names k
     Printf.printf "\n######################################################################\n";
     Printf.printf "# %s (size %d, model %d)\n\n" th_name n k ;
     Array.iteri (fun op t ->
-                   Printf.printf " %s " unary_names.(op) ;
-                   for i = 0 to n-1 do Printf.printf "| %s " names.(i) done ;
-                   Printf.printf "\n%s" (dashes (String.length unary_names.(op) + 2)) ;
-                   for i = 0 to n-1 do Printf.printf "+---" done;
-                   Printf.printf "\n%s" (spaces (String.length unary_names.(op) + 2)) ;
-                   for i = 0 to n-1 do Printf.printf "| %s " names.(t.(i)) done ;
+                   Printf.printf " %s |" unary_names.(op) ;
+                   for i = 0 to n-1 do Printf.printf " %s " names.(i) done ;
+                   Printf.printf "\n%s+" (dashes (String.length unary_names.(op) + 2)) ;
+                   for i = 0 to n-1 do Printf.printf "---" done;
+                   Printf.printf "\n%s|" (spaces (String.length unary_names.(op) + 2)) ;
+                   for i = 0 to n-1 do Printf.printf " %s " names.(t.(i)) done ;
                    Printf.printf "\n\n"
                 ) unary ;
   Array.iteri (fun op t -> 
                  let sp = spaces (String.length binary_names.(op) - 1) in
                  let ds = dashes (String.length binary_names.(op) + 2) in
-                   Printf.printf "\n\n %s " binary_names.(op) ;
-                   for i = 0 to n-1 do Printf.printf "| %s " names.(i) done ;
+                   Printf.printf "\n\n %s |" binary_names.(op) ;
+                   for i = 0 to n-1 do Printf.printf " %s " names.(i) done ;
+                   Printf.printf "\n%s+" ds ;
+                   for j = 0 to n-1 do Printf.printf "---" done ;
                    for i = 0 to n-1 do
-                     Printf.printf "\n%s" ds;
-                     for j = 0 to n-1 do Printf.printf "+---" done ;
-                     Printf.printf "\n %s%s " sp names.(i) ;
+                     Printf.printf "\n %s%s |" sp names.(i) ;
                      for j = 0 to n-1 do
-                       Printf.printf "| %s " names.(t.(i).(j))
+                       Printf.printf " %s " names.(t.(i).(j))
                      done
                    done ;
                    Printf.printf "\n"

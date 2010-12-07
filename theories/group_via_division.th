@@ -4,7 +4,6 @@
 # G. Higman and B.H. Neumann. Groups as grupoids with one law.
 # Publicationes Mathematicae Debrecen, 2:215--227, 1952.
 
-signature:
-   / : 2 # division x/y corresponds to x * y^(-1)
-axioms:
-  (x / ((((x / x) / y) / z) / (((x / x) / x) / z))) = y;
+# division x/y corresponds to x * y^(-1)
+Binary /. 
+Axiom: (x / ((((x / x) / y) / z) / (((x / x) / x) / z))) = y.

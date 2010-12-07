@@ -1,25 +1,24 @@
 # Tarski's high school algebra (according to Wikipedia, which is a bit fishy)
-signature:
-  1 : 0
-  ^ : 2
-  * : 2
-  + : 2
+Constant 1.
+Binary + * ^.
 
-axioms:
-  ### + is a commutative semigroup
-  x + y = y + x;
-  x + (y + z) = (x + y) + z;
-  ### (1,*) is a commutative monoid
-  1 * x = x;
-  x * 1 = x;
-  x * y = y * x;
-  x * (y * z) = (x * y) * z;
-  ### distributivity of + and *
-  x * (y + z) = x * y + x * z;
-  (x + y) * z = x * z + y * z;
-  ### Exponentiation
-  1 ^ x = 1;
-  x ^ 1 = x;
-  (x * y) ^ z = (x ^ z) * (y ^ z);
-  x ^ (y + z) = (x ^ y) * (x ^ z);
-  x ^ (y * z) = (x ^ y) ^ z;
+### + is a commutative semigroup
+Axiom: x + y = y + x.
+Axiom: x + (y + z) = (x + y) + z.
+
+### (1,*) is a commutative monoid
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: x * y = y * x.
+Axiom: x * (y * z) = (x * y) * z.
+
+### distributivity of + and *
+Axiom: x * (y + z) = x * y + x * z.
+Axiom: (x + y) * z = x * z + y * z.
+
+### Exponentiation
+Axiom: 1 ^ x = 1.
+Axiom: x ^ 1 = x.
+Axiom: (x * y) ^ z = (x ^ z) * (y ^ z).
+Axiom: x ^ (y + z) = (x ^ y) * (x ^ z).
+Axiom: x ^ (y * z) = (x ^ y) ^ z.

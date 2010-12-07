@@ -1,11 +1,9 @@
-# The theory of a join semilattice
-signature:
-   0 : 0 # bottom
-   | : 2 # join
+Theory join_semilattice.
+Constant 0.
+Binary |.
 
-axioms:
-   0 | x = x;
-   x | 0 = x;
-   x | y = y | x;
-   x | (y | z) = (x | y) | z;
-   x | x = x;
+Axiom: 0 | x = x.
+Axiom: x | 0 = x.
+Axiom: x | y = y | x.
+Axiom: x | (y | z) = (x | y) | z.
+Axiom: x | x = x.
