@@ -13,13 +13,13 @@ let empty_env = { const = []; unary = []; binary = [] }
 
 let fresh lst = 1 + List.fold_left (fun m (_,k) -> max m k) (-1) lst
 
-let extend_const c env = 
+let extend_const env c = 
   { env with const = (c, fresh env.const) :: env.const }
 
-let extend_unary u env = 
+let extend_unary env u = 
   { env with unary = (u, fresh env.unary) :: env.unary }
 
-let extend_binary b env = 
+let extend_binary env b = 
   { env with binary = (b, fresh env.binary) :: env.binary }
 
 let extend_var x vars =
@@ -122,9 +122,9 @@ let cook_formula env f =
 let split_entries lst =
   List.fold_left
     (fun (env,eqs,axs) -> function
-       | S.Constant cs -> (List.fold_right extend_const cs env, eqs, axs)
-       | S.Unary us -> (List.fold_right extend_unary us env, eqs, axs)
-       | S.Binary bs -> (List.fold_right extend_binary bs env, eqs, axs)
+       | S.Constant cs -> (List.fold_left extend_const env cs, eqs, axs)
+       | S.Unary us -> (List.fold_left extend_unary env us, eqs, axs)
+       | S.Binary bs -> (List.fold_left extend_binary env bs, eqs, axs)
        | S.Equation (_,(t1,t2)) -> (env, (t1,t2) :: eqs, axs)
        | S.Axiom (_,a) ->
            begin match S.as_equation a with

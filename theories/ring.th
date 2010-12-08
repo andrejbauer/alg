@@ -1,8 +1,6 @@
-# The axioms for a ring
-
 Constant 0.
 Unary neg.
-Binary * +.
+Binary + *.
 
 Axiom plus_commutative: x + y = y + x.
 Axiom plus_associative: (x + y) + z = x + (y + z).
