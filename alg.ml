@@ -125,11 +125,11 @@ try begin (*A big wrapper for error reporting. *)
     (* Processing of algebras of a given size and pass them to the given continuations,
        together with information whether the algebra is indecomposable. *)
   let rec process_size n output =
-      (* Generate decomposable algebras if needed. *)
+    (* Generate decomposable algebras if needed. *)
     let decomposables = 
       if n < Array.length theory.Type.th_const || not config.products then []
       else
-          (* Generate indecomposable factors and then decomposable algebras from them. *)
+        (* Generate indecomposable factors and then decomposable algebras from them. *)
         let factors =
           List.fold_left
             (fun m k ->
@@ -147,12 +147,12 @@ try begin (*A big wrapper for error reporting. *)
             (Util.divisors n)
         in
         begin
-              (* make decomposables *)
+          (* make decomposables *)
           Indecomposable.gen_decomposable theory n factors (fun a -> output (a, false))
         end
     in
-      (* Generate indecomposable algebras. *)
-      (* Are we going to cache these? *)
+    (* Generate indecomposable algebras. *)
+    (* Are we going to cache these? *)
     let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
     let algebras = ref decomposables in
     let to_cache = ref [] in
@@ -167,7 +167,7 @@ try begin (*A big wrapper for error reporting. *)
     if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
   in
 
-  let out = Output.Text.init config stdout lines theory in
+  let out = Output.HTML.init config stdout lines theory in
 
   let counts = ref [] in
 
@@ -183,10 +183,10 @@ try begin (*A big wrapper for error reporting. *)
             if not config.count_only then out.size_header n ;
             let k = ref 0 in
             let output (algebra, indecomposable) =
-              incr k ;
+              if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Type.alg_name <- Some (theory.Type.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
-              then out.algebra !k algebra
+              then out.algebra algebra
             in
             process_size n output ;
             counts := (n, !k) :: !counts ;
