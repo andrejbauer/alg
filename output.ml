@@ -68,10 +68,12 @@ struct
       Printf.fprintf ch "## Size %d\n\n" n ;
     in
 
-    let algebra k {T.alg_size=n; T.alg_const=const; T.alg_unary=unary; T.alg_binary=binary} =
+    let algebra k {T.alg_size=n; T.alg_name=name; T.alg_prod=prod; T.alg_const=const; T.alg_unary=unary; T.alg_binary=binary} =
       let spaces k = String.make (max 0 k) ' ' in
       let dashes k = String.make (max 0 k) '-' in
-        Printf.fprintf ch "%s (size %d, model %d)\n\n" th_name n k ;
+        Printf.fprintf ch "%s%s\n\n"
+          (match name with Some n -> n | None -> "")
+          (match prod with None -> "" | Some lst -> " (" ^ String.concat " * " lst ^ ")") ;
         Array.iteri (fun op t ->
                        Printf.fprintf ch "     %s |" th_unary.(op) ;
                        for i = 0 to n-1 do Printf.fprintf ch " %s " names.(i) done ;

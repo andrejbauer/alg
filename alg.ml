@@ -184,6 +184,7 @@ try begin (*A big wrapper for error reporting. *)
             let k = ref 0 in
             let output (algebra, indecomposable) =
               incr k ;
+              algebra.Type.alg_name <- Some (theory.Type.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
               then out.algebra !k algebra
             in

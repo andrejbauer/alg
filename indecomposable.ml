@@ -4,8 +4,8 @@ open Util
 (* It is assumed that the two algebras correspond to the same signature. *)
 (* Note that this returns an algebra not in a form where supplied constants come before
    other elements. TODO: We cannot print this algebra correctly with current implementation of Print module. *)
-let product {alg_size=n1; alg_const=c1; alg_unary=u1; alg_binary=b1}
-            {alg_size=n2; alg_const=c2; alg_unary=u2; alg_binary=b2} =
+let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; alg_binary=b1}
+            {alg_size=n2; alg_name=a2; alg_prod=p2; alg_const=c2; alg_unary=u2; alg_binary=b2} =
 
   let size = n1 * n2 in
   let mapping i j = n2 * i + j in
@@ -35,7 +35,12 @@ let product {alg_size=n1; alg_const=c1; alg_unary=u1; alg_binary=b1}
   let const = Util.array_map2 mapping c1 c2 in
   let unary = Util.array_map2 combine_unary u1 u2 in
   let binary = Util.array_map2 combine_binary b1 b2 in
-    {alg_size=size; alg_const=const; alg_unary=unary; alg_binary=binary}
+    { alg_size = size;
+      alg_name = None;
+      alg_prod = Util.alg_prod a1 a2 p1 p2;
+      alg_const=const;
+      alg_unary=unary;
+      alg_binary=binary }
 
 let factor n =
   let rec
@@ -83,4 +88,3 @@ let gen_decomposable theory n factors output =
   in (* end of gen_product *)
     List.iter gen_product (Util.partitions n) ;
     !algebras
-

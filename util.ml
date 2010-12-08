@@ -239,12 +239,16 @@ let perms = function
   | _ -> snd (fromSome !permutations)
 
 (* Make fresh copies of operation tables of a given algebra. *)
-let copy_algebra {alg_size=n; alg_const=const; alg_unary=unary; alg_binary=binary} =
-  { alg_size = n;
-    alg_const = const;
-    alg_unary = matrix_copy unary;
-    alg_binary = array3d_copy binary
-  }
+let copy_algebra a =
+  { a with alg_unary = matrix_copy a.alg_unary ; alg_binary = array3d_copy a.alg_binary }
+
+let alg_prod a1 a2 i1 i2 =
+  match a1, a2, i1, i2 with
+    | _, _, Some lst1, Some lst2 -> Some (lst1 @ lst2)
+    | Some i1, _, None, Some lst2 -> Some (i1 :: lst2)
+    | _, Some i2, Some lst1, None -> Some (lst1 @ [i2])
+    | Some i1, Some i2, None, None -> Some [i1; i2]
+    | _, _, _, _ -> None
 
 (* Combinations without repetition. *)
 (*
