@@ -13,7 +13,7 @@ let ksprintf k =
 
 let position pos ppf =
   match pos with
-  | None -> Format.fprintf ppf "<unknown position>"
+  | None -> Format.fprintf ppf ""
   | Some (begin_pos, end_pos) ->
       let begin_char = begin_pos.Lexing.pos_cnum - begin_pos.Lexing.pos_bol + 1 in
       let end_char = end_pos.Lexing.pos_cnum - end_pos.Lexing.pos_bol in
@@ -34,7 +34,7 @@ let position pos ppf =
         Format.fprintf ppf "line %i (char %i) - line %i (char %i)" begin_line begin_char end_line end_char
 
 let report (pos, err, msg) = 
-  Format.eprintf "%s error: %s %t@." err msg (position pos) ;
+  Format.eprintf "%s error: %s%t@." err msg (position pos) ;
   exit 1
 
 

@@ -7,15 +7,25 @@ type formatter = {
   header: unit -> unit;
   size_header: int -> unit;
   algebra: int -> T.algebra -> unit;
-  size_footer: int -> int -> unit;
-  size_count: int -> int -> unit;
-  footer: unit -> unit
+  size_footer: unit -> unit;
+  footer: (int * int) list -> unit;
+  count_header: unit -> unit;
+  count: int -> int -> unit;
+  count_footer: (int * int) list -> unit        
 }
 
 module type Formatter =
 sig
   val init : Config.config -> out_channel -> string list -> T.theory -> formatter
 end
+
+(* Create a URL which queries the http://oeis.org. *)
+let oeis lst =
+  let m = List.fold_left (fun m (n,_) -> max m n) 0 lst in
+  "http://oeis.org/search?q=" ^
+    String.concat ","
+    (List.map (fun n -> match Util.lookup n lst with None -> "_" | Some k -> string_of_int k) (Util.enumFromTo 2 m))
+;;
 
 module Text : Formatter =
 struct
@@ -51,8 +61,7 @@ struct
       if source then begin
         List.iter (fun line -> Printf.fprintf ch "    %s\n" line) src_lines ;
         Printf.fprintf ch "\n"
-      end ;
-      Printf.fprintf ch "Sizes: %s\n\n" (String.concat ", " (List.map string_of_int sizes))
+      end
     in
 
     let size_header n =
@@ -91,18 +100,31 @@ struct
         Printf.fprintf ch "\n- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n%!" (* flush *)
     in
 
-    let size_count n k =
-      Printf.fprintf ch "There are %d algebras of size %d.\n\n" k n
+    let size_footer () = () in
+
+    let footer _ = () in
+
+    let count_header () =
+      Printf.fprintf ch "    size | count\n" ;
+      Printf.fprintf ch "    -----+------\n"
     in
 
-    let size_footer = size_count in
+    let count n k =
+      Printf.fprintf ch "    %4d | %d\n%!" n k
+    in
 
-    let footer () = () in
+    let count_footer lst =
+      Printf.fprintf ch "\nCheck the numbers on-line: %s\n" (oeis lst)
+    in
 
       { header = header;
         size_header = size_header;
         algebra = algebra;
         size_footer = size_footer;
-        size_count = size_count;
-        footer = footer }
+        count_header = count_header ;
+        count = count;
+        footer = footer;
+        count_footer = count_footer
+      }
+
 end

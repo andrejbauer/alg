@@ -402,22 +402,3 @@ let partitions n =
     | _::ds -> part n ds
   in
     part n (small_divisors n)
-
-(* Convert a string given via the --size command-line option to a list of sizes. *)
-let sizes_of_str str =
-  let interval_of_str str =
-    try
-      let k = String.index str '-'
-      in enumFromTo (int_of_string (String.sub str 0 k)) (int_of_string (String.sub str (k+1) (String.length str - k - 1)))
-    with
-      | Not_found -> [int_of_string str]
-      | Failure "int_of_string" -> Error.fatal "Invalid arguments of --size"
-  in
-  let lst = ref [] in
-  let k = ref 0 in
-  while !k < String.length str do
-    let m = (try String.index_from str !k ',' with Not_found -> String.length str) in
-    lst := union !lst (interval_of_str (String.sub str !k (m - !k))) ;
-    k := m + 1
-  done ;
-  !lst
