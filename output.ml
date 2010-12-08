@@ -14,15 +14,16 @@ type formatter = {
 
 module type Formatter =
 sig
-  val init : Config.config -> out_channel -> T.theory -> formatter
+  val init : Config.config -> out_channel -> string list -> T.theory -> formatter
 end
 
 module Text : Formatter =
 struct
 
   let init
-      { C.sizes=sizes }
+      {C.sizes=sizes; C.source=source}
       ch
+      src_lines
       {T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} =
 
     let names =
@@ -47,6 +48,10 @@ struct
     let header () =
       Printf.fprintf ch "Theory: %s\n" th_name ;
       Printf.fprintf ch "%s\n\n" (String.make (String.length th_name + 8) '=') ;
+      if source then begin
+        List.iter (fun line -> Printf.fprintf ch "    %s\n" line) src_lines ;
+        Printf.fprintf ch "\n"
+      end ;
       Printf.fprintf ch "Sizes: %s\n\n" (String.concat ", " (List.map string_of_int sizes))
     in
 

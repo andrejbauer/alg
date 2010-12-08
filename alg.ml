@@ -30,6 +30,9 @@ module IntMap = Util.IntMap ;;
       ("--no-products",
        Arg.Unit (fun () -> config.products <- false),
        " Do not try to generate algebras as products of smaller algebras.");
+      ("--no-source",
+       Arg.Unit (fun () -> config.source <- false),
+       " Do not include the theory source in the output.");
     ]
     in
 
@@ -44,14 +47,14 @@ module IntMap = Util.IntMap ;;
       usage ;
 
     (* Read the input file. *)
-    let fh =
+    let lines =
       begin match config.input_filename with
         | "" -> Error.fatal "please provide a theory file on the command line"
-        | f -> open_in f
+        | filename -> Util.read_lines filename
       end
     in
 
-    let lex = Lexing.from_channel fh in
+    let lex = Lexing.from_string (String.concat "\n" lines) in
 
     let theory_name, raw_theory =
       begin
@@ -64,8 +67,6 @@ module IntMap = Util.IntMap ;;
             Error.syntax ~pos:(Lexing.lexeme_start_p lex, Lexing.lexeme_end_p lex) "Unrecognised symbol."
       end
     in
-
-    close_in fh ;
 
     (* Compute the theory name from the file name, if needed. *)
     let theory_name =
@@ -138,7 +139,7 @@ module IntMap = Util.IntMap ;;
         if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
     in
 
-    let out = Output.Text.init config stdout theory in
+    let out = Output.Text.init config stdout lines theory in
 
     (* The main loop *)
     begin

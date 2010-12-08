@@ -5,7 +5,8 @@ type config = {
   mutable indecomposable_only : bool;
   mutable count_only : bool;
   mutable products : bool;
-  mutable input_filename : string
+  mutable source : bool;
+  mutable input_filename : string;
 }
 
 let default = {
@@ -13,5 +14,6 @@ let default = {
   indecomposable_only = false;
   count_only = false;
   products = true;
+  source = true;
   input_filename = "";
 }

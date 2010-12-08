@@ -6,6 +6,19 @@ module IntMap =
     let compare = compare
   end) ;;
 
+(* Return the list of lines in the given file. *)
+let read_lines filename =
+  let fh = open_in filename in
+  let lines = ref [] in
+  begin try
+          while true do
+            let line = input_line fh in
+            lines := line :: !lines ;
+          done
+    with End_of_file -> close_in fh
+  end ;
+  List.rev !lines
+
 (* The number of characters an non-negative int takes to print out. *)
 let rec strlen = function
   | k when k < 10 -> 1

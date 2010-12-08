@@ -14,7 +14,7 @@ let infixop4 = "**"           symbolchar*
 let infixop3 = ['*' '/' '%']  symbolchar*
 
 rule token = parse
-  | '#' [^'\n']* '\n'   { new_line lexbuf; token lexbuf }
+  | '#' [^'\n']* ('\n' | eof) { new_line lexbuf; token lexbuf }
   | '\n'                { new_line lexbuf; token lexbuf }
   | [' ' '\t']          { token lexbuf }
   | "Theory"            { THEORY }
