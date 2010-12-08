@@ -6,7 +6,7 @@
 let ident = ['_' 'a'-'z' 'A'-'Z' '0'-'9']+
 
 let symbolchar = ['!' '$' '%' '&' '*' '+' '-' '/' '\\' ':' '<' '=' '>' '?' '@' '^' '|' '~']
-let prefixop = ['?' '!'] symbolchar* | '~'  symbolchar+
+let prefixop = ['?' '!' '~'] symbolchar*
 let infixop0 = ['|' '&' '$']  symbolchar*
 let infixop1 = ['@' '^']      symbolchar*
 let infixop2 = ['+' '-' '\\'] symbolchar*

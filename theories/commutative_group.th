@@ -1,14 +1,14 @@
 Theory abelian_group.
 Constant 0.
-Unary inv.
+Unary ~.
 Binary +.
 
 Axiom: (x + y) + z = x + (y + z).
 Axiom: x + y = y + x.
 Axiom: 0 + x = x.
 Axiom: x + 0 = x.
-Axiom: x + inv(x) = 0.
-Axiom: inv(x) + x = 0.
+Axiom: x + ~ x = 0.
+Axiom: ~ x + x = 0.
 
-Theorem: inv(0) = 0.
-Theorem: inv(inv(x)) = x.
+Theorem: ~ 0 = 0.
+Theorem: ~ (~ x) = x.

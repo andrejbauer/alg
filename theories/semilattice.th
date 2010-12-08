@@ -1,7 +1,9 @@
 Theory join_semilattice.
-Constant 0.
+Constant 0 1.
 Binary |.
 
+Axiom: 1 | x = 1.
+Axiom: x | 1 = 1.
 Axiom: 0 | x = x.
 Axiom: x | 0 = x.
 Axiom: x | y = y | x.

@@ -276,7 +276,7 @@ Comments are written as in Python, i.e., a comment begins with the
 
 An alg input file consists of a sequence of declarations
 (\texttt{Theory}, \texttt{Constant}, \texttt{Unary}, \texttt{Binary})
-and axioms (\texttt{Axiom}, \texttt{Equation}). Each declaration and
+and axioms (\texttt{Axiom}, \texttt{Theorem}). Each declaration and
 axiom is terminated with a period.
 
 \section{The \texttt{Theory} keyword}
@@ -287,7 +287,7 @@ You may give a name to your theory with the declaration
 Theory /@theory_name@/.
 \end{alg}
 %
-\emph{at the beginning of the input file}, possibly preceeded by
+\emph{at the beginning of the input file}, possibly preceded by
 comments and whitespace. The theory name consists of letters, numbers,
 and the underscore. If you do not provide a theory name, alg will
 deduce one from the file name.
@@ -309,8 +309,8 @@ axioms, although it is probably a good idea to declare the constants
 and operations first.
 
 A constant may be any string of letters, digits and the underscore
-character. In particular, a constant may consist just of digits.
-Popular choices for neutral elements are \texttt{0} or \texttt{1}.
+character. In particular, a constant may consist just of digits, for
+example \texttt{0} or \texttt{1}.
 
 Unary and binary operations may be strings of letters, digits and the
 underscore character. For example, if we declare
@@ -384,7 +384,7 @@ are worth including in the theory because they make alg run faster,
 see Chapter~\ref{sec:optimization}.
 
 The optional \texttt{\textit{[name]}} is a string of of
-letters, digits and the underscore chatacters. The
+letters, digits and the underscore characters. The
 \texttt{\textit{<formula>}} is a first-order formula built from the
 following logical operations, listed in order of increasing precedence:
 %
@@ -427,16 +427,152 @@ Axiom: forall x y, x + y = y + x.
 \chapter{Output}
 \label{sec:output-files}
 
-At the moment alg prints results to standard output in text format. We
-plan to add various other output formats, such as {\LaTeX}, JSON and HMTL.
+\section{Description of the output}
+\label{sec:description-output}
+
+The output of alg is meant to be self-explanatory. Nevertheless, here
+is what the output consists of:
+%
+\begin{description}
+\item[Title:] the name of the theory.
+\item[Theory:] the input file, which can be suppressed with %
+  \texttt{--no-source} command-line option.
+\item[Models:] a list of the models found. This can be
+  suppressed with the \texttt{--count} command-line option. Each model
+  has a name \texttt{\textit{theory\_name\_$n$\_$m$}}
+  where $n$ is the model size and $m$ is the model sequence number. If
+  a model can be decomposed, a decomposition into indecomposable
+  factors is given.\footnote{Please note that in general such a
+    decomposition is \emph{not} unique.} Tables of all the operations
+  are displayed.
+\item[Counts:] a table showing how many models of each size were found.
+  If more than three sizes were considered, alg also provides a URL to
+  query the counts at \texttt{http://oeis.org/}, the On-Line
+  Encyclopedia of Integer Sequences.
+\end{description}
+
+\section{Available output formats}
+\label{sec:output-formats}
+
+Alg supports several output formats. The default output format is
+plain text and it is sent to the screen. You can choose a different
+format with the \texttt{--format} command-line option, and you can
+send the output to a file with the \texttt{--output} option. If you
+specify an output file but no format, alg guesses the correct format
+from the output filename. To see which formats are supported by alg,
+type \texttt{alg --help}.
 
 \chapter{Command-line Options}
 \label{sec:command-line-options}
 
-\chapter{Optimization}
+Alg is used as
+%
+\begin{shell}
+alg --size /@<sizes>@/ /@[options]@/ /@<theory.th>@/
+\end{shell}
+%
+where \texttt{\textit{theory.th}} is the input file, and the options are:
+%
+\begin{description}
+\item[\texttt{--size \textit{<sizes>}}]
+  A comma-separated list of sizes that alg should consider. You can
+  also specify a size interval of the form
+  \texttt{\texttt{m}-\textit{n}}. For example, \texttt{1,2,5-8} would
+  mean that we consider sizes 1, 2, 5, 6, 7, 8.
+\item[\texttt{--count}]
+  Do not print out the models, just report the counts.
+\item[\texttt{--format \textit{<format>}}]
+  Output in the given format. Supported formats are \texttt{text},
+  \texttt{html}, and \texttt{latex}.
+\item[\texttt{--indecomposable}]
+  Output only indecomposable models, i.e., those that are not products
+  of smaller models.
+\item[\texttt{--no-products}]
+  Do not try to generate models as products of smaller models. Use
+  this option if you know that a model cannot be a product of smaller
+  ones. For example, a field can never be a product of two fields. If
+  all of your axioms are equations, then you should \emph{not} use
+  this option.
+\item[\texttt{--no-source}]
+  Do not include the theory in the output.
+\item[\texttt{--output \textit{<filename>}}]
+  Output to the given file rather than to screen.
+\item[\texttt{--help}]
+  Print help.
+\end{description}
+
+\chapter{How to use alg efficiently}
 \label{sec:optimization}
 
-\chapter{Examples}
-\label{sec:examples}
+You should always keep in mind the fact that alg performs a brute
+force search with a few optimizations. In the worst case its running
+time is doubly exponential in the size of the models because there are
+$n^{n^2}$ tables for a binary operation on a set of size $n$.
+
+Alg is optimized for \emph{equational} theories, i.e., those whose
+axioms are equations (semigroups, monoids, groups, rings, lattices,
+etc., but \emph{not} integral domains and fields). Alg takes advantage
+of commutativity, associativity and idempotent laws, and to a smaller
+extent of other kinds of equational laws, such as absorption and
+distributivity.
+
+Alg checks axioms which are not equations, but does not perform any
+optimizations based on them. You should have as few non-equational
+axioms as possible. Furthermore, you should always push all the
+quantifiers inside. For example, instead of
+%
+\begin{shell}
+Axiom: forall x, exists y, x <> 0 -> x * y = 1.
+\end{shell}
+%
+you should write
+%
+\begin{shell}
+Axiom: forall x, x <> 0 -> (exists y, x * y = 1).
+\end{shell}
+%
+The best kind of axioms are those that allow alg to immediately fill in
+a whole column or row. Typically these are axioms about neutral
+elements, such as $1 \cdot x = x$ and $0 + x = x$. As a rule of thumb,
+every such axiom will increase the maximum manageable size by one.
+
+In general alg performs better if it is given more axioms and
+theorems, because each additional statement cuts down the
+possibilities. Thus you \emph{should} include theorems which already
+follow from other axioms. For example:
+%
+\begin{itemize}
+\item state \emph{both} $1 \cdot x = x$ and $x \cdot 1 = x$, even if
+  one of them follows from the other,
+\item more generally, state all versions of a symmetric equation, even
+  if they all follow from one of them,
+\item state laws like $0 \cdot x = 0$ (and also $x \cdot 0 = x$), even
+  if they follow from other axioms.
+\end{itemize}
+
+You should declare as many constants and as few operations as
+possible. A typical example is the theory of lattices. For
+\emph{finite} structures the following are equivalent theories:
+%
+\begin{itemize}
+\item a lattice with operations $\land$, $\lor$,
+\item a bounded lattice with operations $\land$, $\lor$
+  and constants $0$, $1$,
+\item a $\lor$-semilattice with operation $\lor$ and constant $0$,
+\item a bounded $\lor$-semilattice with operation $\lor$
+  and constants $0$, $1$.
+\end{itemize}
+%
+The best choice is the last one because it has just fewest operation and
+most constants. Indeed, figuring out that there are 53 lattices of size
+7 takes 250 times longer with the theory of a lattice than with the
+theory of a bounded $\lor$-semilattice.
+
+Lastly, we should mention that alg generates tables in the order in
+which the operations are declared. Sometimes it is much easier to
+generate tables for one operation than another, so you should experiment
+by switching the order of declarations. For example, the theory of a
+ring works much faster if addition $+$ is declared before
+multiplication $\times$.
 
 \end{document}
