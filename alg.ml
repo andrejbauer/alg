@@ -1,6 +1,7 @@
 (* The main program. *)
 
-open Type
+open Config
+open Output
 
 module IntMap = Util.IntMap ;;
 
@@ -8,11 +9,7 @@ module IntMap = Util.IntMap ;;
   try begin
 
     (* References that store the command-line options *)
-    let sizes = ref [] in
-    let indecomposable_only = ref false in
-    let count_only = ref false in
-    let input_filename = ref None in
-    let products = ref true in
+    let config = Config.default in
 
     (* Command-line options and usage *)
     let usage = "Usage: alg --size <n> <theory.th>" in
@@ -22,16 +19,16 @@ module IntMap = Util.IntMap ;;
        Arg.Unit (fun () -> print_endline usage; exit 0),
        " Print this jelp");
       ("--size",
-       Arg.String (fun str -> sizes := List.sort compare (Util.union !sizes (Util.sizes_of_str str))),
+       Arg.String (fun str -> config.sizes <- List.sort compare (Util.union config.sizes (Util.sizes_of_str str))),
        " Comma-separated list of sizes and size intervals m-n that should be considered.");
       ("--count",
-       Arg.Set count_only,
+       Arg.Unit (fun () -> config.count_only <- true),
        " Just count the models, do not print them out.");
       ("--indecomposable",
-       Arg.Set indecomposable_only,
+       Arg.Unit (fun () -> config.indecomposable_only <- true),
        " Output only indecomposable models.");
       ("--no-products",
-       Arg.Clear products,
+       Arg.Unit (fun () -> config.products <- false),
        " Do not try to generate algebras as products of smaller algebras.");
     ]
     in
@@ -41,16 +38,16 @@ module IntMap = Util.IntMap ;;
     (* Parse the arguments. Treat the anonymous arguments as files to be read. *)
     Arg.parse options
       (fun str ->
-        match !input_filename with
-          | None -> input_filename := Some str
-          | Some _ -> raise (Arg.Bad " only one theory file should be given"))
+        match config.input_filename with
+          | "" -> config.input_filename <- str
+          | _ -> raise (Arg.Bad " only one theory file should be given"))
       usage ;
 
     (* Read the input file. *)
-    let file_name, fh =
-      begin match !input_filename with
-        | None -> Error.fatal "please provide a theory file on the command line"
-        | Some f -> f, open_in f
+    let fh =
+      begin match config.input_filename with
+        | "" -> Error.fatal "please provide a theory file on the command line"
+        | f -> open_in f
       end
     in
 
@@ -76,7 +73,7 @@ module IntMap = Util.IntMap ;;
         | Some n -> n
         | None ->
           begin
-            let n = Filename.basename file_name in
+            let n = Filename.basename config.input_filename in
             try String.sub n 0 (String.index n '.') with Not_found -> n
           end
       end in
@@ -85,7 +82,7 @@ module IntMap = Util.IntMap ;;
     let theory = Cook.cook_theory theory_name raw_theory in
 
     (* If --indecomposable is given then --no-products makes no sense. *)
-    if !indecomposable_only then products := true ;
+    if config.indecomposable_only then config.products <- true ;
 
     (* Cache storing indecomposable algebras computed so far. *)
     let indecomposable_algebras = ref IntMap.empty in
@@ -101,7 +98,7 @@ module IntMap = Util.IntMap ;;
     let rec process_size n output =
       (* Generate decomposable algebras if needed. *)
       let decomposables = 
-        if n < Array.length theory.th_const || not !products then []
+        if n < Array.length theory.Type.th_const || not config.products then []
         else
           (* Generate indecomposable factors and then decomposable algebras from them. *)
           let factors =
@@ -127,7 +124,7 @@ module IntMap = Util.IntMap ;;
       in
       (* Generate indecomposable algebras. *)
       (* Are we going to cache these? *)
-      let must_cache = !products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) !sizes in
+      let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
       let algebras = ref decomposables in
       let to_cache = ref [] in
         Enum.enum n theory
@@ -141,72 +138,26 @@ module IntMap = Util.IntMap ;;
         if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
     in
 
+    let out = Output.Text.init config stdout theory in
+
     (* The main loop *)
     begin
+      out.header () ;
       List.iter
         (fun n -> 
+           if not config.count_only then out.size_header n ;
            let k = ref 0 in
-           let names = Print.names n theory in
            let output (algebra, indecomposable) =
              incr k ;
-             if not !count_only && (not !indecomposable_only || indecomposable)
-             then Print.algebra names !k theory algebra
+             if not config.count_only && (not config.indecomposable_only || indecomposable)
+             then out.algebra !k algebra
            in
              process_size n output ;
-             Printf.printf "The number of models of theory %s of size %d is %d.\n%!" theory.th_name n !k)
-        !sizes
+             if config.count_only
+             then out.size_count n !k
+             else out.size_footer n !k)
+        config.sizes ;
+      out.footer ()
     end
   end
   with Error.Error (pos, err, msg) -> Error.report (pos, err, msg)
-
-(*
-(* GARBAGE        -------------------------------------------- *)
-        else (* Indecomposable only. *)
-          (* TODO: We don't necessarily have products. *)
-          begin
-            let indecomposable = ref 0 in
-            let start = Array.length theory.th_const in
-            let cont a =
-              if not (Iso.seen theory a !unique) && First_order.check_axioms theory a then
-                begin
-                  let a' = Util.copy_algebra a in
-                  unique := a' :: !unique ;
-                  incr indecomposable
-                end in
-            let rec
-                gen_smaller acc = function
-                  | k when 2 * k > !size -> acc
-                  | k ->
-                    begin
-                      unique := Indecomposable.gen_decomposable theory k acc ;
-                      indecomposable := 0 ;
-                      Enum.enum k theory cont ;
-                      gen_smaller (Util.rev_take !indecomposable !unique :: acc) (k+1)
-                    end in
-
-            (* There are no algebras with strictly fewer elements than there are constants. *)
-            let indecomposable_by_size = List.rev (gen_smaller (Util.replicate start []) start) in
-
-            unique := Indecomposable.gen_decomposable theory !size indecomposable_by_size ;
-
-            let cont a =
-              if not (Iso.seen theory a !unique) && First_order.check_axioms theory a then
-                begin
-                  incr k;
-                  unique := (Util.copy_algebra a) :: !unique ;
-                  if not !count_only then
-                    Print.algebra names !k theory a
-                end
-            in
-              Enum.enum !size theory cont ;
-              Printf.printf "The number of models of theory %s of size %d is %d.\n" theory.th_name !size !k
-          end
-      end
-      in
-
-      let k = ref 0 in
-
-      let unique = ref [] in
-      
-      List.iter process_size !size
-*)

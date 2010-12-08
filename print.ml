@@ -34,7 +34,7 @@ let algebra names k
                    for i = 0 to n-1 do Printf.printf "---" done;
                    Printf.printf "\n%s|" (spaces (String.length unary_names.(op) + 2)) ;
                    for i = 0 to n-1 do Printf.printf " %s " names.(t.(i)) done ;
-                   Printf.printf "\n\n"
+                   Printf.printf "\n"
                 ) unary ;
   Array.iteri (fun op t -> 
                  let sp = spaces (String.length binary_names.(op) - 1) in

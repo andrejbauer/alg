@@ -6,6 +6,11 @@ module IntMap =
     let compare = compare
   end) ;;
 
+(* The number of characters an non-negative int takes to print out. *)
+let rec strlen = function
+  | k when k < 10 -> 1
+  | k -> 1 + strlen (k / 10)
+
 (* Return a duplicate element in the list, if one exists. *)
 let rec find_duplicate = function
   | [] -> None
