@@ -11,7 +11,8 @@ type formatter = {
   footer: (int * int) list -> unit;
   count_header: unit -> unit;
   count: int -> int -> unit;
-  count_footer: (int * int) list -> unit        
+  count_footer: (int * int) list -> unit;
+  interrupted: unit -> unit                
 }
 
 module type Formatter =
@@ -56,8 +57,7 @@ struct
     in
         
     let header () =
-      Printf.fprintf ch "Theory: %s\n" th_name ;
-      Printf.fprintf ch "%s\n\n" (String.make (String.length th_name + 8) '=') ;
+      Printf.fprintf ch "# Theory: %s\n\n" th_name ;
       if source then begin
         List.iter (fun line -> Printf.fprintf ch "    %s\n" line) src_lines ;
         Printf.fprintf ch "\n"
@@ -65,8 +65,7 @@ struct
     in
 
     let size_header n =
-      Printf.fprintf ch "Size %d\n" n ;
-      Printf.fprintf ch "%s\n\n" (String.make (Util.strlen n + 5) '-')
+      Printf.fprintf ch "## Size %d\n\n" n ;
     in
 
     let algebra k {T.alg_size=n; T.alg_const=const; T.alg_unary=unary; T.alg_binary=binary} =
@@ -102,8 +101,6 @@ struct
 
     let size_footer () = () in
 
-    let footer _ = () in
-
     let count_header () =
       Printf.fprintf ch "    size | count\n" ;
       Printf.fprintf ch "    -----+------\n"
@@ -114,7 +111,20 @@ struct
     in
 
     let count_footer lst =
-      Printf.fprintf ch "\nCheck the numbers on-line: %s\n" (oeis lst)
+      let lst = List.filter (fun (n,_) -> n >= 2) lst in
+      if List.length lst > 3 then Printf.fprintf ch "\nCheck the numbers on-line at [OEIS](%s)\n" (oeis lst) ;
+      Printf.fprintf ch "\n"
+    in
+
+    let footer lst = 
+      Printf.fprintf ch "## Total counts:\n\n" ;
+      count_header () ;
+      List.iter (fun (n,k) -> count n k) lst ;
+      count_footer lst
+    in
+
+    let interrupted () =
+      Printf.fprintf ch "\n\n**Warning: the computation was interrupted by the user.**\n\n"
     in
 
       { header = header;
@@ -124,7 +134,8 @@ struct
         count_header = count_header ;
         count = count;
         footer = footer;
-        count_footer = count_footer
+        count_footer = count_footer;
+        interrupted = interrupted
       }
 
 end

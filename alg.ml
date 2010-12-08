@@ -173,23 +173,28 @@ try begin (*A big wrapper for error reporting. *)
 
   (* The main loop *)
   begin
+    Sys.catch_break true ;
     out.header () ;
     if config.count_only then out.count_header () ;
-    List.iter
-      (fun n -> 
-        if not config.count_only then out.size_header n ;
-        let k = ref 0 in
-        let output (algebra, indecomposable) =
-          incr k ;
-          if not config.count_only && (not config.indecomposable_only || indecomposable)
-          then out.algebra !k algebra
-        in
-        process_size n output ;
-        counts := (n, !k) :: !counts ;
-        if config.count_only
-        then out.count n !k
-        else out.size_footer ())
-      config.sizes ;
+    begin 
+      try
+        List.iter
+          (fun n -> 
+            if not config.count_only then out.size_header n ;
+            let k = ref 0 in
+            let output (algebra, indecomposable) =
+              incr k ;
+              if not config.count_only && (not config.indecomposable_only || indecomposable)
+              then out.algebra !k algebra
+            in
+            process_size n output ;
+            counts := (n, !k) :: !counts ;
+            if config.count_only
+            then out.count n !k
+          else out.size_footer ())
+          config.sizes
+      with Sys.Break -> out.interrupted ()
+    end ;
     if config.count_only
     then out.count_footer (List.rev !counts)
     else out.footer (List.rev !counts)
