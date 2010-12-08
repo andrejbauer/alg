@@ -19,6 +19,14 @@ let read_lines filename =
   end ;
   List.rev !lines
 
+(* Return the filename extension or "" if there isn't one. *)
+let filename_extension filename =
+  let fn = Filename.basename filename in
+    try
+      let k = String.rindex fn '.' in
+        String.sub fn (k+1) (String.length fn - k - 1)
+    with Not_found -> ""
+
 (* The number of characters an non-negative int takes to print out. *)
 let rec strlen = function
   | k when k < 10 -> 1

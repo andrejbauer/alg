@@ -34,6 +34,19 @@ let sizes_of_str str =
 ;;
 
 
+let formats = [
+  ("text", Output.Markdown.init);
+  ("html", Output.HTML.init);
+  ("latex", Output.LaTeX.init);
+] ;;
+
+let formats_extension = [
+  ("txt", "text");
+  ("html", "html");
+  ("htm", "html");
+  ("tex", "latex");
+] ;;
+
 (* Main program starts here. *)
 try begin (*A big wrapper for error reporting. *)
   
@@ -50,6 +63,9 @@ try begin (*A big wrapper for error reporting. *)
     ("--count",
      Arg.Unit (fun () -> config.count_only <- true),
      " Just count the models, do not print them out.");
+    ("--format",
+     Arg.String (fun str -> config.format <- str),                     
+     " Output format, one of: " ^ String.concat ", " (List.map fst formats) ^ ".");
     ("--indecomposable",
      Arg.Unit (fun () -> config.indecomposable_only <- true),
      " Output only indecomposable models.");
@@ -59,6 +75,9 @@ try begin (*A big wrapper for error reporting. *)
     ("--no-source",
      Arg.Unit (fun () -> config.source <- false),
      " Do not include the theory source in the output.");
+    ("--output",
+     Arg.String (fun str -> config.output_filename <- str),
+     " Output to the a file.");
   ]
   in
 
@@ -167,7 +186,28 @@ try begin (*A big wrapper for error reporting. *)
     if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
   in
 
-  let out = Output.HTML.init config stdout lines theory in
+  if config.format = "" then
+    config.format <-
+      begin
+        try List.assoc (Util.filename_extension config.output_filename) formats_extension
+        with Not_found -> fst (List.hd formats)
+      end ;
+
+  let outch =
+    begin
+      match config.output_filename with
+        | "" -> stdout
+        | filename -> open_out filename
+    end
+  in
+
+  let out = 
+    begin
+      try List.assoc config.format formats config outch lines theory
+      with Not_found ->
+        Error.fatal "unknown output format, should be one of: %s" (String.concat ", " (List.map fst formats))
+    end
+  in
 
   let counts = ref [] in
 

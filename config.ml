@@ -7,6 +7,8 @@ type config = {
   mutable products : bool;
   mutable source : bool;
   mutable input_filename : string;
+  mutable output_filename : string;
+  mutable format : string;
 }
 
 let default = {
@@ -16,4 +18,6 @@ let default = {
   products = true;
   source = true;
   input_filename = "";
+  output_filename = "";
+  format = "";
 }
