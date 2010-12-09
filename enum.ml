@@ -233,6 +233,7 @@ let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axiom
         apply_simple_binary simple_binary unary_arr binary_arr ;
         apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
         check_after_add () ; (* TODO: Move this into the above functions. *)
+        if not (check ()) then raise Contradiction ; (* We might be lucky and fill everything already. *)
         gen_binary n lc lu lb binary_dos binary_undos unary_arr binary_arr check k
       with Contradiction -> () in
       
