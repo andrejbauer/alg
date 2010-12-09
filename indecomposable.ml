@@ -42,22 +42,6 @@ let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; 
       alg_unary=unary;
       alg_binary=binary }
 
-let factor n =
-  let rec
-      factor' acc = function
-        | k when k * k > n -> acc
-        | k when n mod k = 0 -> factor' ((k,n / k)::acc) (succ k)
-        | k -> factor' acc (succ k) in
-  factor' [] 2
-
-let is_decomposable s a lst =
-  let factors = factor a.alg_size in
-  let exist_factors (k,l) =
-    let ks = List.nth lst k in
-    let ls = List.nth lst l in
-    List.exists (fun left -> List.exists (fun right -> Iso.are_iso s a (product left right)) ls) ks in
-  List.exists exist_factors factors
-
 (* factors is a map of possible factors *)
 let gen_decomposable theory n factors output = 
   let algebras = ref [] in

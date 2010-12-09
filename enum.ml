@@ -160,6 +160,13 @@ let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axiom
       
     apply_simple simple unary_arr ;
 
+    for o=0 to lc - 1 do
+      for i=0 to n-1 do
+        if unary_arr.(o).(i) <> -1 && not (unary_dos (o,i)) then
+          Error.fatal "All of the axioms cannot be met." (* TODO: raise exception and catch it in main loop. *)
+      done
+    done ;
+
     (* Auxiliary variables for generation of binary operations. *)
     (* ******************************************************* *)
     let (simple_binary, complicated_binary) = part_binary_axioms binary_axioms in
@@ -208,14 +215,24 @@ let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axiom
           for j=0 to n-1 do
             binary_arr.(o).(i).(j) <- -1
           done
-      done
+        done
       done in
-
+    
+    let check_after_add () =
+      for o=0 to lb-1 do
+        for i=0 to n-1 do
+          for j=0 to n-1 do
+            if binary_arr.(o).(i).(j) <> -1 && not (binary_dos (o,i,j) o i j) then
+              raise Contradiction
+          done
+        done
+      done in
     let cont () =
       try
         reset_binary_arr () ;
         apply_simple_binary simple_binary unary_arr binary_arr ;
         apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
+        check_after_add () ; (* TODO: Move this into the above functions. *)
         gen_binary n lc lu lb binary_dos binary_undos unary_arr binary_arr check k
       with Contradiction -> () in
       
