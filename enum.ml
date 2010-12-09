@@ -160,7 +160,7 @@ let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axiom
       
     apply_simple simple unary_arr ;
 
-    for o=0 to lc - 1 do
+    for o=0 to lu - 1 do
       for i=0 to n-1 do
         if unary_arr.(o).(i) <> -1 && not (unary_dos (o,i)) then
           Error.fatal "All of the axioms cannot be met." (* TODO: raise exception and catch it in main loop. *)
