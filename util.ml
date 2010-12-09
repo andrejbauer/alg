@@ -94,14 +94,14 @@ let array3d_copy a =
 let array_map2 f a1 a2 =
   let n = Array.length a1 in
     if n <> Array.length a2
-    then failwith "array_map2: invald argument"
+    then failwith "array_map2: invalid argument"
     else
       Array.init n (fun i -> f a1.(i) a2.(i))
 
 let array_map2_list f a1 a2 =
   let n = Array.length a1 in
     if n <> Array.length a2
-    then failwith "array_map2: invald argument"
+    then failwith "array_map2: invalid argument"
     else
       let lst = ref [] in
         for i = 0 to n-1 do
@@ -213,39 +213,6 @@ let fac n =
     r := !r * i
   done ; !r
 
-let permutations = ref None
-
-(* generate array of all permutations of elements 0..n-1. Cached in permutations. *)
-let perms = function
-  | n when !permutations = None || fst (fromSome !permutations) <> fac n ->
-    let len = fac n in
-    let arr = Array.make_matrix len n 0 in
-    let place = ref 0 in
-    let used = Array.make n false in
-    let cur = Array.make n 0 in
-    let rec loop = function
-      | k when k = n ->
-        begin
-          for i=0 to n-1 do
-            arr.(!place).(i) <- cur.(i);
-          done ;
-          place := !place + 1
-        end
-      | k ->
-        for i=0 to n-1 do
-          if not used.(i) then
-            begin
-              used.(i) <- true;
-              cur.(k) <- i;
-              loop (k+1) ;
-              used.(i) <- false
-            end
-        done in
-    loop 0;
-    permutations := Some (len, arr) ;
-    arr
-  | _ -> snd (fromSome !permutations)
-
 (* Make fresh copies of operation tables of a given algebra. *)
 let copy_algebra a =
   { a with alg_unary = matrix_copy a.alg_unary ; alg_binary = array3d_copy a.alg_binary }
@@ -257,84 +224,6 @@ let alg_prod a1 a2 i1 i2 =
     | _, Some i2, Some lst1, None -> Some (lst1 @ [i2])
     | Some i1, Some i2, None, None -> Some [i1; i2]
     | _, _, _, _ -> None
-
-(* Combinations without repetition. *)
-(*
-  Generate next k-combination of elements 0..n-1.
-*)
-let next_comb n k cur =
-  let i = ref 0 in
-  while !i < k && cur.(k - !i - 1) >= n - !i - 1 do
-    incr i
-  done ;
-  if !i = k then
-    None
-  else
-    begin
-      cur.(k- !i-1) <- cur.(k- !i-1) + 1;
-      decr i;
-      for j = !i downto 0 do
-        cur.(k-j-1) <- cur.(k-j-2) + 1;
-      done ;
-      Some cur
-    end
-
-(*
-  Generate all k element subsets of 0..n-1 and pass each set to a given continuation.
-*)
-let combs n k cont =
-  let cur = Array.init k (fun i -> i) in
-  let rec loop = function
-    | None -> ()
-    | Some arr -> cont arr ;
-                  loop (next_comb n k cur)
-  in loop (Some cur)
-
-(* Combination with repetition. *)
-(*
-  Generate next k-combination with repetition of elements 0..n-1.
-*)
-let next_comb_r n k cur =
-  let i = ref 0 in
-  while !i < k && cur.(k - !i - 1) = n-1 do
-    incr i
-  done ;
-  if !i = k then
-    None
-  else
-    begin
-      cur.(k- !i-1) <- cur.(k- !i-1)+1;
-      decr i;
-      for j = !i downto 0 do
-        cur.(k-j-1) <- cur.(k-j-2)
-      done ;
-      Some cur
-    end
-
-(*
-  Generate k-combinations with repetition of elements 0..n-1 and
-  pass each one to the given continuation.
-*)
-let combs_r n k cont =
-  let cur = Array.make k 0 in
-  let rec loop = function
-    | None -> ()
-    | Some arr -> cont arr ;
-                  loop (next_comb_r n k cur)
-  in loop (Some cur)
-
-(*
-  Generate all k element subsets of the given elements and pass each one to a
-  given continuation. Elements are assumed to  be distinct.
-*)
-let subsets k elems cont =
-  let n = Array.length elems in
-  let tmp = Array.make k 0 in
-  let f arr =
-    for i=0 to k-1 do
-      tmp.(i) <- elems.(arr.(i));
-    done ; cont tmp in
-  combs n k f
 
 let print_arr a =
   for i=0 to Array.length a - 1 do

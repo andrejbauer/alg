@@ -79,7 +79,7 @@ try begin (*A big wrapper for error reporting. *)
      " Do not include the theory source in the output.");
     ("--output",
      Arg.String (fun str -> config.output_filename <- str),
-     " Output to the a file.");
+     " Output to the specified file.");
   ]
   in
 
