@@ -3,6 +3,7 @@
 module T = Type
 module C = Config
 
+(* A formatter for output *)
 type formatter = {
   header: unit -> unit;
   size_header: int -> unit;
@@ -15,6 +16,13 @@ type formatter = {
   interrupted: unit -> unit                
 }
 
+module type Formatter =
+sig
+  val init : Config.config -> out_channel -> string list -> T.theory -> formatter
+end
+
+(* Several output styles (Markdown, LaTeX, and HTML) are sufficiently similar
+   that it is worth implementing them all the same way via the following structure. *)
 module type TextStyle =
 sig
   val names : T.theory -> int -> string array
@@ -33,11 +41,7 @@ sig
   val count_footer : out_channel -> string option -> unit
 end
 
-module type Formatter =
-sig
-  val init : Config.config -> out_channel -> string list -> T.theory -> formatter
-end
-
+(* A functor taking an implementation of [TextStyle] to [Formatter]. *)
 module Make(S : TextStyle) : Formatter =
 struct
 
@@ -204,7 +208,7 @@ struct
     | None -> Printf.fprintf ch "\n"
     | Some msg -> Printf.fprintf ch "\n%s\n" msg
 
-end
+end (* MarkdownStyle *)
 
 module HTMLStyle : TextStyle =
 struct
@@ -285,17 +289,35 @@ end (* HTMLStyle *)
 module LaTeXStyle : TextStyle =
 struct
 
+  (* Escape LaTeX special characters. This is horribly inefficient, but it does not matter,
+     as it is only done once. *)
   let escape str =
-    let k = ref 0 in
-    String.iter (fun c -> if c = '_' then incr k) str ;
-    let str' = String.make (String.length str + !k) ' ' in
-    k := 0 ;
+    let trans = [
+      ('_', "{\\_}");
+      ('$', "{\\$}");
+      ('%', "{\\%}");
+      ('&', "{\\&}");
+      ('*', "{*}");
+      ('+', "{+}");
+      ('-', "{-}");
+      ('/', "{/}");
+      ('\\', "{\\setminus}");
+      (':', "{:}");
+      ('<', "{<}");
+      ('=', "{=}");
+      ('>', "{>}");
+      ('?', "{?}");
+      ('@', "{@}");
+      ('^', "{\\^}");
+      ('|', "{:}");
+      ('~', "{\\sim}");
+    ]
+    in
+    let s = ref "" in
     String.iter
-      (fun c ->
-         if c = '_' then (str'.[!k] <- '\\' ; incr k) ;
-         str'.[!k] <- c ; incr k)
+      (fun c -> s := !s ^ (try List.assoc c trans with Not_found -> String.make 1 c))
       str ;
-    str'
+    !s
 
   let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} n =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
@@ -308,12 +330,12 @@ struct
     in
     let i = Array.length th_const in
     let j = List.length default_names in
-      Array.init n
-        (fun k -> "$" ^
-           escape (if k < i then th_const.(k)
-                   else if k - i < j then List.nth default_names (k-i)
-                   else "x" ^ string_of_int (k-i-j)) ^ "$")
-        
+    Array.init n
+      (fun k -> "$" ^
+        escape (if k < i then th_const.(k)
+          else if k - i < j then List.nth default_names (k-i)
+          else "x" ^ string_of_int (k-i-j)) ^ "$")
+      
   let link txt url = txt
     
   let title ch str =
@@ -339,31 +361,31 @@ struct
 
   let algebra_unary ch names op t =
     let n = Array.length t in
-      Printf.fprintf ch "\\begin{tabular}[t]{|" ;
-      for i = 0 to n do Printf.fprintf ch "c|" done ;
-      Printf.fprintf ch "}\n\\hline\n" ;
-      Printf.fprintf ch "%s " op;
-      for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
-      Printf.fprintf ch "\\\\ \\hline\n" ;
-      for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(t.(i)) done ;
-      Printf.fprintf ch "\\\\ \\hline\n\\end{tabular}\n\n"
+    Printf.fprintf ch "\\begin{tabular}[t]{|" ;
+    for i = 0 to n do Printf.fprintf ch "c|" done ;
+    Printf.fprintf ch "}\n\\hline\n" ;
+    Printf.fprintf ch "%s " op;
+    for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
+    Printf.fprintf ch "\\\\ \\hline\n" ;
+    for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(t.(i)) done ;
+    Printf.fprintf ch "\\\\ \\hline\n\\end{tabular}\n\n"
 
   let algebra_binary ch names op t =
     let n = Array.length t in
-      Printf.fprintf ch "\\begin{tabular}[t]{|" ;
-      for i = 0 to n do Printf.fprintf ch "c|" done ;
-      Printf.fprintf ch "}\n\\hline\n" ;
-      Printf.fprintf ch "%s " op;
-      for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
-      Printf.fprintf ch "\\\\ \\hline\n" ;
-      for i = 0 to n-1 do
-        Printf.fprintf ch "%s " names.(i) ;
-        for j = 0 to n-1 do
-          Printf.fprintf ch "& %s " names.(t.(i).(j))
-        done ;
-        Printf.fprintf ch "\\\\ \\hline\n"
+    Printf.fprintf ch "\\begin{tabular}[t]{|" ;
+    for i = 0 to n do Printf.fprintf ch "c|" done ;
+    Printf.fprintf ch "}\n\\hline\n" ;
+    Printf.fprintf ch "%s " op;
+    for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
+    Printf.fprintf ch "\\\\ \\hline\n" ;
+    for i = 0 to n-1 do
+      Printf.fprintf ch "%s " names.(i) ;
+      for j = 0 to n-1 do
+        Printf.fprintf ch "& %s " names.(t.(i).(j))
       done ;
-      Printf.fprintf ch "\\end{tabular}\n\n"
+      Printf.fprintf ch "\\\\ \\hline\n"
+    done ;
+    Printf.fprintf ch "\\end{tabular}\n\n"
 
   let algebra_footer ch = Printf.fprintf ch "\n\n%!"
 
@@ -378,6 +400,68 @@ struct
 
 end (* LaTeXStyle *)
 
+(* The actual formatters for Markdown, HTML and LaTeX. *)
 module Markdown = Make(MarkdownStyle)
 module HTML = Make(HTMLStyle)
 module LaTeX = Make(LaTeXStyle)
+
+(* The json formatter is different from the others, so we implement it directly. *)
+module JSON : Formatter =
+struct
+  let sep i n = if i < n then ", " else ""
+
+  let init config ch _
+      {T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} =
+
+    {
+      header = begin fun () -> Printf.fprintf ch "[ \"%s\"" th_name end;
+
+      size_header = begin fun _ -> () end;
+
+      algebra =
+        begin
+          fun {T.alg_unary=unary; T.alg_binary=binary} ->
+            Printf.fprintf ch ",\n  {\n";
+            Array.iteri (fun i c -> Printf.fprintf ch "    \"%s\" : %d,\n" c i) th_const;
+            let ulen = Array.length unary in
+            Array.iteri
+              (fun op t -> 
+                let n = Array.length t in
+                Printf.fprintf ch "    \"%s\" : [" th_unary.(op) ;
+                for i = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i) (sep i (n-1)) done;
+                Printf.fprintf ch "]%s\n" (sep op ulen)
+              )
+              unary;
+           let blen = Array.length binary in
+            Array.iteri
+              (fun op t -> 
+                let n = Array.length t in
+                Printf.fprintf ch "    \"%s\" :\n      [\n" th_binary.(op) ;
+                for i = 0 to n-1 do
+                  Printf.fprintf ch "        [" ;
+                  for j = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i).(j) (sep j (n-1)) done ;
+                  Printf.fprintf ch "]%s\n" (sep i (n-1))
+                done ;
+                Printf.fprintf ch "      ]%s\n" (sep op (blen-1))
+              )
+              binary;
+            Printf.fprintf ch "  }"
+        end;
+
+      size_footer = begin fun () -> () end;
+
+      footer = begin fun _ -> Printf.fprintf ch "]\n" end;
+
+      count_header = begin fun () -> () end;
+
+      count = begin fun n k -> () end;
+
+      count_footer = begin fun lst ->
+        Printf.fprintf ch
+          ",\n  [%s]\n"
+          (String.concat ", " (List.map (fun (n,k) -> "[" ^ string_of_int n ^ "," ^ string_of_int k ^ "]") lst))
+      end;
+
+      interrupted = begin fun () -> Error.fatal "interrupted by the user while producing JSON output" end;
+    }
+end

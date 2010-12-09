@@ -1,8 +1,8 @@
-\documentclass{report}
+\documentclass{article}
 
+\usepackage{fullpage}
 \usepackage{url}
 \usepackage{listings}
-\usepackage{minitoc}
 
 \lstnewenvironment{shell}{\lstset{%
 moredelim=*[is][\itshape]{/@}{@/},
@@ -13,24 +13,18 @@ moredelim=*[is][\itshape]{/@}{@/},
 numbers=none,mathescape=true,
 xleftmargin=2em,basicstyle=\ttfamily\small}}{}
 
-
 \begin{document}
 \title{Alg User Manual}
-\author{Ale\v{s} Bizjak\\
-\texttt{Ales.Bizjak@gmail.com}\\
-Faculty of Mathematics and Physics\\
-University of Ljubljana
-\and
-Andrej Bauer\\
-\texttt{Andrej.Bauer@andrej.com}\\
-Faculty of Mathematics and Physics\\
-University of Ljubljana}
+\author{Ale\v{s} Bizjak\thanks{\texttt{Ales.Bizjak@gmail.com},
+  Faculty of Mathematics and Physics, University of Ljubljana}
+  \and Andrej Bauer\thanks{\texttt{Andrej.Bauer@andrej.com},
+    Faculty of Mathematics and Physics, University of Ljubljana}}
+
 \maketitle
 
-\dominitoc
 \tableofcontents
 
-\chapter{Introduction}
+\section{Introduction}
 \label{sec:introduction}
 
 Alg is a program for enumeration of finite models of algebraic
@@ -73,10 +67,10 @@ For usage information type \texttt{./alg.native -help} and for
 examples of theories see the \texttt{theories} subdirectory.
 
 Alg is released under the open source simplified BSD License, as
-detailed in the next chapter.
+detailed in the next section.
 
-\chapter{Copyright and License}
-\label{cha:copyr-license}
+\section{Copyright and License}
+\label{sec:copyr-license}
 
 \noindent
 Copyright {\copyright} 2010, Ale\v{s} Bizjak and Andrej Bauer
@@ -114,10 +108,10 @@ theory of liability, whether in contract, strict liability, or tort
 (including negligence or otherwise) arising in any way out of the use
 of this software, even if advised of the possibility of such damage.
 
-\chapter{Installation}
+\section{Installation}
 \label{sec:installation}
 
-\section{Downloading alg}
+\subsection{Downloading alg}
 \label{sec:how-obtain-alg}
 
 Alg is available at \url{http://hg.andrej.com/alg/}. You have three
@@ -143,10 +137,10 @@ hg clone http://hg.andrej.com/alg/
   contains a number of useful examples.
 \end{enumerate}
 
-\section{Installation for Linux and MacOS}
+\subsection{Installation for Linux and MacOS}
 \label{sec:comp-under-linux}
 
-\subsection{Prerequisites}
+\subsubsection{Prerequisites}
 
 To compile alg you need the Make utility, Ocaml 3.11 or newer, and the
 menhir parser generator higher. We will assume you have Make. You can
@@ -181,7 +175,7 @@ sudo port install caml-menhir
   \end{quote}
 \end{enumerate}
 
-\subsection{Compiling to native code}
+\subsubsection{Compiling to native code}
 
 To compile alg, type \texttt{make} at the command line. If all goes
 well ocamlbuild will generate a subdirectory \texttt{\_build} and in
@@ -206,7 +200,7 @@ This will simply copy \texttt{\_build/alg.native} to
 \texttt{\$(INSTALL\_DIR)/alg}. You may also wish to stash the
 \texttt{theories} subdirectory somewhere for future reference.
 
-\subsection{Compiling to bytecode}
+\subsubsection{Compiling to bytecode}
 
 If your version of Ocaml does not compile to native code you can try
 compiling to bytecode with
@@ -217,7 +211,7 @@ make byte
 %
 This will generate a (significantly slower) \texttt{alg.byte} executable.
 
-\subsection{Installation without Make}
+\subsubsection{Installation without Make}
 
 If you do not have the Make utility (how can that be?) you can compile
 alg directly with ocamlbuild:
@@ -229,7 +223,7 @@ ocamlbuild -use-menhir alg.native
 To install alg just copy \texttt{\_build/alg.native} to
 \texttt{/usr/local/bin/alg} or some other reasonable place.
 
-\section{Installation for Microsoft Windows}
+\subsection{Installation for Microsoft Windows}
 \label{sec:comp-inst-micr}
 
 Sorry, this has not been written yet. But if you have Make and Ocaml
@@ -242,7 +236,7 @@ Note that a Windows precompiled executable may be available at
   \url{http://hg.andrej.com/alg/tip/precompiled/}
 \end{quote}
 
-\chapter{Input}
+\section{Input}
 \label{sec:input}
 
 An alg input file has extension \texttt{.th} and it describes an
@@ -267,19 +261,19 @@ theory, then we have declarations of constants, unary and binary
 operations, and after that there are the axioms. The precise
 syntax rules are as follows.
 
-\section{Comments}
+\subsection{Comments}
 
 Comments are written as in Python, i.e., a comment begins with the
 \texttt{\#} symbol and includes everything up to the end of line.
 
-\section{General syntactic rules}
+\subsection{General syntactic rules}
 
 An alg input file consists of a sequence of declarations
 (\texttt{Theory}, \texttt{Constant}, \texttt{Unary}, \texttt{Binary})
 and axioms (\texttt{Axiom}, \texttt{Theorem}). Each declaration and
 axiom is terminated with a period.
 
-\section{The \texttt{Theory} keyword}
+\subsection{The \texttt{Theory} keyword}
 
 You may give a name to your theory with the declaration
 %
@@ -292,7 +286,7 @@ comments and whitespace. The theory name consists of letters, numbers,
 and the underscore. If you do not provide a theory name, alg will
 deduce one from the file name.
 
-\section{Declaration of operations}
+\subsection{Declaration of operations}
 
 The declarations
 %
@@ -363,7 +357,7 @@ where:
   best to use a couple of extra parentheses.
 \end{itemize}
 
-\section{Axioms}
+\subsection{Axioms}
 
 An axiom has the form
 %
@@ -381,7 +375,7 @@ There is no difference between an axiom and a theorem as far as alg is
 concerned. We use \texttt{Axiom} for the actual axioms and
 \texttt{Theorem} for statements that are consequences of axioms and
 are worth including in the theory because they make alg run faster,
-see Chapter~\ref{sec:optimization}.
+see Section~\ref{sec:optimization}.
 
 The optional \texttt{\textit{[name]}} is a string of of
 letters, digits and the underscore characters. The
@@ -424,10 +418,10 @@ Axiom: forall x y, x + y = y + x.
 \end{alg}
 %
 
-\chapter{Output}
+\section{Output}
 \label{sec:output-files}
 
-\section{Description of the output}
+\subsection{Description of the output}
 \label{sec:description-output}
 
 The output of alg is meant to be self-explanatory. Nevertheless, here
@@ -451,7 +445,7 @@ is what the output consists of:
   Encyclopedia of Integer Sequences.
 \end{description}
 
-\section{Available output formats}
+\subsection{Available output formats}
 \label{sec:output-formats}
 
 Alg supports several output formats. The default output format is
@@ -462,7 +456,28 @@ specify an output file but no format, alg guesses the correct format
 from the output filename. To see which formats are supported by alg,
 type \texttt{alg --help}.
 
-\chapter{Command-line Options}
+\subsection{Output for futher processing}
+
+Alg can output the models in JSON format, which is suitable for
+further processing. Select the JSON format by specifying the
+commnad-line option \texttt{--format json} or an output file with the
+\texttt{.json} extension.
+
+In Python you can import JSON data from a file
+\texttt{mystuff.json} like this:
+%
+\begin{lstlisting}[language=python,basicstyle=\ttfamily\small]
+import json
+with open('mystuff.json','r') as f:
+    mystuff = json.load(f)
+\end{lstlisting}
+%
+In Mathematica just use the \texttt{Import["\textit{mystuff.json}"]}
+command. Most other common programming languages have support for
+processing JSON data.
+
+
+\section{Command-line Options}
 \label{sec:command-line-options}
 
 Alg is used as
@@ -501,7 +516,7 @@ where \texttt{\textit{theory.th}} is the input file, and the options are:
   Print help.
 \end{description}
 
-\chapter{How to use alg efficiently}
+\section{How to use alg efficiently}
 \label{sec:optimization}
 
 You should always keep in mind the fact that alg performs a brute

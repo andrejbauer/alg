@@ -38,6 +38,7 @@ let formats = [
   ("text", Output.Markdown.init);
   ("html", Output.HTML.init);
   ("latex", Output.LaTeX.init);
+  ("json", Output.JSON.init);
 ] ;;
 
 let formats_extension = [
@@ -45,6 +46,7 @@ let formats_extension = [
   ("html", "html");
   ("htm", "html");
   ("tex", "latex");
+  ("json", "json");
 ] ;;
 
 (* Main program starts here. *)
@@ -236,9 +238,8 @@ try begin (*A big wrapper for error reporting. *)
           config.sizes
       with Sys.Break -> out.interrupted ()
     end ;
-    if config.count_only
-    then out.count_footer (List.rev !counts)
-    else out.footer (List.rev !counts)
+    if config.count_only then out.count_footer (List.rev !counts);
+    out.footer (List.rev !counts)
   end
 end
 with Error.Error (pos, err, msg) -> Error.report (pos, err, msg)
