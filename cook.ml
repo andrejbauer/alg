@@ -125,7 +125,6 @@ let split_entries lst =
        | S.Constant cs -> (List.fold_left extend_const env cs, eqs, axs)
        | S.Unary us -> (List.fold_left extend_unary env us, eqs, axs)
        | S.Binary bs -> (List.fold_left extend_binary env bs, eqs, axs)
-       | S.Equation (_,(t1,t2)) -> (env, (t1,t2) :: eqs, axs)
        | S.Axiom (_,a) ->
            begin match S.as_equation a with
              | None -> (env, eqs, a :: axs)

@@ -7,8 +7,6 @@ type term =
   | Var of variable
   | Apply of operation * term list
 
-type equation = term * term
-
 type formula =
   | True
   | False
@@ -25,7 +23,6 @@ type theory_entry =
   | Constant of operation list
   | Unary of operation list
   | Binary of operation list
-  | Equation of string option * equation
   | Axiom of string option * formula
 
 type theory_name = string

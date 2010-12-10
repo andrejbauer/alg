@@ -1,4 +1,4 @@
-Theory group.
+Theory group_all_are_order_3.
 Constant 1.
 Unary inv.
 Binary *.
@@ -10,3 +10,5 @@ Axiom: inv(inv(x)) = x.
 Axiom: x * inv(x) = 1.
 Axiom: inv(x) * x = 1.
 Axiom: (x * y) * z = x * (y * z).
+
+Axiom: x * x * x = 1.

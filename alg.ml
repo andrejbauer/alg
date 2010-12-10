@@ -54,6 +54,9 @@ try begin (*A big wrapper for error reporting. *)
   
   (* References that store the command-line options *)
   let config = Config.default in
+
+  (* Command-line axioms. *)
+  let cmd_axioms = ref [] in
   
   (* Command-line options and usage *)
   let usage = "Usage: alg --size <i,j-k,m> [options] <theory.th>" in
@@ -74,6 +77,9 @@ try begin (*A big wrapper for error reporting. *)
     ("--no-products",
      Arg.Unit (fun () -> config.products <- false),
      " Do not generate algebras as products of smaller algebras.");
+    ("--axiom",
+     Arg.String (fun str -> cmd_axioms := ("Axiom: " ^ str ^ ".") :: !cmd_axioms),
+     " Add an extra axiom to the theory.");
     ("--no-source",
      Arg.Unit (fun () -> config.source <- false),
      " Do not include the theory source in the output.");
@@ -83,9 +89,9 @@ try begin (*A big wrapper for error reporting. *)
   ]
   in
 
-    (* First we process the command line. *)
+  (* First we process the command line. *)
 
-    (* Parse the arguments. Treat the anonymous arguments as files to be read. *)
+  (* Parse the arguments. Treat the anonymous arguments as files to be read. *)
   Arg.parse options
     (fun str ->
       match config.input_filename with
@@ -93,14 +99,16 @@ try begin (*A big wrapper for error reporting. *)
         | _ -> raise (Arg.Bad " only one theory file should be given"))
     usage ;
 
-    (* Read the input file. *)
+  if !cmd_axioms <> [] then cmd_axioms := "" :: "# Command-line axioms" :: !cmd_axioms ;
+
+  (* Read the input file. *)
   let lines =
     begin match config.input_filename with
       | "" -> Arg.usage options usage; exit 1
       | filename ->
         try Util.read_lines filename
         with Sys_error msg -> Error.fatal "could not read %s" msg
-    end
+    end @ !cmd_axioms
   in
 
   let lex = Lexing.from_string (String.concat "\n" lines) in
@@ -117,7 +125,7 @@ try begin (*A big wrapper for error reporting. *)
     end
   in
 
-    (* Compute the theory name from the file name, if needed. *)
+  (* Compute the theory name from the file name, if needed. *)
   let theory_name =
     begin match theory_name with
       | Some n -> n
@@ -128,7 +136,7 @@ try begin (*A big wrapper for error reporting. *)
         end
     end in
 
-    (* Parse the theory. *)
+  (* Parse the theory. *)
   let theory = Cook.cook_theory theory_name raw_theory in
 
     (* If --indecomposable is given then --no-products makes no sense. *)
