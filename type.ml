@@ -56,9 +56,9 @@ let embrace s = "(" ^ s ^ ")"
 
 let rec string_of_term = function
   | Var k -> "x" ^ string_of_int k
-  | Const k -> "const" ^ string_of_int k
-  | Unary (f, t) -> "op" ^ string_of_int f ^ "(" ^ string_of_term t ^ ")"
-  | Binary (f, t1, t2) -> "op" ^ string_of_int f ^ "(" ^ string_of_term t1 ^ ", " ^ string_of_term t2 ^ ")"
+  | Const k -> "c" ^ string_of_int k
+  | Unary (f, t) -> "u" ^ string_of_int f ^ "(" ^ string_of_term t ^ ")"
+  | Binary (f, t1, t2) -> "b" ^ string_of_int f ^ "(" ^ string_of_term t1 ^ ", " ^ string_of_term t2 ^ ")"
 
 let string_of_equation (t1, t2) =
   string_of_term t1 ^ " = " ^ string_of_term t2

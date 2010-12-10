@@ -25,7 +25,8 @@ end
    that it is worth implementing them all the same way via the following structure. *)
 module type TextStyle =
 sig
-  val names : T.theory -> int -> string array
+  val ttfont : string -> string
+  val names : T.theory -> T.algebra -> string array
   val link : string -> string -> string
   val title : out_channel -> string -> unit
   val section : out_channel -> string -> unit
@@ -62,8 +63,6 @@ struct
       src_lines
       ({T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} as th) =
 
-    let names = S.names th (List.fold_left max 0 sizes) in
-
     let count_footer lst =
       let lst = List.filter (fun (n,_) -> n >= 2) lst in
         S.count_footer ch
@@ -86,18 +85,19 @@ struct
           end;
 
         algebra =
-          begin fun {T.alg_name=name; T.alg_prod=prod; T.alg_unary=unary; T.alg_binary=binary} ->
+          begin fun ({T.alg_name=name; T.alg_prod=prod; T.alg_const=const; T.alg_unary=unary; T.alg_binary=binary} as a) ->
             let name = (match name with | None -> "Model of " ^ th_name | Some n -> n) in
             let info =
               begin match prod with
                 | None -> None
-                | Some lst -> Some ("Decomposition: " ^ String.concat " * " lst)
+                | Some lst -> Some ("Decomposition: " ^ String.concat ", " (List.map S.ttfont lst))
               end
             in
-              S.algebra_header ch name info ;
-              Array.iteri (fun op t -> S.algebra_unary ch names th_unary.(op) t) unary ;
-              Array.iteri (fun op t -> S.algebra_binary ch names th_binary.(op) t) binary ;
-              S.algebra_footer ch 
+            let ns = S.names th a in
+            S.algebra_header ch name info ;
+            Array.iteri (fun op t -> S.algebra_unary ch ns th_unary.(op) t) unary ;
+            Array.iteri (fun op t -> S.algebra_binary ch ns th_binary.(op) t) binary ;
+            S.algebra_footer ch 
           end;
 
         size_footer = begin fun () -> () end;
@@ -123,26 +123,29 @@ end (* Make *)
 
 module MarkdownStyle : TextStyle =
 struct
-  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} n =
+  let ttfont str = str
+
+  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {T.alg_size=n; T.alg_const=const} =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
     let default_names = 
-      List.filter (fun x -> not (List.mem x forbidden_names))
-        ["a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m";
-         "n"; "o"; "p"; "q"; "e"; "r"; "s"; "t"; "u"; "v"; "x"; "y"; "z";
-         "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J"; "K"; "L"; "M";
-         "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z"]
+      ref (List.filter (fun x -> not (List.mem x forbidden_names))
+             ["a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m";
+              "n"; "o"; "p"; "q"; "e"; "r"; "s"; "t"; "u"; "v"; "x"; "y"; "z";
+              "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J"; "K"; "L"; "M";
+              "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z"])
     in
-    let i = Array.length th_const in
-    let j = List.length default_names in
-    let ns =
-      Array.init n
-        (fun k -> 
-           if k < i then th_const.(k)
-           else if k - i < j then List.nth default_names (k-i)
-           else "x" ^ string_of_int (k-i-j))
-    in
-    let w = Array.fold_left (fun w s -> max w (String.length s)) 0 ns in
-      Array.map (fun s -> (String.make (w - String.length s) ' ') ^ s) ns
+    let m = List.length !default_names in
+    let ns = Array.make n "?" in
+    (* Constants *)
+    for k = 0 to Array.length th_const - 1 do ns.(const.(k)) <- th_const.(k) done ;
+    for k = 0 to n-1 do
+      if ns.(k) = "?" then
+        ns.(k) <-
+          match !default_names with
+            | [] -> "x" ^ string_of_int (k - m)
+            | d::ds -> default_names := ds ; d
+    done ;
+    ns
 
   let link txt url = Printf.sprintf "[%s](%s)" txt url
 
@@ -212,22 +215,31 @@ end (* MarkdownStyle *)
 
 module HTMLStyle : TextStyle =
 struct
-  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} n =
+  let escape str = str (* TODO should escape < > & and so on. *)
+
+  let ttfont str = "<code>" ^ escape str ^ "</code>"
+
+  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {T.alg_size=n; T.alg_const=const} =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
     let default_names = 
-      List.filter (fun x -> not (List.mem x forbidden_names))
-        ["a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m";
-         "n"; "o"; "p"; "q"; "e"; "r"; "s"; "t"; "u"; "v"; "x"; "y"; "z";
-         "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J"; "K"; "L"; "M";
-         "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z"]
+      ref (List.filter (fun x -> not (List.mem x forbidden_names))
+             ["a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m";
+              "n"; "o"; "p"; "q"; "e"; "r"; "s"; "t"; "u"; "v"; "x"; "y"; "z";
+              "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J"; "K"; "L"; "M";
+              "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z"])
     in
-    let i = Array.length th_const in
-    let j = List.length default_names in
-      Array.init n
-        (fun k -> 
-           if k < i then th_const.(k)
-           else if k - i < j then List.nth default_names (k-i)
-           else "x" ^ string_of_int (k-i-j))
+    let m = List.length !default_names in
+    let ns = Array.make n "?" in
+    (* Constants *)
+    for k = 0 to Array.length th_const - 1 do ns.(const.(k)) <- th_const.(k) done ;
+    for k = 0 to n-1 do
+      if ns.(k) = "?" then
+        ns.(k) <-
+          match !default_names with
+            | [] -> "x" ^ string_of_int (k - m)
+            | d::ds -> default_names := ds ; d
+    done ;
+    ns
 
   let link txt url = Printf.sprintf "<a href=\"%s\">%s</a>" url txt
 
@@ -301,7 +313,7 @@ struct
       ('+', "{+}");
       ('-', "{-}");
       ('/', "{/}");
-      ('\\', "{\\setminus}");
+      ('\\',"{\\backslash}");
       (':', "{:}");
       ('<', "{<}");
       ('=', "{=}");
@@ -319,28 +331,36 @@ struct
       str ;
     !s
 
-  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} n =
+  let ttfont str = "\\texttt{" ^ escape str ^ "}"
+  let math str = "$" ^ str ^ "$"
+
+  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {T.alg_size=n; T.alg_const=const} =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
     let default_names = 
-      List.filter (fun x -> not (List.mem x forbidden_names))
-        ["a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m";
-         "n"; "o"; "p"; "q"; "e"; "r"; "s"; "t"; "u"; "v"; "x"; "y"; "z";
-         "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J"; "K"; "L"; "M";
-         "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z"]
+      ref (List.filter (fun x -> not (List.mem x forbidden_names))
+             ["a"; "b"; "c"; "d"; "e"; "f"; "g"; "h"; "i"; "j"; "k"; "l"; "m";
+              "n"; "o"; "p"; "q"; "e"; "r"; "s"; "t"; "u"; "v"; "x"; "y"; "z";
+              "A"; "B"; "C"; "D"; "E"; "F"; "G"; "H"; "I"; "J"; "K"; "L"; "M";
+              "N"; "O"; "P"; "Q"; "R"; "S"; "T"; "U"; "V"; "W"; "X"; "Y"; "Z"])
     in
-    let i = Array.length th_const in
-    let j = List.length default_names in
-    Array.init n
-      (fun k -> "$" ^
-        escape (if k < i then th_const.(k)
-          else if k - i < j then List.nth default_names (k-i)
-          else "x" ^ string_of_int (k-i-j)) ^ "$")
+    let m = List.length !default_names in
+    let ns = Array.make n "?" in
+    (* Constants *)
+    for k = 0 to Array.length th_const - 1 do ns.(const.(k)) <- math th_const.(k) done ;
+    for k = 0 to n-1 do
+      if ns.(k) = "?" then
+        ns.(k) <-
+          match !default_names with
+            | [] -> math ("x_" ^ string_of_int (k - m))
+            | d::ds -> default_names := ds ; math d
+    done ;
+    ns
       
   let link txt url = txt
     
   let title ch str =
     Printf.fprintf ch
-      "\\documentclass{article}\n\\begin{document}\n\\title{Theory \\texttt{%s}}\n\\date{}\n\\maketitle\n\\parindent=0pt\\parskip=\\baselineskip\n" (escape str)
+      "\\documentclass{article}\n\\begin{document}\n\\title{Theory \\texttt{%s}}\n\\author{Computed by alg}\n\\maketitle\n\\parindent=0pt\\parskip=\\baselineskip\n" (escape str)
 
   let section ch str = Printf.fprintf ch "\\section*{%s}\n" str
 
@@ -357,14 +377,14 @@ struct
     Printf.fprintf ch "\\subsection*{%s}\n\n" (escape name) ;
     match info with
       | None -> ()
-      | Some msg -> Printf.fprintf ch "\n\n\\noindent\n%s\n\n" (escape msg)
+      | Some msg -> Printf.fprintf ch "\n\n\\noindent\n%s\n\n" msg
 
   let algebra_unary ch names op t =
     let n = Array.length t in
     Printf.fprintf ch "\\begin{tabular}[t]{|" ;
     for i = 0 to n do Printf.fprintf ch "c|" done ;
     Printf.fprintf ch "}\n\\hline\n" ;
-    Printf.fprintf ch "%s " op;
+    Printf.fprintf ch "%s " (ttfont op);
     for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
     Printf.fprintf ch "\\\\ \\hline\n" ;
     for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(t.(i)) done ;
@@ -375,7 +395,7 @@ struct
     Printf.fprintf ch "\\begin{tabular}[t]{|" ;
     for i = 0 to n do Printf.fprintf ch "c|" done ;
     Printf.fprintf ch "}\n\\hline\n" ;
-    Printf.fprintf ch "%s " op;
+    Printf.fprintf ch "%s " (ttfont op);
     for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
     Printf.fprintf ch "\\\\ \\hline\n" ;
     for i = 0 to n-1 do

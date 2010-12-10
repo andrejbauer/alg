@@ -99,7 +99,7 @@ try begin (*A big wrapper for error reporting. *)
         | _ -> raise (Arg.Bad " only one theory file should be given"))
     usage ;
 
-  if !cmd_axioms <> [] then cmd_axioms := "" :: "# Command-line axioms" :: !cmd_axioms ;
+  if !cmd_axioms <> [] then cmd_axioms := "" :: "# Extra command-line axioms" :: !cmd_axioms ;
 
   (* Read the input file. *)
   let lines =
@@ -134,7 +134,8 @@ try begin (*A big wrapper for error reporting. *)
           let n = Filename.basename config.input_filename in
           try String.sub n 0 (String.index n '.') with Not_found -> n
         end
-    end in
+    end ^ (if !cmd_axioms = [] then "" else "_with_extras")
+  in
 
   (* Parse the theory. *)
   let theory = Cook.cook_theory theory_name raw_theory in

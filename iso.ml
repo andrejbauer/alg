@@ -4,11 +4,6 @@ exception Break
 exception Found
 
 (*
-  Checks if permutation preserves constants.
-*)
-let check_const iso c1 c2 = iso.(c1) = c2
-
-(*
   Checks if a function commutes with permutation.
   f(i(a)) = i(f(a)).
 *)

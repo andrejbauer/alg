@@ -2,8 +2,6 @@ open Type
 open Util
 
 (* It is assumed that the two algebras correspond to the same signature. *)
-(* Note that this returns an algebra not in a form where supplied constants come before
-   other elements. TODO: We cannot print this algebra correctly with current implementation of Print module. *)
 let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; alg_binary=b1}
             {alg_size=n2; alg_name=a2; alg_prod=p2; alg_const=c2; alg_unary=u2; alg_binary=b2} =
 
