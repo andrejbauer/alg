@@ -8,7 +8,7 @@
 moredelim=*[is][\itshape]{/@}{@/},
 numbers=none,xleftmargin=2em,basicstyle=\ttfamily\small}}{}
 
-\lstnewenvironment{alg}{\lstset{%
+\lstnewenvironment{source}{\lstset{%
 moredelim=*[is][\itshape]{/@}{@/},
 numbers=none,mathescape=true,
 xleftmargin=2em,basicstyle=\ttfamily\small}}{}
@@ -240,10 +240,12 @@ Note that a Windows precompiled executable may be available at
 \label{sec:input}
 
 An alg input file has extension \texttt{.th} and it describes an
-algebraic theory. The syntax vaguely follows the syntax of the Coq
-proof assistant. A typical input file might look like this:
+algebraic theory.\footnote{Actually, we allow arbitrary first-order
+  statements, while an algebraic theory can only have equational
+  axioms.} The syntax vaguely follows the syntax of the Coq proof
+assistant. A typical input file might look like this:
 %
-\begin{alg}
+\begin{source}
 # The axioms of a group.
 Theory group.
 Constant 1.
@@ -254,11 +256,11 @@ Axiom unit_right: x * 1 = x.
 Axiom inverse_left: x * inv(x) = 1.
 Axiom inverse_right: inv(x) * x = 1.
 Axiom associativity: (x * y) * z = x * (y * z).
-\end{alg}
+\end{source}
 %
-There is an optional \texttt{Theory} declaration which names the
-theory, then we have declarations of constants, unary and binary
-operations, and after that there are the axioms. The precise
+The file starts with an optional \texttt{Theory} declaration which
+names the theory, then we have declarations of constants, unary and
+binary operations, and after that there are the axioms. The precise
 syntax rules are as follows.
 
 \subsection{Comments}
@@ -277,9 +279,9 @@ axiom is terminated with a period.
 
 You may give a name to your theory with the declaration
 %
-\begin{alg}
+\begin{source}
 Theory /@theory_name@/.
-\end{alg}
+\end{source}
 %
 \emph{at the beginning of the input file}, possibly preceded by
 comments and whitespace. The theory name consists of letters, numbers,
@@ -290,11 +292,11 @@ deduce one from the file name.
 
 The declarations
 %
-\begin{alg}
+\begin{source}
 Constant /@$c_1$ $c_2$ $\ldots$ $c_k$@/.
 Unary /@$u_1$ $u_2$ $\ldots$ $u_m$@/.
 Binary /@$b_1$ $b_2$ $\ldots$ $b_n$@/.
-\end{alg}
+\end{source}
 %
 are used to declare constants, unary, and binary operations
 respectively. You may declare several constants or operations with a
@@ -309,20 +311,20 @@ example \texttt{0} or \texttt{1}.
 Unary and binary operations may be strings of letters, digits and the
 underscore character. For example, if we declare
 %
-\begin{alg}
+\begin{source}
 Unary inv.
 Binary mult.
-\end{alg}
+\end{source}
 %
 then we can write expressions like \texttt{mult(x, inv(y))}. It is
 even possible to declare operations whose names are strings of digits,
 for example:
 %
-\begin{alg}
+\begin{source}
 Unary 3 ten.
 Binary +.
 Axiom: 3(3(x)) + x = ten(x).
-\end{alg}
+\end{source}
 %
 Alternatively, we can use \emph{infix} and \emph{prefix} operators.
 These follow the Ocaml rules for infix and prefix notation. An
@@ -361,15 +363,15 @@ where:
 
 An axiom has the form
 %
-\begin{alg}
+\begin{source}
 Axiom /@[name]@/: /@<formula>@/.
-\end{alg}
+\end{source}
 %
 or
 %
-\begin{alg}
+\begin{source}
 Theorem /@[name]@/: /@<formula>@/.
-\end{alg}
+\end{source}
 %
 There is no difference between an axiom and a theorem as far as alg is
 concerned. We use \texttt{Axiom} for the actual axioms and
@@ -408,14 +410,14 @@ and similarly for $\exists$.
 
 Axioms may contain free variables. Thus we can write just
 %
-\begin{alg}
+\begin{source}
 Axiom: x + y = y + x.
-\end{alg}
+\end{source}
 %
 instead of
-\begin{alg}
+\begin{source}
 Axiom: forall x y, x + y = y + x.
-\end{alg}
+\end{source}
 %
 
 \section{Output}
@@ -456,25 +458,76 @@ specify an output file but no format, alg guesses the correct format
 from the output filename. To see which formats are supported by alg,
 type \texttt{alg --help}.
 
-\subsection{Output for futher processing}
+\subsection{Output in JSON format for futher processing}
 
-Alg can output the models in JSON format, which is suitable for
-further processing. Select the JSON format by specifying the
-commnad-line option \texttt{--format json} or an output file with the
+For further processing of output use the JSON output format by
+specifying \texttt{--format json} or output to a file with the
 \texttt{.json} extension.
+
+The JSON output has one of two forms, depending on whether the
+\texttt{--count} option is used. Without it, the output is a list
+%
+\begin{source}
+["/@theory_name@/", $M_1$, ..., $M_n$]
+\end{source}
+%
+where $M_1, \ldots, M_n$ are the models found. Each model $M_i$ is
+given as a dictionary which maps constants, unary operations and
+binary operations to the corresponding integers, tables and matrices.
+For example, the only commutative ring of size~$6$ with unit is
+presented as
+%
+\begin{shell}
+{
+  "0" : 0,
+  "1" : 4,
+  "~" : [0, 2, 1, 3, 5, 4], 
+  "+" :
+    [
+      [0, 1, 2, 3, 4, 5], 
+      [1, 2, 0, 4, 5, 3], 
+      [2, 0, 1, 5, 3, 4], 
+      [3, 4, 5, 0, 1, 2], 
+      [4, 5, 3, 1, 2, 0], 
+      [5, 3, 4, 2, 0, 1]
+    ], 
+  "*" :
+    [
+      [0, 0, 0, 0, 0, 0], 
+      [0, 1, 2, 0, 1, 2], 
+      [0, 2, 1, 0, 2, 1], 
+      [0, 0, 0, 3, 3, 3], 
+      [0, 1, 2, 3, 4, 5], 
+      [0, 2, 1, 3, 5, 4]
+    ]
+}
+\end{shell}
+%
+The underlying set of the ring is $\{0,1,2,3,4,5\}$, the neutral
+elements for addition and multiplication are $0$ and $4$,
+respectively, and the operations are given as lookup tables, for
+example, $\mathop{\texttt{\char126}} 1 = 2$ and $4
+\mathbin{\texttt{*}} 3 = 3$.
+
+The \texttt{--count} option gives JSON output
+%
+\begin{source}
+["/@theory_name@/", [[$i_1$,$k_1$], ..., [$i_n$,$k_n$]]]
+\end{source}
+%
+which is read as saying that there are $k_j$ models of size $i_j$.
 
 In Python you can import JSON data from a file
 \texttt{mystuff.json} like this:
 %
-\begin{lstlisting}[language=python,basicstyle=\ttfamily\small]
+\begin{source}
 import json
 with open('mystuff.json','r') as f:
     mystuff = json.load(f)
-\end{lstlisting}
-%
+\end{source}
+
 In Mathematica just use the \texttt{Import["\textit{mystuff.json}"]}
-command. Most other common programming languages have support for
-processing JSON data.
+command.
 
 
 \section{Command-line Options}
@@ -547,7 +600,7 @@ Axiom: forall x, exists y, x <> 0 -> x * y = 1.
 you should write
 %
 \begin{shell}
-Axiom: forall x, x <> 0 -> (exists y, x * y = 1).
+Axiom: forall x, x <> 0 -> exists y, x * y = 1.
 \end{shell}
 %
 The best kind of axioms are those that allow alg to immediately fill in
