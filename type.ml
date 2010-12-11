@@ -51,6 +51,9 @@ type algebra = {
   alg_binary : int array array array
 }
 
+(* Used to indicate that a permanent inconsistency has been discovered. *)
+exception InconsistentAxioms
+
 (* Conversion to string, for debugging purposes. *)
 let embrace s = "(" ^ s ^ ")"
 

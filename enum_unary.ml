@@ -9,13 +9,12 @@ let apply_simple simple unary_arr =
   List.iter
     (function
       | (Unary (op, Const c1), Const c2)
-      | (Const c2, Unary (op, Const c1))
-        -> if unary_arr.(op).(c1) <> -1 && unary_arr.(op).(c1) <> c2 then
-            Error.fatal "You supplied contradicting axioms."
+      | (Const c2, Unary (op, Const c1)) ->
+          if unary_arr.(op).(c1) <> -1 && unary_arr.(op).(c1) <> c2
+          then raise InconsistentAxioms
           else unary_arr.(op).(c1) <- c2
       | _ -> invalid_arg "Not a simple axiom in apply_simple.")
     simple
-
 
 (* Get do and undo actions from axioms in normal form for use in main loop of gen_unary. *)
 let get_unary_actions n normal_axioms unary_arr =
@@ -39,7 +38,7 @@ let get_unary_actions n normal_axioms unary_arr =
     let stack = Stack.create () in
 
     let undo id =
-      while not (Stack.is_empty stack) && let (id', _, _) = Stack.top stack in id' = id do
+      while not (Stack.is_empty stack) && (let (id', _, _) = Stack.top stack in id' = id) do
         let (_, o, i) = Stack.pop stack in
         unary_arr.(o).(i) <- -1
       done in

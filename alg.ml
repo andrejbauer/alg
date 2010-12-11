@@ -140,6 +140,7 @@ try begin (*A big wrapper for error reporting. *)
   (* Parse the theory. *)
   let theory = Cook.cook_theory theory_name raw_theory in
 
+
     (* If --indecomposable is given then --no-products makes no sense. *)
   if config.indecomposable_only then config.products <- true ;
 

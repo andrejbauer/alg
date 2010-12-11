@@ -95,39 +95,73 @@ args:
     { t :: ts }
 
 formula:
-  | FORALL xs = vars COMMA f = formula
-    { List.fold_right (fun x f -> Forall (x, f)) xs f }
-  | EXISTS xs = vars COMMA f = formula
-    { List.fold_right (fun x f -> Exists (x, f)) xs f }
+  | f = quantified_formula
   | f = iff_formula
-    { f }
   | f = imply_formula
     { f }
 
+formula_noquant:
+  | f = quantified_formula
+  | f = imply_formula
+  | f = iff_formula_noquant
+    { f }
+
+quantified_formula:
+  | FORALL xs = vars COMMA f = formula_noquant
+    { List.fold_right (fun x f -> Forall (x, f)) xs f }
+  | EXISTS xs = vars COMMA f = formula_noquant
+    { List.fold_right (fun x f -> Exists (x, f)) xs f }
+
+iff_formula_noquant:
+  | f1 = or_formula_noquant IFF f2 = or_formula_noquant
+    { Iff (f1, f2) }
+
 iff_formula:
-  | f1 = or_formula IFF f2 = or_formula
+  | f1 = or_formula_noquant IFF f2 = or_formula
     { Iff (f1, f2) }
 
 imply_formula:
-  | f1 = or_formula IMPLY f2 = imply_formula
+  | f1 = or_formula_noquant IMPLY f2 = formula
     { Imply (f1, f2) }
   | f = or_formula
     { f }
 
 or_formula:
-  | f1 = or_formula OR f2 = and_formula
+  | f1 = or_formula_noquant OR f2 = and_formula
+    { Or (f1, f2) }
+  | f1 = or_formula_noquant OR f2 = quantified_formula
     { Or (f1, f2) }
   | f = and_formula
     { f }
 
+or_formula_noquant:
+  | f1 = or_formula_noquant OR f2 = and_formula_noquant
+    { Or (f1, f2) }
+  | f = and_formula_noquant
+    { f }
+
 and_formula:
-  | f1 = and_formula AND f2 = negation_formula
+  | f1 = and_formula_noquant AND f2 = negation_formula
+  | f1 = and_formula_noquant AND f2 = quantified_formula
     { And (f1, f2) }
   | f = negation_formula
     { f }
 
+and_formula_noquant:
+  | f1 = and_formula_noquant AND f2 = negation_formula_noquant
+    { And (f1, f2) }
+  | f = negation_formula_noquant
+    { f }
+
 negation_formula:
   | NOT f = negation_formula
+  | NOT f = quantified_formula
+    { Not f }
+  | f = atomic_formula
+    { f }
+
+negation_formula_noquant:
+  | NOT f = negation_formula_noquant
     { Not f }
   | f = atomic_formula
     { f }
