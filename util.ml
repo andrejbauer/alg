@@ -303,3 +303,5 @@ let partitions n =
     | _::ds -> part n ds
   in
     part n (small_divisors n)
+
+let apply_to_snd f (_,t) = f t

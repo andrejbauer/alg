@@ -14,7 +14,9 @@ type term =
   | Binary of operation * term * term
 
 (* An equation. *)
-type equation = term * term
+type equation' = term * term
+
+type equation = int * equation'
 
 (* A raw formula. *)
 type formula' = 
@@ -90,5 +92,5 @@ let string_of_theory {th_name=name;
   "Constant: " ^ String.concat " " (Array.to_list const) ^ "\n" ^
   "Unary: " ^ String.concat " " (Array.to_list unary) ^ "\n" ^
   "Binary: " ^ String.concat " " (Array.to_list binary) ^ "\n" ^
-  "Equations:\n" ^ String.concat "\n" (List.map string_of_equation equations) ^ "\n" ^
+  "Equations:\n" ^ String.concat "\n" (List.map (fun (_,eq) -> string_of_equation eq) equations) ^ "\n" ^
   "Axioms:\n" ^ String.concat "\n" (List.map string_of_formula axioms) ^ "\n"

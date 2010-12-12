@@ -97,7 +97,7 @@ let rec cook_term env vars = function
 
 let cook_equation env (t1, t2) =
   let _, vars = Util.enum (Util.union (fv_term env t1) (fv_term env t2)) in
-    (cook_term env vars t1, cook_term env vars t2)
+    (List.length vars, (cook_term env vars t1, cook_term env vars t2))
 
 let cook_formula env f =
   let rec cook vars = function
