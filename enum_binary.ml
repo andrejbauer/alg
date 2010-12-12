@@ -282,7 +282,9 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
   let actions_from_assoc = function
     | (_,(Binary (op1, Binary (op2, Var a1, Var b1), Var c1), Binary (op3, Var a2, Binary (op4, Var b2, Var c2))))
     | (_,(Binary (op3, Var a2, Binary (op4, Var b2, Var c2)), Binary (op1, Binary (op2, Var a1, Var b1), Var c1)))
-        when op1 = op2 && op2 = op3 && op3 = op4 && a1 = a2 && b1 = b2 && c1 = c2 ->
+        when op1 = op2 && op2 = op3 && op3 = op4 && 
+          a1 = a2 && b1 = b2 && c1 = c2 && 
+          a1 <> b1 && a1 <> c1 && b1 <> c1 ->
       let stack = Stack.create () in
       let f cont id o i j =
         if o <> op1 then true
