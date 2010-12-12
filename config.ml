@@ -9,6 +9,7 @@ type config = {
   mutable input_filename : string;
   mutable output_filename : string;
   mutable format : string;
+  mutable paranoid : bool;
 }
 
 let default = {
@@ -20,4 +21,5 @@ let default = {
   input_filename = "";
   output_filename = "";
   format = "";
+  paranoid = false;
 }
