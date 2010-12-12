@@ -5,9 +5,9 @@ open Type
    unary and binary operation arrays are assumed to be full so there
    should be no -1's anywhere.
 *)
-let eval_term {alg_unary=u; alg_binary=b} vars t =
+let eval_term {alg_const=c; alg_unary=u; alg_binary=b} vars t =
   let rec eval = function
-    | Const c -> c
+    | Const v -> c.(v)
     | Var v -> vars.(v)
     | Unary (op, t) -> u.(op).(eval t)
     | Binary (op, t1, t2) -> b.(op).(eval t1).(eval t2)
