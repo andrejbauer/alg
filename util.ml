@@ -235,7 +235,7 @@ let print_matrix m = Array.iter print_arr m
 
 (* Auxiliary functions. *)
 
-(* Enumerate a list *)
+(* Enumerate a list, return the number of elements and the enumerated list. *)
 let enum lst = List.fold_left (fun (k,lst) c -> (k+1, (c,k)::lst)) (0,[]) lst
 
 (* Invert assoc list. *)
