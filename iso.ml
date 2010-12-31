@@ -50,9 +50,7 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
                 Stack.push i stack ; true
               end
           end
-        else if iso.(arr1.(i)) <> arr2.(iso.(i)) then
-          false
-        else true in
+        else not (iso.(arr1.(i)) <> arr2.(iso.(i))) in
       let undo i =
         while not (Stack.is_empty stack) && Stack.top stack = i do
           iso.(arr1.(Stack.pop stack)) <- -1 ;
