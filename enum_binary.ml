@@ -15,7 +15,7 @@ let apply_simple_binary simple unary_arr binary_arr =
      Applies simple axioms to the main operation tables.
      If axioms aren't simple it fails miserably.
   *)
-  let apply_simple axiom =
+  let apply_simple (_,axiom) =
     let rec get_value = function
       | (Const c) -> c
       | (Unary (op,v)) -> unary_arr.(op).(get_value v)
@@ -39,7 +39,7 @@ let apply_one_var_shallow n one_var_shallow unary_arr binary_arr =
     Apply one variable shallow axioms. Typical example is axioms for
     a unit element in a monoid (forall a: a * e = e)
   *)
-  let apply_one_var axiom elem =
+  let apply_one_var (_,axiom) elem =
     let rec get_value = function
       | (Const c) -> c
       | (Var _) -> elem
@@ -113,9 +113,9 @@ let get_checks all_tuples unary_arr binary_arr zipped_axioms =
 *)
 let get_binary_actions n unary_arr binary_arr assoc amenable =
   (* Compute actions from amenable axioms *)
-  let actions_from_axiom (nvars, axiom) =
+  let actions_from_axiom (num_vars, axiom) =
     let stack = Stack.create () in
-    let vars = Array.make nvars (-1) in
+    let vars = Array.make num_vars (-1) in
     let nfill = ref 0 in
     let undo id =
       while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
@@ -125,50 +125,52 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
 
     (* free fills the rest of the variables with all possible values *)
     let rec free cont term =
-      if !nfill = nvars then cont ()
-      else begin
-        match term with
-          | Var v when vars.(v) = -1 ->
-            for k=0 to n-1 do
-              vars.(v) <- k ;
-              incr nfill ;
-              cont () ;
-              decr nfill ;
-              vars.(v) <- -1 ;
-            done
-          | (Binary (_, l, r)) ->
-            free (fun () -> free cont r) l
-          | _ -> cont ()
-      end in
-
-    let rec
-        (* generate all possible subexpressions so that the term evaluates to k *)
-        gen_all k cont term =
-          if !nfill = nvars then cont ()
-          else begin
-            match term with
-              | (Binary (op, l, r)) ->
-                for u=0 to n-1 do
-                  for v=0 to n-1 do
-                    if binary_arr.(op).(u).(v) = k then
-                      gen_all u (fun () -> gen_all v cont r) l
-                  done
-                done
-              | (Unary (op, t)) ->
-                for u=0 to n-1 do
-                  if unary_arr.(op).(u) = k then
-                    gen_all u cont t
-                done
-              | Var v when vars.(v) = -1 ->
+      if !nfill < num_vars then
+        begin
+          match term with
+            | Var v when vars.(v) = -1 ->
+              for k=0 to n-1 do
                 vars.(v) <- k ;
                 incr nfill ;
                 cont () ;
                 decr nfill ;
-                vars.(v) <- -1
-              | Var v when vars.(v) = k -> cont ()
-              | Const c when c = k -> cont ()
-              | _ -> ()
-          end in
+                vars.(v) <- -1 ;
+              done
+            | (Binary (_, l, r)) ->
+              free (fun () -> free cont r) l
+            | _ -> cont ()
+        end
+      else cont () in
+
+    let rec
+        (* generate all possible subexpressions so that the term evaluates to k *)
+        gen_all k cont term =
+          if !nfill < num_vars then
+            begin
+              match term with
+                | (Binary (op, l, r)) ->
+                  for u=0 to n-1 do
+                    for v=0 to n-1 do
+                      if binary_arr.(op).(u).(v) = k then
+                        gen_all u (fun () -> gen_all v cont r) l
+                    done
+                  done
+                | (Unary (op, t)) ->
+                  for u=0 to n-1 do
+                    if unary_arr.(op).(u) = k then
+                      gen_all u cont t
+                  done
+                | Var v when vars.(v) = -1 ->
+                  vars.(v) <- k ;
+                  incr nfill ;
+                  cont () ;
+                  decr nfill ;
+                  vars.(v) <- -1
+                | Var v when vars.(v) = k -> cont ()
+                | Const c when c = k -> cont ()
+                | _ -> ()
+            end
+          else cont () in
 
     (* We just set (i,j) to some value in o.
        See where we might use this to violate an axiom or set a new value. *)
@@ -197,7 +199,7 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
     match axiom with
       | (Binary (op1, l1, r1), Binary (op2, l2, r2)) ->
         let f cont id o i j =
-          for k = 0 to nvars - 1 do
+          for k = 0 to num_vars - 1 do
             vars.(k) <- -1
           done ;
           nfill := 0 ;
@@ -242,7 +244,7 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
       | (term, Binary (op2, l2, r2))
       | (Binary (op2, l2, r2), term) ->
         let f cont id o i j =
-          for k = 0 to nvars - 1 do
+          for k = 0 to num_vars - 1 do
             vars.(k) <- -1
           done ;
           nfill := 0 ;
@@ -278,9 +280,11 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
      It is ugly, but much faster.
   *)
   let actions_from_assoc = function
-    | (Binary (op1, Binary (op2, Var a1, Var b1), Var c1), Binary (op3, Var a2, Binary (op4, Var b2, Var c2)))
-    | (Binary (op3, Var a2, Binary (op4, Var b2, Var c2)), Binary (op1, Binary (op2, Var a1, Var b1), Var c1))
-        when op1 = op2 && op2 = op3 && op3 = op4 && a1 = a2 && b1 = b2 && c1 = c2 ->
+    | (_,(Binary (op1, Binary (op2, Var a1, Var b1), Var c1), Binary (op3, Var a2, Binary (op4, Var b2, Var c2))))
+    | (_,(Binary (op3, Var a2, Binary (op4, Var b2, Var c2)), Binary (op1, Binary (op2, Var a1, Var b1), Var c1)))
+        when op1 = op2 && op2 = op3 && op3 = op4 && 
+          a1 = a2 && b1 = b2 && c1 = c2 && 
+          a1 <> b1 && a1 <> c1 && b1 <> c1 ->
       let stack = Stack.create () in
       let f cont id o i j =
         if o <> op1 then true
@@ -401,7 +405,7 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
     | _ -> invalid_arg "actions_from_assoc axiom given is not associativity" in
 
   let (dos, undos) = List.split (List.map actions_from_assoc assoc @
-                                 List.map (actions_from_axiom) amenable) in
+                                 List.map actions_from_axiom amenable) in
 
   (*
      Use all the functions from dos. Continuation passed is dodos itself.
@@ -432,12 +436,12 @@ let gen_binary n lc lu lb dodos doundos unary_arr binary_arr check k =
   (* o is index of operation, (i,j) current element *)
   let rec gen_operation o = function
     | _ when o = lb ->
-        k { alg_size = n;
-            alg_name = None;
-            alg_prod = None;
-            alg_const = Array.init lc (fun k -> k);
-            alg_unary = Util.matrix_copy unary_arr;
-          }
+         k { alg_size = n;
+             alg_name = None;
+             alg_prod = None;
+             alg_const = Array.init lc (fun k -> k);
+             alg_unary = Util.matrix_copy unary_arr;
+           }
     | (i,_) when i = n -> gen_operation (o+1) (0,0)
     | (i,j) when j = n -> gen_operation o (i+1,0)
     | (i,j) when binary_arr.(o).(i).(j) = -1 ->

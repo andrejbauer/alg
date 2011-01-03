@@ -440,9 +440,9 @@ struct
 
       algebra =
         begin
-          fun {T.alg_unary=unary; T.alg_binary=binary} ->
+          fun {T.alg_const=const; T.alg_unary=unary; T.alg_binary=binary} ->
             Printf.fprintf ch ",\n  {\n";
-            Array.iteri (fun i c -> Printf.fprintf ch "    \"%s\" : %d,\n" c i) th_const;
+            Array.iteri (fun i c -> Printf.fprintf ch "    \"%s\" : %d,\n" c const.(i)) th_const;
             let ulen = Array.length unary in
             Array.iteri
               (fun op t -> 

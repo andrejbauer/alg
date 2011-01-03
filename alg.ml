@@ -3,6 +3,8 @@
 open Config
 open Output
 
+module CM = Check_model
+
 module IntMap = Util.IntMap ;;
 
 (* Convert a string given via the --size command-line option to a list of sizes. *)
@@ -86,6 +88,9 @@ try begin (*A big wrapper for error reporting. *)
     ("--output",
      Arg.String (fun str -> config.output_filename <- str),
      " Output to the specified file.");
+    ("--paranoid",
+     Arg.Unit (fun () -> config.paranoid <- true),
+     " Naively check all axioms and isomorphism before output. Use if you think there is a bug in alg.");
   ]
   in
 
@@ -140,6 +145,7 @@ try begin (*A big wrapper for error reporting. *)
   (* Parse the theory. *)
   let theory = Cook.cook_theory theory_name raw_theory in
 
+
     (* If --indecomposable is given then --no-products makes no sense. *)
   if config.indecomposable_only then config.products <- true ;
 
@@ -189,11 +195,14 @@ try begin (*A big wrapper for error reporting. *)
     Enum.enum n theory
       (fun a -> 
         if First_order.check_axioms theory a && not (Iso.seen theory a !algebras) then
-          begin
-            algebras := Util.copy_algebra a :: !algebras ;
-            if must_cache then to_cache := a :: !to_cache ;
-            output (a, true)
-          end) ;
+          if config.paranoid && CM.seen theory a !algebras then
+            Error.fatal "There is a bug in isomorphism detection in alg.\nPlease report with example."
+          else
+            begin
+              algebras := Util.copy_algebra a :: !algebras ;
+              if must_cache then to_cache := a :: !to_cache ;
+              output (a, true)
+            end) ;
     if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
   in
 
@@ -234,6 +243,9 @@ try begin (*A big wrapper for error reporting. *)
             if not config.count_only then out.size_header n ;
             let k = ref 0 in
             let output (algebra, indecomposable) =
+              if config.paranoid && not (CM.check_model theory algebra) then
+                Error.fatal "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
+
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Type.alg_name <- Some (theory.Type.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
