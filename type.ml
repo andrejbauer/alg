@@ -3,7 +3,10 @@
 (* Variables and operations are represented as integers, but we also keep around
    the original operation names so that results can be printed. *)
 type operation = int
+type relation = int
 type operation_name = string
+type relation_name = string
+
 type variable = int
 
 (* A term *)
@@ -20,6 +23,8 @@ type equation = term * term
 type formula' = 
   | True
   | False
+  | Predicate of relation * term
+  | Relation of relation * term * term
   | Equal of term * term
   | Forall of variable * formula'
   | Exists of variable * formula'
@@ -38,6 +43,8 @@ type theory = {
   th_const : operation_name array;
   th_unary : operation_name array;
   th_binary : operation_name array;
+  th_predicates : relation_name array;
+  th_relations : relation_name array;
   th_equations : equation list;
   th_axioms : formula list
 }
@@ -48,7 +55,9 @@ type algebra = {
   alg_size : int;
   alg_const : int array;
   alg_unary : int array array;
-  alg_binary : int array array array
+  alg_binary : int array array array;
+  alg_predicates : int array array;
+  alg_relations : int array array array;
 }
 
 (* Conversion to string, for debugging purposes. *)
@@ -66,6 +75,8 @@ let string_of_equation (t1, t2) =
 let rec string_of_formula' = function
   | True -> "True"
   | False -> "False"
+  | Predicate (r, t) -> "p" ^ string_of_int r ^ " " ^ embrace (string_of_term t)
+  | Relation (r, t1, t2) -> "r" ^ string_of_int r ^ " " ^ embrace (string_of_term t1 ^ ", " ^ string_of_term t2)
   | Equal (t1, t2) -> string_of_equation (t1, t2)
   | Not f -> "not " ^ embrace (string_of_formula' f)
   | And (f1, f2) -> embrace (string_of_formula' f1) ^ " /\ " ^ embrace (string_of_formula' f2)
@@ -81,11 +92,15 @@ let string_of_theory {th_name=name;
                       th_const=const;
                       th_unary=unary;
                       th_binary=binary;
+                      th_predicates=predicates;
+                      th_relations=relations;
                       th_equations=equations;
                       th_axioms=axioms} =
   "Theory: " ^ name ^ "\n" ^
   "Constant: " ^ String.concat " " (Array.to_list const) ^ "\n" ^
   "Unary: " ^ String.concat " " (Array.to_list unary) ^ "\n" ^
   "Binary: " ^ String.concat " " (Array.to_list binary) ^ "\n" ^
+  "Predicates: " ^ String.concat " " (Array.to_list predicates) ^ "\n" ^
+  "Relations: " ^ String.concat " " (Array.to_list relations) ^ "\n" ^
   "Equations:\n" ^ String.concat "\n" (List.map string_of_equation equations) ^ "\n" ^
   "Axioms:\n" ^ String.concat "\n" (List.map string_of_formula axioms) ^ "\n"
