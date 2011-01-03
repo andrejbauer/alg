@@ -31,14 +31,14 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
     Util.array_iter2 (fun i j -> used.(j) <- true ; iso.(i) <- j) c1 c2 ;
 
     (*
-       Generate actions from unary and binary operations analogous to generation
-       of actions from axioms. Axioms here are implicit from the definition of isomorphism
+      Generate actions from unary and binary operations analogous to generation
+      of actions from axioms. Axioms here are implicit from the definition of isomorphism
       IMPORTANT: actions_from_unary and actions_from_binary assume that algebras
       are "synced".
     *)
     let actions_from_unary arr1 arr2 =
       let stack = Stack.create () in
-      let f i =
+      let f_unary i =
         if iso.(arr1.(i)) = -1 then
           begin
             if used.(arr2.(iso.(i))) then
@@ -55,11 +55,11 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
         while not (Stack.is_empty stack) && Stack.top stack = i do
           iso.(arr1.(Stack.pop stack)) <- -1 ;
           used.(arr2.(iso.(i))) <- false
-        done in (f, undo) in
+        done in (f_unary, undo) in
 
     let actions_from_binary arr1 arr2 =
       let stack = Stack.create () in
-      let f i =
+      let f_binary i =
         try
           for k=0 to n-1 do
             if iso.(k) <> -1 then
@@ -95,7 +95,7 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
           let (_, (a,b)) = Stack.pop stack in
           iso.(a) <- -1 ;
           used.(b) <- false
-        done in (f, undo) in
+        done in (f_binary, undo) in
 
     let (dos, undos) = List.split (Util.array_map2_list actions_from_unary u1 u2
                                    @ Util.array_map2_list actions_from_binary b1 b2) in
