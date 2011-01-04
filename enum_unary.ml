@@ -4,7 +4,7 @@ open Type
 (* Auxiliary functions for unary axioms. *)
 
 (* Apply simple axioms to operation tables unary_arr *)
-let apply_simple simple unary_arr =
+let apply_simple simple {alg_unary=unary_arr} =
   (* Apply simple axioms *)
   List.iter
     (function
@@ -17,7 +17,7 @@ let apply_simple simple unary_arr =
     simple
 
 (* Get do and undo actions from axioms in normal form for use in main loop of gen_unary. *)
-let get_unary_actions n normal_axioms unary_arr =
+let get_unary_actions normal_axioms {alg_size=n; alg_unary=unary_arr} =
   (*
     Traces function applications in equation eq starting with start. If an unknown
     element comes up, it returns None.
@@ -166,7 +166,8 @@ let get_normal_axioms complicated =
   Generate unary operation tables. lc, lu and lb are numbers of constants,
   unary and binary operations.
 *)
-let gen_unary n lu dodos doundos unary_arr k =
+let gen_unary dodos doundos {alg_size=n; alg_unary=unary_arr} k =
+  let lu = Array.length unary_arr in
   (* Main loop. *)
   let rec
       gen_operation i = function

@@ -17,7 +17,8 @@ type term =
   | Binary of operation * term * term
 
 (* An equation. *)
-type equation = term * term
+type equation' = term * term
+type equation = int * equation'
 
 (* A raw formula. *)
 type formula' = 
@@ -59,6 +60,9 @@ type algebra = {
   alg_predicates : int array array;
   alg_relations : int array array array;
 }
+
+(* Used to indicate that a permanent inconsistency has been discovered. *)
+exception InconsistentAxioms
 
 (* Conversion to string, for debugging purposes. *)
 let embrace s = "(" ^ s ^ ")"
@@ -102,5 +106,5 @@ let string_of_theory {th_name=name;
   "Binary: " ^ String.concat " " (Array.to_list binary) ^ "\n" ^
   "Predicates: " ^ String.concat " " (Array.to_list predicates) ^ "\n" ^
   "Relations: " ^ String.concat " " (Array.to_list relations) ^ "\n" ^
-  "Equations:\n" ^ String.concat "\n" (List.map string_of_equation equations) ^ "\n" ^
+  "Equations:\n" ^ String.concat "\n" (List.map (fun (_,eq) -> string_of_equation eq) equations) ^ "\n" ^
   "Axioms:\n" ^ String.concat "\n" (List.map string_of_formula axioms) ^ "\n"

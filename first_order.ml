@@ -21,10 +21,12 @@ let check_formula alg (vars,f) =
     | False -> false
     | True -> true
     | Equal (t1, t2) -> eval_term alg vars t1 = eval_term alg vars t2
+    | Predicate (p,t) -> alg.alg_predicates.(p).(eval_term alg vars t) = 1
+    | Relation (r,t1,t2) -> alg.alg_relations.(r).(eval_term alg vars t1).(eval_term alg vars t2) = 1
     | Not f -> not (eval f)
     | And (f1,f2) -> eval f1 && eval f2
     | Or (f1,f2) -> eval f1 || eval f2
-    | Imply (f1,f2) -> eval f1 <= eval f2
+    | Imply (f1,f2) -> not (eval f1) || eval f2
     | Iff (f1, f2) -> eval f1 = eval f2
     | Forall (i,f) ->
         let b = ref true in
