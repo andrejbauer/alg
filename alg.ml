@@ -154,7 +154,7 @@ try begin (*A big wrapper for error reporting. *)
   (* If there are predicates or relations --no-products makes no sense (and will crash). *)
   if theory_with_relations then config.products <- false ;
 
-  (* Cache for indecomposable algebras computed so far. *)
+  (* Cache for indecomposable algebras computed so far. This is a map from size to a list of algebras. *)
   let indecomposable_algebras = ref IntMap.empty in
 
   let lookup_cached n =
@@ -166,9 +166,9 @@ try begin (*A big wrapper for error reporting. *)
   (* Processing of algebras of a given size and pass them to the given continuations,
      together with information whether the algebra is indecomposable. *)
   let rec process_size n output =
-    (* Generate decomposable algebras if needed. *)
+    (* Generate a hash table of decomposable algebras if needed. *)
     let decomposables = 
-      if n < Array.length theory.Theory.th_const || not config.products then []
+      if n < Array.length theory.Theory.th_const || not config.products then Iso.empty_store ()
       else
         (* Generate indecomposable factors and then decomposable algebras from them. *)
         let factors =
@@ -179,12 +179,11 @@ try begin (*A big wrapper for error reporting. *)
                   | Some lst -> lst
                   | None ->
                     let lst = ref [] in
-                    process_size k (fun (algebra, indecomposable) ->
-                                      if indecomposable then lst := A.with_invariant algebra :: !lst) ;
+                    process_size k (fun (algebra, indecomposable) -> if indecomposable then lst := algebra :: !lst) ;
                     !lst
                 end
               in
-              IntMap.add k lst m)
+                IntMap.add k lst m)
             IntMap.empty
             (Util.divisors n)
         in
@@ -196,22 +195,23 @@ try begin (*A big wrapper for error reporting. *)
     (* Generate indecomposable algebras. *)
     (* Are we going to cache these? *)
     let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
-    let algebras = ref decomposables in
+    let algebras = decomposables in
     let to_cache = ref [] in
     Enum.enum n theory
       (fun a -> 
-         let a = A.with_invariant a in
-           if First_order.check_axioms theory (fst a) && not (Iso.seen theory a !algebras) then
-             if config.paranoid && CM.seen theory (fst a) !algebras then
+         (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
+         let (seen, i) = Iso.seen theory a algebras in
+           if not seen && First_order.check_axioms theory a then
+             if config.paranoid && CM.seen theory a algebras then
                Error.fatal "There is a bug in isomorphism detection in alg.\nPlease report with example."
              else
                begin
-                 let b = (Util.copy_algebra (fst a), snd a) in
-                 algebras := b :: !algebras ;
-                 if must_cache then to_cache := b :: !to_cache ;
-              output (fst a, true)
-            end) ;
-    if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
+                 let b = Util.copy_algebra a in
+                   Iso.store algebras ~inv:i b ;
+                   if must_cache then to_cache := b :: !to_cache ;
+                   output (b, true)
+             end) ;
+      if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
   in
 
   if config.format = "" then
@@ -258,16 +258,17 @@ try begin (*A big wrapper for error reporting. *)
               if not config.count_only && (not config.indecomposable_only || indecomposable)
               then out.algebra algebra
             in
-            process_size n output ;
-            counts := (n, !k) :: !counts ;
-            if config.count_only
-            then out.count n !k
-          else out.size_footer ())
+              process_size n output ;
+              counts := (n, !k) :: !counts ;
+              if config.count_only
+              then out.count n !k
+              else out.size_footer ())
           config.sizes
       with Sys.Break -> out.interrupted ()
     end ;
-    if config.count_only then out.count_footer (List.rev !counts);
-    out.footer (List.rev !counts)
+    if config.count_only
+    then out.count_footer (List.rev !counts)
+    else out.footer (List.rev !counts)
   end
 end
 with Error.Error (pos, err, msg) -> Error.report (pos, err, msg)
