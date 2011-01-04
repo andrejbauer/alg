@@ -11,7 +11,7 @@ exception Undefined
 (* Auxiliary functions for binary axioms. *)
 
 (* Apply simple axioms to the binary operation tables. *)
-let apply_simple_binary simple unary_arr binary_arr =
+let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr} =
   (*
      Applies simple axioms to the main operation tables.
      If axioms aren't simple it fails miserably.
@@ -35,7 +35,9 @@ let apply_simple_binary simple unary_arr binary_arr =
   in List.iter apply_simple simple
 
 (* Apply one variable shallow axioms to the binary_arr operation tables. *)
-let apply_one_var_shallow n one_var_shallow unary_arr binary_arr =
+let apply_one_var_shallow one_var_shallow {alg_size=n;
+                                           alg_unary=unary_arr;
+                                           alg_binary=binary_arr} =
   (*
     Apply one variable shallow axioms. Typical example is axioms for
     a unit element in a monoid (forall a: a * e = e)
@@ -66,7 +68,7 @@ let apply_one_var_shallow n one_var_shallow unary_arr binary_arr =
   evaluate term in the context of vars. Raises Undefined if there is
   insufficient information to fully evaluate.
 *)
-let eval_eq unary_arr binary_arr vars =
+let eval_eq {alg_unary=unary_arr; alg_binary=binary_arr} vars =
   let rec eval_eq' = function
     | Const c -> c
     | Var v -> vars.(v)
@@ -85,7 +87,9 @@ let eval_eq unary_arr binary_arr vars =
           end
       end in eval_eq'
 
-let get_checks all_tuples unary_arr binary_arr zipped_axioms =
+let get_checks all_tuples ({alg_unary=unary_arr;
+                            alg_binary=binary_arr} as alg)
+    zipped_axioms =
   (*
      Returns false if there is a conflict.
   *)
@@ -93,9 +97,9 @@ let get_checks all_tuples unary_arr binary_arr zipped_axioms =
     let tuples = all_tuples.(num_vars) in
     let apply_to vars =
       try
-        let a = eval_eq unary_arr binary_arr vars left in (* b is not evaluated if a is -1 *)
+        let a = eval_eq alg vars left in (* b is not evaluated if a is -1 *)
         a = -1 ||
-            let b = eval_eq unary_arr binary_arr vars right in
+            let b = eval_eq alg vars right in
             (b = -1 || a = b)
       with Undefined -> true
     in
@@ -112,7 +116,10 @@ let get_checks all_tuples unary_arr binary_arr zipped_axioms =
    Auxiliary functions for computing actions from binary axioms and
    checking axiom validity after adding one element.
 *)
-let get_binary_actions n unary_arr binary_arr assoc amenable =
+let get_binary_actions ({alg_size=n;
+                         alg_unary=unary_arr;
+                         alg_binary=binary_arr} as alg) 
+    assoc amenable =
   (* Compute actions from amenable axioms *)
   let actions_from_axiom (num_vars, axiom) =
     let stack = Stack.create () in
@@ -206,10 +213,10 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
           nfill := 0 ;
           let check_other () =
             try
-              let el1 = eval_eq unary_arr binary_arr vars l1 in
-              let er1 = eval_eq unary_arr binary_arr vars r1 in
-              let el2 = eval_eq unary_arr binary_arr vars l2 in
-              let er2 = eval_eq unary_arr binary_arr vars r2 in
+              let el1 = eval_eq alg vars l1 in
+              let er1 = eval_eq alg vars r1 in
+              let el2 = eval_eq alg vars l2 in
+              let er2 = eval_eq alg vars r2 in
               if el1 <> -1 && el2 <> -1 && er1 <> -1 && er2 <> -1 then
                 begin
                   let left = binary_arr.(op1).(el1).(er1) in
@@ -251,9 +258,9 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
           nfill := 0 ;
           let check_other () =
             try
-              let el2 = eval_eq unary_arr binary_arr vars l2 in
-              let er2 = eval_eq unary_arr binary_arr vars r2 in
-              let elt = eval_eq unary_arr binary_arr vars term in
+              let el2 = eval_eq alg vars l2 in
+              let er2 = eval_eq alg vars r2 in
+              let elt = eval_eq alg vars term in
               if elt <> -1 && el2 <> -1 && er2 <> -1 then
                 begin
                   let left = elt in
@@ -432,21 +439,15 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
   amenable axioms, check checks if non-amenable axioms are still valid.
   k is the continuation.
 *)
-let gen_binary n th dodos doundos unary_arr binary_arr check k =
+let gen_binary th ({alg_size=n; 
+                    alg_binary=binary_arr;
+                    alg_unary=unary_arr} as alg)
+    dodos doundos check k =
+  let lb = Array.length th.th_binary in
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
-  let lb = Array.length th.th_binary in
   let rec gen_operation o = function
-    | _ when o = lb ->
-         k { alg_size = n;
-             alg_name = None;
-             alg_prod = None;
-             alg_const = Array.init (Array.length th.th_const) (fun k -> k);
-             alg_unary = Util.matrix_copy unary_arr;
-             alg_binary = Util.array3d_copy binary_arr;
-             alg_predicates = Array.make_matrix (Array.length th.th_predicates) n (-1);
-             alg_relations = Array.init (Array.length th.th_relations) (fun k -> Array.make_matrix n n (-1));
-           }
+    | _ when o = lb -> k alg
     | (i,_) when i = n -> gen_operation (o+1) (0,0)
     | (i,j) when j = n -> gen_operation o (i+1,0)
     | (i,j) when binary_arr.(o).(i).(j) = -1 ->

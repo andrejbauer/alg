@@ -209,8 +209,8 @@ try begin (*A big wrapper for error reporting. *)
                  let b = (Util.copy_algebra (fst a), snd a) in
                  algebras := b :: !algebras ;
                  if must_cache then to_cache := b :: !to_cache ;
-              output (fst a, true)
-            end) ;
+                 output (fst a, true)
+               end) ;
     if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
   in
 

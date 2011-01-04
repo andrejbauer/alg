@@ -28,7 +28,7 @@ let check_formula alg (vars,f) =
     | Not f -> not (eval f)
     | And (f1,f2) -> eval f1 && eval f2
     | Or (f1,f2) -> eval f1 || eval f2
-    | Imply (f1,f2) -> eval f1 <= eval f2
+    | Imply (f1,f2) -> not (eval f1) || eval f2
     | Iff (f1, f2) -> eval f1 = eval f2
     | Forall (i,f) ->
         let b = ref true in

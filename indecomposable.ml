@@ -11,7 +11,7 @@ let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; 
   else begin
     let size = n1 * n2 in
     let mapping i j = n2 * i + j in
-      (* IMPORTANT: combine_unary and combine_binary assume that algebras are "synced". *)
+    (* IMPORTANT: combine_unary and combine_binary assume that algebras are "synced". *)
     let combine_unary arr1 arr2 =
       let arr = Array.make size 0 in
         for k = 0 to n1 - 1 do
@@ -64,7 +64,7 @@ let gen_decomposable theory n factors output =
             let a = with_invariant acc in
               if not (Iso.seen theory a !algebras)
               then begin
-                algebras := a :: !algebras ;
+                algebras := (Util.copy_algebra (fst a), snd a) :: !algebras ;
                 output acc
               end
       | (p::ps) -> 
