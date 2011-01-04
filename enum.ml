@@ -127,13 +127,9 @@ let partition_amenable axioms =
   Enumerate all algebras of a given size for the given theory
   and pass them to the given continuation.
 *)
-let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axioms} k =
+let enum n ({th_const=const; th_unary=unary; th_binary=binary; th_equations=axioms} as th) k =
   if n >= Array.length const then
     try begin
-      let lc = Array.length const in
-      let lu = Array.length unary in
-      let lb = Array.length binary in
-        
       (* Auxiliary variables for generation of unary operations. *)
       (* ******************************************************* *)
       let (unary_axioms, binary_axioms) = part_axioms axioms in
@@ -151,15 +147,15 @@ let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axiom
       let complicated = List.map snd complicated' in
 
       (* Main operation tables for unary operations. *)
-      let unary_arr = Array.make_matrix lu n (-1) in
-        
+      let unary_arr = Array.make_matrix (Array.length unary) n (-1) in
+                
       let normal_axioms = get_normal_axioms complicated in
         
       let (unary_dos, unary_undos) = get_unary_actions n normal_axioms unary_arr in
         
         apply_simple simple unary_arr ;
 
-        for o=0 to lu - 1 do
+        for o=0 to Array.length unary_arr - 1 do
           for i=0 to n-1 do
             if unary_arr.(o).(i) <> -1 && not (unary_dos (o,i)) then
               Error.fatal "All of the axioms cannot be met." (* TODO: raise exception and catch it in main loop. *)
@@ -203,14 +199,14 @@ let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axiom
         (*
           Main operation tables for binary operations.
         *)
-        let binary_arr = make_3d_array lb n n (-1) in
+        let binary_arr = make_3d_array (Array.length binary) n n (-1) in
 
         let check = get_checks all_tuples unary_arr binary_arr stubborn in
 
         let (binary_dos, binary_undos) = get_binary_actions n unary_arr binary_arr assoc amenable in
 
         let reset_binary_arr () =
-          for o=0 to lb-1 do
+          for o=0 to Array.length binary_arr - 1 do
             for i=0 to n-1 do
               for j=0 to n-1 do
                 binary_arr.(o).(i).(j) <- -1
@@ -219,7 +215,7 @@ let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axiom
           done in
           
         let check_after_add () =
-          for o=0 to lb-1 do
+          for o=0 to Array.length binary_arr - 1 do
             for i=0 to n-1 do
               for j=0 to n-1 do
                 if binary_arr.(o).(i).(j) <> -1 && not (binary_dos (o,i,j) o i j) then
@@ -234,9 +230,9 @@ let enum n {th_const=const; th_unary=unary; th_binary=binary; th_equations=axiom
             apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
             check_after_add () ; (* TODO: Move this into the above functions. *)
             if not (check ()) then raise Contradiction ; (* We might be lucky and fill everything already. *)
-            gen_binary n lc lu lb binary_dos binary_undos unary_arr binary_arr check k
+            gen_binary n th binary_dos binary_undos unary_arr binary_arr check k
           with Contradiction -> () in
           
-          gen_unary n lu unary_dos unary_undos unary_arr cont
+          gen_unary n th unary_dos unary_undos unary_arr cont
     end
     with InconsistentAxioms -> ()
