@@ -1,13 +1,14 @@
 (* Output in various formats. *)
 
-module T = Type
+module T = Theory
+module A = Algebra
 module C = Config
 
 (* A formatter for output *)
 type formatter = {
   header: unit -> unit;
   size_header: int -> unit;
-  algebra: T.algebra -> unit;
+  algebra: A.algebra -> unit;
   size_footer: unit -> unit;
   footer: (int * int) list -> unit;
   count_header: unit -> unit;
@@ -26,7 +27,7 @@ end
 module type TextStyle =
 sig
   val ttfont : string -> string
-  val names : T.theory -> T.algebra -> string array
+  val names : T.theory -> A.algebra -> string array
   val link : string -> string -> string
   val title : out_channel -> string -> unit
   val section : out_channel -> string -> unit
@@ -85,7 +86,7 @@ struct
           end;
 
         algebra =
-          begin fun ({T.alg_name=name; T.alg_prod=prod; T.alg_const=const; T.alg_unary=unary; T.alg_binary=binary} as a) ->
+          begin fun ({A.alg_name=name; A.alg_prod=prod; A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary} as a) ->
             let name = (match name with | None -> "Model of " ^ th_name | Some n -> n) in
             let info =
               begin match prod with
@@ -125,7 +126,7 @@ module MarkdownStyle : TextStyle =
 struct
   let ttfont str = str
 
-  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {T.alg_size=n; T.alg_const=const} =
+  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {A.alg_size=n; A.alg_const=const} =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
     let default_names = 
       ref (List.filter (fun x -> not (List.mem x forbidden_names))
@@ -219,7 +220,7 @@ struct
 
   let ttfont str = "<code>" ^ escape str ^ "</code>"
 
-  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {T.alg_size=n; T.alg_const=const} =
+  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {A.alg_size=n; A.alg_const=const} =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
     let default_names = 
       ref (List.filter (fun x -> not (List.mem x forbidden_names))
@@ -334,7 +335,7 @@ struct
   let ttfont str = "\\texttt{" ^ escape str ^ "}"
   let math str = "$" ^ str ^ "$"
 
-  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {T.alg_size=n; T.alg_const=const} =
+  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {A.alg_size=n; A.alg_const=const} =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
     let default_names = 
       ref (List.filter (fun x -> not (List.mem x forbidden_names))
@@ -440,7 +441,7 @@ struct
 
       algebra =
         begin
-          fun {T.alg_const=const; T.alg_unary=unary; T.alg_binary=binary} ->
+          fun {A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary} ->
             Printf.fprintf ch ",\n  {\n";
             Array.iteri (fun i c -> Printf.fprintf ch "    \"%s\" : %d,\n" c const.(i)) th_const;
             let ulen = Array.length unary in

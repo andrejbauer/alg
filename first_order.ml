@@ -1,4 +1,5 @@
-open Type
+open Theory
+open Algebra
 
 (*
    Evaluate term in the context of vars, unary_arr and binary_arr.

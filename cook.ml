@@ -1,7 +1,7 @@
 (* A simple compiler from abstract syntax to the internal representation. *)
 
 module S = Syntax
-module T = Type
+module T = Theory
 
 type env = {
   const : (S.operation * T.operation) list ;

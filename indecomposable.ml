@@ -1,4 +1,5 @@
-open Type
+open Algebra
+open Theory
 open Util
 
 (* It is assumed that the two algebras correspond to the same signature. Furthermore, an error
@@ -47,7 +48,7 @@ let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; 
       }
   end
 
-(* factors is a map of possible factors *)
+(* factors is a map of possible factors (algebras paired with invariants) *)
 let gen_decomposable theory n factors output = 
   let algebras = ref [] in
     
@@ -59,21 +60,23 @@ let gen_decomposable theory n factors output =
        algebras of the same size), part is the tail of partition *)
     let rec gen_p last start acc = function
       | [] ->
-          if First_order.check_axioms theory acc && not (Iso.seen theory acc !algebras)
-          then begin
-            algebras := acc :: !algebras ;
-            output acc
-          end
+          if First_order.check_axioms theory acc then
+            let a = with_invariant acc in
+              if not (Iso.seen theory a !algebras)
+              then begin
+                algebras := a :: !algebras ;
+                output acc
+              end
       | (p::ps) -> 
           let start = if last = p then start else 0 in
           let last = p in
             Util.iter_enum
-              (fun i a -> if i >= start then gen_p last i (product acc a) ps)
+              (fun i (a,_) -> if i >= start then gen_p last i (product acc a) ps)
               (IntMap.find last factors)
     in
       match partition with
         | [] -> ()
-        | p::ps -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
+        | p::ps -> List.iter (fun (a,_) -> gen_p p 0 a ps) (IntMap.find p factors)
   in (* end of gen_product *)
     List.iter gen_product (Util.partitions n) ;
     !algebras

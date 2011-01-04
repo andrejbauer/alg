@@ -51,17 +51,6 @@ type theory = {
   th_axioms : formula list
 }
 
-type algebra = {
-  mutable alg_name : string option;
-  alg_prod : string list option;
-  alg_size : int;
-  alg_const : int array;
-  alg_unary : int array array;
-  alg_binary : int array array array;
-  alg_predicates : int array array;
-  alg_relations : int array array array;
-}
-
 (* Used to indicate that a permanent inconsistency has been discovered. *)
 exception InconsistentAxioms
 

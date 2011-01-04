@@ -1,4 +1,4 @@
-open Type
+open Theory
 
 (* ******************************************************************************* *)
 (* Auxiliary functions for unary axioms. *)

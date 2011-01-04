@@ -1,4 +1,5 @@
-open Type
+open Theory
+open Algebra
 
 module IntMap =
   Map.Make(struct

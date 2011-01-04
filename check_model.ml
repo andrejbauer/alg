@@ -1,5 +1,5 @@
-open Type
-
+open Theory
+open Algebra
 open Util
 
 module FO=First_order
@@ -103,4 +103,4 @@ let are_iso theory
 (* 
    Have we already seen an algebra of this isomorphism type. 
 *)
-let seen theory alg lst = List.exists (are_iso theory alg) lst
+let seen theory alg lst = List.exists (fun (alg',_) -> are_iso theory alg alg') lst

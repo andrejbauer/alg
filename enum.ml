@@ -1,8 +1,5 @@
-open Type
+open Theory
 open Util
-
-open Enum_binary
-open Enum_unary
 
 (* General helper functions for partitioning axioms. *)
 
@@ -149,11 +146,11 @@ let enum n ({th_const=const; th_unary=unary; th_binary=binary; th_equations=axio
       (* Main operation tables for unary operations. *)
       let unary_arr = Array.make_matrix (Array.length unary) n (-1) in
                 
-      let normal_axioms = get_normal_axioms complicated in
+      let normal_axioms = Enum_unary.get_normal_axioms complicated in
         
-      let (unary_dos, unary_undos) = get_unary_actions n normal_axioms unary_arr in
+      let (unary_dos, unary_undos) = Enum_unary.get_unary_actions n normal_axioms unary_arr in
         
-        apply_simple simple unary_arr ;
+        Enum_unary.apply_simple simple unary_arr ;
 
         for o=0 to Array.length unary_arr - 1 do
           for i=0 to n-1 do
@@ -201,9 +198,9 @@ let enum n ({th_const=const; th_unary=unary; th_binary=binary; th_equations=axio
         *)
         let binary_arr = make_3d_array (Array.length binary) n n (-1) in
 
-        let check = get_checks all_tuples unary_arr binary_arr stubborn in
+        let check = Enum_binary.get_checks all_tuples unary_arr binary_arr stubborn in
 
-        let (binary_dos, binary_undos) = get_binary_actions n unary_arr binary_arr assoc amenable in
+        let (binary_dos, binary_undos) = Enum_binary.get_binary_actions n unary_arr binary_arr assoc amenable in
 
         let reset_binary_arr () =
           for o=0 to Array.length binary_arr - 1 do
@@ -219,20 +216,20 @@ let enum n ({th_const=const; th_unary=unary; th_binary=binary; th_equations=axio
             for i=0 to n-1 do
               for j=0 to n-1 do
                 if binary_arr.(o).(i).(j) <> -1 && not (binary_dos (o,i,j) o i j) then
-                  raise Contradiction
+                  raise Enum_binary.Contradiction
               done
             done
           done in
         let cont () =
           try
             reset_binary_arr () ;
-            apply_simple_binary simple_binary unary_arr binary_arr ;
-            apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
+            Enum_binary.apply_simple_binary simple_binary unary_arr binary_arr ;
+            Enum_binary.apply_one_var_shallow n one_var_shallow unary_arr binary_arr ;
             check_after_add () ; (* TODO: Move this into the above functions. *)
-            if not (check ()) then raise Contradiction ; (* We might be lucky and fill everything already. *)
-            gen_binary n th binary_dos binary_undos unary_arr binary_arr check k
-          with Contradiction -> () in
+            if not (check ()) then raise Enum_binary.Contradiction ; (* We might be lucky and fill everything already. *)
+            Enum_binary.gen_binary n th binary_dos binary_undos unary_arr binary_arr check k
+          with Enum_binary.Contradiction -> () in
           
-          gen_unary n th unary_dos unary_undos unary_arr cont
+          Enum_unary.gen_unary n th unary_dos unary_undos unary_arr cont
     end
     with InconsistentAxioms -> ()

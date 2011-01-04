@@ -3,6 +3,7 @@
 open Config
 open Output
 
+module A = Algebra
 module CM = Check_model
 
 module IntMap = Util.IntMap ;;
@@ -145,11 +146,15 @@ try begin (*A big wrapper for error reporting. *)
   (* Parse the theory. *)
   let theory = Cook.cook_theory theory_name raw_theory in
 
+  let theory_with_relations = Array.length theory.Theory.th_predicates > 0 || Array.length theory.Theory.th_relations > 0 in
 
-    (* If --indecomposable is given then --no-products makes no sense. *)
+  (* If --indecomposable is given then --no-products makes no sense. *)
   if config.indecomposable_only then config.products <- true ;
 
-    (* Cache storing indecomposable algebras computed so far. *)
+  (* If there are predicates or relations --no-products makes no sense (and will crash). *)
+  if theory_with_relations then config.products <- false ;
+
+  (* Cache for indecomposable algebras computed so far. *)
   let indecomposable_algebras = ref IntMap.empty in
 
   let lookup_cached n =
@@ -158,12 +163,12 @@ try begin (*A big wrapper for error reporting. *)
     with Not_found -> None
   in
 
-    (* Processing of algebras of a given size and pass them to the given continuations,
-       together with information whether the algebra is indecomposable. *)
+  (* Processing of algebras of a given size and pass them to the given continuations,
+     together with information whether the algebra is indecomposable. *)
   let rec process_size n output =
     (* Generate decomposable algebras if needed. *)
     let decomposables = 
-      if n < Array.length theory.Type.th_const || not config.products then []
+      if n < Array.length theory.Theory.th_const || not config.products then []
       else
         (* Generate indecomposable factors and then decomposable algebras from them. *)
         let factors =
@@ -174,7 +179,8 @@ try begin (*A big wrapper for error reporting. *)
                   | Some lst -> lst
                   | None ->
                     let lst = ref [] in
-                    process_size k (fun (algebra, indecomposable) -> if indecomposable then lst := algebra :: !lst) ;
+                    process_size k (fun (algebra, indecomposable) ->
+                                      if indecomposable then lst := A.with_invariant algebra :: !lst) ;
                     !lst
                 end
               in
@@ -194,14 +200,16 @@ try begin (*A big wrapper for error reporting. *)
     let to_cache = ref [] in
     Enum.enum n theory
       (fun a -> 
-        if First_order.check_axioms theory a && not (Iso.seen theory a !algebras) then
-          if config.paranoid && CM.seen theory a !algebras then
-            Error.fatal "There is a bug in isomorphism detection in alg.\nPlease report with example."
-          else
-            begin
-              algebras := Util.copy_algebra a :: !algebras ;
-              if must_cache then to_cache := a :: !to_cache ;
-              output (a, true)
+         let a = A.with_invariant a in
+           if First_order.check_axioms theory (fst a) && not (Iso.seen theory a !algebras) then
+             if config.paranoid && CM.seen theory (fst a) !algebras then
+               Error.fatal "There is a bug in isomorphism detection in alg.\nPlease report with example."
+             else
+               begin
+                 let b = (Util.copy_algebra (fst a), snd a) in
+                 algebras := b :: !algebras ;
+                 if must_cache then to_cache := b :: !to_cache ;
+              output (fst a, true)
             end) ;
     if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
   in
@@ -245,9 +253,8 @@ try begin (*A big wrapper for error reporting. *)
             let output (algebra, indecomposable) =
               if config.paranoid && not (CM.check_model theory algebra) then
                 Error.fatal "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
-
               if not config.indecomposable_only || indecomposable then incr k ;
-              algebra.Type.alg_name <- Some (theory.Type.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
+              algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
               then out.algebra algebra
             in
