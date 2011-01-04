@@ -179,8 +179,10 @@ try begin (*A big wrapper for error reporting. *)
                   | Some lst -> lst
                   | None ->
                     let lst = ref [] in
-                    process_size k (fun (algebra, indecomposable) ->
-                                      if indecomposable then lst := A.with_invariant algebra :: !lst) ;
+                    process_size k 
+                      (fun (algebra, indecomposable) ->
+                        if indecomposable then 
+                          lst := A.with_invariant (Util.copy_algebra algebra) :: !lst) ;
                     !lst
                 end
               in
