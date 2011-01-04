@@ -7,7 +7,7 @@ let ident = ['_' 'a'-'z' 'A'-'Z' '0'-'9']+
 
 let symbolchar = ['!' '$' '%' '&' '*' '+' '-' '/' '\\' ':' '<' '=' '>' '?' '@' '^' '|' '~']
 let prefixop = ['?' '!' '~'] symbolchar*
-let infixop0 = ['|' '&' '$']  symbolchar*
+let infixop0 = ['=' '<' '>' '|' '&' '$']  symbolchar*
 let infixop1 = ['@' '^']      symbolchar*
 let infixop2 = ['+' '-' '\\'] symbolchar*
 let infixop4 = "**"           symbolchar*
@@ -22,6 +22,10 @@ rule token = parse
   | "Constant"          { CONSTANT }
   | "Unary"             { UNARY }
   | "Binary"            { BINARY }
+  | "Predicate"         { PREDICATE }
+  | "Predicates"        { PREDICATE }
+  | "Relation"          { RELATION }
+  | "Relations"         { RELATION }
   | "Axiom"             { AXIOM }
   | "Theorem"           { THEOREM }
   | "forall"            { FORALL }
@@ -36,6 +40,7 @@ rule token = parse
   | "<->"               { IFF }
   | "=>"                { IMPLY }
   | "<=>"               { IFF }
+  | '='                 { EQUAL }
   | "<>"                { NOTEQUAL }
   | "!="                { NOTEQUAL }
   | "not"               { NOT }
@@ -53,7 +58,6 @@ rule token = parse
   | ')'                 { RPAREN }
   | ':'                 { COLON }
   | ','                 { COMMA }
-  | '='                 { EQUAL }
   | eof                 { EOF }
 
 {

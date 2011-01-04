@@ -3,7 +3,7 @@
 %}
 
 %token THEORY
-%token CONSTANT UNARY BINARY
+%token CONSTANT UNARY BINARY PREDICATE RELATION
 %token AXIOM THEOREM
 %token <string> IDENT
 %token <string> PREFIXOP INFIXOP0 INFIXOP1 INFIXOP2 INFIXOP3 INFIXOP4
@@ -38,9 +38,13 @@ theory_entry:
     { Unary lst }
   | BINARY lst = nonempty_list(name_or_op)
     { Binary lst }
-  | AXIOM n = option(IDENT) COLON a = formula
+  | PREDICATE lst = nonempty_list(name_or_prefix)
+    { Predicate lst }
+  | RELATION lst = nonempty_list(name_or_op)
+    { Relation lst }
+  | AXIOM n = option(IDENT) COLON a = expr
     { Axiom (n, a) }
-  | THEOREM n = option(IDENT) COLON a = formula
+  | THEOREM n = option(IDENT) COLON a = expr
     { Axiom (n, a) }
 
 name:
@@ -57,22 +61,6 @@ name_or_op:
     { n }
   | op = binop
     { op }
-
-term:
-  | t1 = term op = binop t2 = term
-    { Apply (op, [t1;t2]) }
-  | op = PREFIXOP t = simple_term
-    { Apply (op, [t]) }
-  | t = simple_term
-    { t }
-
-simple_term:
-  | x = name
-    { Var x }
-  | op = name LPAREN lst = args RPAREN
-    { Apply (op, lst) }
-  | LPAREN t = term RPAREN
-    { t }
 
 %inline binop: 
   | op = INFIXOP0
@@ -94,79 +82,81 @@ args:
   | t = term COMMA ts = args
     { t :: ts }
 
-formula:
-  | f = quantified_formula
-  | f = iff_formula
-  | f = imply_formula
+expr:
+  | f = quantified_expr
+  | f = iff_expr
+  | f = imply_expr
     { f }
 
-formula_noquant:
-  | f = quantified_formula
-  | f = imply_formula
-  | f = iff_formula_noquant
+expr_noquant:
+  | f = quantified_expr
+  | f = imply_expr
+  | f = iff_expr_noquant
     { f }
 
-quantified_formula:
-  | FORALL xs = vars COMMA f = formula_noquant
+quantified_expr:
+  | FORALL xs = vars COMMA f = expr_noquant
     { List.fold_right (fun x f -> Forall (x, f)) xs f }
-  | EXISTS xs = vars COMMA f = formula_noquant
+  | EXISTS xs = vars COMMA f = expr_noquant
     { List.fold_right (fun x f -> Exists (x, f)) xs f }
 
-iff_formula_noquant:
-  | f1 = or_formula_noquant IFF f2 = or_formula_noquant
+iff_expr_noquant:
+  | f1 = or_expr_noquant IFF f2 = or_expr_noquant
     { Iff (f1, f2) }
 
-iff_formula:
-  | f1 = or_formula_noquant IFF f2 = or_formula
+iff_expr:
+  | f1 = or_expr_noquant IFF f2 = or_expr
     { Iff (f1, f2) }
 
-imply_formula:
-  | f1 = or_formula_noquant IMPLY f2 = formula
+imply_expr:
+  | f1 = or_expr_noquant IMPLY f2 = expr
     { Imply (f1, f2) }
-  | f = or_formula
+  | f = or_expr
     { f }
 
-or_formula:
-  | f1 = or_formula_noquant OR f2 = and_formula
+or_expr:
+  | f1 = or_expr_noquant OR f2 = and_expr
     { Or (f1, f2) }
-  | f1 = or_formula_noquant OR f2 = quantified_formula
+  | f1 = or_expr_noquant OR f2 = quantified_expr
     { Or (f1, f2) }
-  | f = and_formula
+  | f = and_expr
     { f }
 
-or_formula_noquant:
-  | f1 = or_formula_noquant OR f2 = and_formula_noquant
+or_expr_noquant:
+  | f1 = or_expr_noquant OR f2 = and_expr_noquant
     { Or (f1, f2) }
-  | f = and_formula_noquant
+  | f = and_expr_noquant
     { f }
 
-and_formula:
-  | f1 = and_formula_noquant AND f2 = negation_formula
-  | f1 = and_formula_noquant AND f2 = quantified_formula
+and_expr:
+  | f1 = and_expr_noquant AND f2 = negation_expr
+  | f1 = and_expr_noquant AND f2 = quantified_expr
     { And (f1, f2) }
-  | f = negation_formula
+  | f = negation_expr
     { f }
 
-and_formula_noquant:
-  | f1 = and_formula_noquant AND f2 = negation_formula_noquant
+and_expr_noquant:
+  | f1 = and_expr_noquant AND f2 = negation_expr_noquant
     { And (f1, f2) }
-  | f = negation_formula_noquant
+  | f = negation_expr_noquant
     { f }
 
-negation_formula:
-  | NOT f = negation_formula
-  | NOT f = quantified_formula
+negation_expr:
+  | NOT f = negation_expr
+  | NOT f = quantified_expr
     { Not f }
-  | f = atomic_formula
+  | f = atomic_expr
     { f }
 
-negation_formula_noquant:
-  | NOT f = negation_formula_noquant
+negation_expr_noquant:
+  | NOT f = negation_expr_noquant
     { Not f }
-  | f = atomic_formula
+  | f = atomic_expr
     { f }
 
-atomic_formula:
+atomic_expr:
+  | t = term
+     { t }
   | t1 = term EQUAL t2 = term
     { Equal (t1, t2) }
   | t1 = term NOTEQUAL t2 = term
@@ -175,8 +165,22 @@ atomic_formula:
     { True }
   | FALSE
     { False }
-  | LPAREN f = formula RPAREN
-    { f }
+
+term:
+  | t1 = term op = binop t2 = term
+    { Apply (op, [t1;t2]) }
+  | op = PREFIXOP t = simple_term
+    { Apply (op, [t]) }
+  | t = simple_term
+    { t }
+
+simple_term:
+  | x = name
+    { Var x }
+  | op = name LPAREN lst = args RPAREN
+    { Apply (op, lst) }
+  | LPAREN t = expr RPAREN
+    { t }
 
 vars:
   | vs = nonempty_list(name)

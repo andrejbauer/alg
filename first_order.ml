@@ -1,4 +1,5 @@
-open Type
+open Theory
+open Algebra
 
 (*
    Evaluate term in the context of vars, unary_arr and binary_arr.
@@ -21,6 +22,9 @@ let check_formula alg (vars,f) =
     | False -> false
     | True -> true
     | Equal (t1, t2) -> eval_term alg vars t1 = eval_term alg vars t2
+    | Predicate (k, t) -> alg.alg_predicates.(k).(eval_term alg vars t) = 1
+    | Relation (k, t1, t2) ->
+        alg.alg_relations.(k).(eval_term alg vars t1).(eval_term alg vars t2) = 1
     | Not f -> not (eval f)
     | And (f1,f2) -> eval f1 && eval f2
     | Or (f1,f2) -> eval f1 || eval f2

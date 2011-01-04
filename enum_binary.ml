@@ -1,4 +1,5 @@
-open Type
+open Theory
+open Algebra
 
 exception Contradiction
 
@@ -431,16 +432,20 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
   amenable axioms, check checks if non-amenable axioms are still valid.
   k is the continuation.
 *)
-let gen_binary n lc lu lb dodos doundos unary_arr binary_arr check k =
+let gen_binary n th dodos doundos unary_arr binary_arr check k =
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
+  let lb = Array.length th.th_binary in
   let rec gen_operation o = function
     | _ when o = lb ->
          k { alg_size = n;
              alg_name = None;
              alg_prod = None;
-             alg_const = Array.init lc (fun k -> k);
+             alg_const = Array.init (Array.length th.th_const) (fun k -> k);
              alg_unary = Util.matrix_copy unary_arr;
+             alg_binary = Util.array3d_copy binary_arr;
+             alg_predicates = Array.make_matrix (Array.length th.th_predicates) n (-1);
+             alg_relations = Array.init (Array.length th.th_relations) (fun k -> Array.make_matrix n n (-1));
            }
     | (i,_) when i = n -> gen_operation (o+1) (0,0)
     | (i,j) when j = n -> gen_operation o (i+1,0)
@@ -448,10 +453,9 @@ let gen_binary n lc lu lb dodos doundos unary_arr binary_arr check k =
       for k=0 to n-1 do
         binary_arr.(o).(i).(j) <- k ;
         (* check_after_add isn't needed here because fs report back instead *)
-        if dodos (o,i,j) o i j && check () then
-          gen_operation o (i,j+1)
-        ; doundos (o,i,j)
-        ; binary_arr.(o).(i).(j) <- -1
+        if dodos (o,i,j) o i j && check () then gen_operation o (i,j+1) ;
+        doundos (o,i,j) ;
+        binary_arr.(o).(i).(j) <- -1
       done
     | (i,j) ->  gen_operation o (i,j+1) in
   gen_operation 0 (0,0)

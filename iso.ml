@@ -1,4 +1,5 @@
-open Type
+open Theory
+open Algebra
 
 exception Break
 exception Found
@@ -20,9 +21,10 @@ let check_binary iso b1 b2 =
 
 
 let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
-            {alg_size=n1; alg_const=c1; alg_unary=u1; alg_binary=b1}
-            {alg_size=n2; alg_const=c2; alg_unary=u2; alg_binary=b2} =
-  if n1 <> n2 then false
+            ({alg_size=n1; alg_const=c1; alg_unary=u1; alg_binary=b1}, i1)
+            ({alg_size=n2; alg_const=c2; alg_unary=u2; alg_binary=b2}, i2) =
+  if i1 <> i2
+  then false
   else
     let n = n1 in
     let used = Array.make n false in
@@ -131,7 +133,5 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
       gen_iso 0 ; false
     with Found -> true
 
-(*
-   Have we already seen an algebra of this isomorphism type.
-*)
+(* Have we already seen an algebra of this isomorphism type? *)
 let seen s a lst = List.exists (are_iso s a) lst
