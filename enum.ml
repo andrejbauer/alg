@@ -120,10 +120,8 @@ let partition_amenable axioms =
     List.partition (apply_to_snd is_amenable) axioms
 
 
-(*
-  Enumerate all algebras of a given size for the given theory
-  and pass them to the given continuation.
-*)
+(* Enumerate all algebras of a given size for the given theory and pass them to
+   the given continuation. *)
 let enum n ({th_const=const; th_unary=unary; th_binary=binary; th_equations=axioms} as th) k =
   if n >= Array.length const then
     try begin

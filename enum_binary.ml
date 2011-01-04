@@ -433,11 +433,11 @@ let get_binary_actions n unary_arr binary_arr assoc amenable =
   k is the continuation.
 *)
 let gen_binary n th dodos doundos unary_arr binary_arr check k =
-  
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
+  let lb = Array.length th.th_binary in
   let rec gen_operation o = function
-    | _ when o = Array.length th.th_binary ->
+    | _ when o = lb ->
          k { alg_size = n;
              alg_name = None;
              alg_prod = None;
@@ -453,10 +453,9 @@ let gen_binary n th dodos doundos unary_arr binary_arr check k =
       for k=0 to n-1 do
         binary_arr.(o).(i).(j) <- k ;
         (* check_after_add isn't needed here because fs report back instead *)
-        if dodos (o,i,j) o i j && check () then
-          gen_operation o (i,j+1)
-        ; doundos (o,i,j)
-        ; binary_arr.(o).(i).(j) <- -1
+        if dodos (o,i,j) o i j && check () then gen_operation o (i,j+1) ;
+        doundos (o,i,j) ;
+        binary_arr.(o).(i).(j) <- -1
       done
     | (i,j) ->  gen_operation o (i,j+1) in
   gen_operation 0 (0,0)
