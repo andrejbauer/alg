@@ -1,0 +1,9 @@
+# Equivalence relation
+
+Theory equivalence_relation.
+
+Relation ==.
+
+Axiom reflexive: x == x.
+Axiom symmetric: x == y => y == x.
+Axiom transitive: x == y /\ y==z => x == z.

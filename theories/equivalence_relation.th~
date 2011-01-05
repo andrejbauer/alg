@@ -1,0 +1,11 @@
+# Equivalence relation
+
+Theory partial_order.
+
+Constant 0 1.
+Binary R.
+
+Axiom: R(x,y) = 0 \/ R(x,y) = 1.
+Axiom reflexive: R(x,x) = 1.
+Axiom symmetric: R(x,y) = R(y,x).
+Axiom transitive: R(x,y)=1 /\ R(y,z) = 1 => R(x,z)=1.
