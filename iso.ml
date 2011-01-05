@@ -19,14 +19,26 @@ let check_binary iso b1 b2 =
   let l = Array.length iso in
   Util.for_all2 (fun i j -> iso.(b1.(i).(j)) = b2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
 
+let check_predicate iso p1 p2 = 
+  let l = Array.length iso in
+  Util.for_all (fun i -> p1.(i) = p2.(iso.(i))) 0 (l-1)
 
-let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
-            ({alg_size=n1; alg_const=c1; alg_unary=u1; alg_binary=b1}, i1)
-            ({alg_size=n2; alg_const=c2; alg_unary=u2; alg_binary=b2}, i2) =
+let check_relation iso r1 r2 =
+  let l = Array.length iso in
+  Util.for_all2 (fun i j -> r1.(i).(j) = r2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
+
+let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
+             th_predicates=predicates_op; th_relations=relations_op}
+            ({alg_size=n1; alg_const=c1; alg_unary=u1; 
+              alg_binary=b1; alg_relations=r1; alg_predicates=p1}, i1)
+            ({alg_size=n2; alg_const=c2; alg_unary=u2;
+              alg_binary=b2; alg_relations=r2; alg_predicates=p2}, i2) =
   if i1 <> i2
   then false
   else
     let n = n1 in
+    let lp = Array.length predicates_op in
+    let lr = Array.length relations_op in
     let used = Array.make n false in
     let iso = Array.make n (-1) in
     (* Handle constants *)
@@ -102,15 +114,29 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op}
     let (dos, undos) = List.split (Util.array_map2_list actions_from_unary u1 u2
                                    @ Util.array_map2_list actions_from_binary b1 b2) in
 
+    let check_predicates ps1 ps2 i = 
+      Util.for_all (fun j ->  ps1.(j).(i) = ps2.(j).(iso.(i))) 0 (lp-1) in
+
+    let check_relations rs1 rs2 i = 
+      Util.for_all2 (fun x y -> iso.(y) = -1 || 
+          rs1.(x).(i).(y) = rs2.(x).(iso.(i)).(iso.(y)) &&
+          rs1.(x).(y).(i) = rs2.(x).(iso.(y)).(iso.(i))) 0 (lr-1) 0 (n-1) in
+
+    let dos = check_predicates p1 p2 :: check_relations r1 r2 :: dos in
+
+
     (*
       End check when iso is full. Check that it really is an isomorphism.
       Constants need not be checked because they are set independently.
     *)
     let check () =
-      let check_op f a1 a2 = Util.for_all_pairs (fun i j -> f iso i j) a1 a2
-      in
-        if check_op check_unary u1 u2 && check_op check_binary b1 b2 then
-          raise Found
+      let check_op f a1 a2 = Util.for_all_pairs (fun i j -> f iso i j) a1 a2 in
+      let us = check_op check_unary u1 u2 in
+      let bs = check_op check_binary b1 b2 in
+      let ps = check_op check_predicate p1 p2 in
+      let rs = check_op check_relation r1 r2 in
+      if us && bs && ps && rs 
+        then raise Found
     in
 
     let rec gen_iso = function

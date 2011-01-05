@@ -1,19 +1,6 @@
 open Theory
 open Algebra
-
-(*
-   Evaluate term in the context of vars, unary_arr and binary_arr.
-   unary and binary operation arrays are assumed to be full so there
-   should be no -1's anywhere.
-*)
-let eval_term {alg_const=c; alg_unary=u; alg_binary=b} vars t =
-  let rec eval = function
-    | Const v -> c.(v)
-    | Var v -> vars.(v)
-    | Unary (op, t) -> u.(op).(eval t)
-    | Binary (op, t1, t2) -> b.(op).(eval t1).(eval t2)
-  in
-    eval t
+open Eval
 
 (* Check if formula f is valid for algebra alg. *)
 let check_formula alg (vars,f) =

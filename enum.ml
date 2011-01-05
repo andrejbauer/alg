@@ -2,6 +2,8 @@ open Theory
 open Algebra
 open Util
 
+module EPR=Enum_predicate_relation
+
 (* General helper functions for partitioning axioms. *)
 
 (* Select axioms that refer only to unary operations and constants. *)
@@ -251,16 +253,35 @@ let enum n ({th_const=const;
               done
             done
           done in
-        let cont () =
+        let reset_predicates () =
+          for o=0 to lp-1 do
+            for i=0 to n-1 do
+              pred_arr.(o).(i) <- -1
+            done
+          done in
+        let reset_relations () =
+          for o=0 to lr-1 do
+            for i=0 to n-1 do
+              for j=0 to n-1 do
+                rel_arr.(o).(i).(j) <- -1
+              done
+            done
+          done in
+        let cont_rel_pred () = 
+          reset_predicates () ;
+          reset_relations () ;
+          EPR.gen_predicate th alg 
+            (fun () -> EPR.gen_relation th alg (fun () -> k alg)) in
+        let cont_binary () =
           try
             reset_binary_arr () ;
             Enum_binary.apply_simple_binary simple_binary alg ;
             Enum_binary.apply_one_var_shallow one_var_shallow alg ;
             check_after_add () ; (* TODO: Move this into the above functions. *)
             if not (check ()) then raise Enum_binary.Contradiction ; (* We might be lucky and fill everything already. *)
-            Enum_binary.gen_binary th alg binary_dos binary_undos check k
+            Enum_binary.gen_binary th alg binary_dos binary_undos check cont_rel_pred
           with Enum_binary.Contradiction -> () in
           
-          Enum_unary.gen_unary th unary_dos unary_undos alg cont
+          Enum_unary.gen_unary th unary_dos unary_undos alg cont_binary
     end
     with InconsistentAxioms -> ()

@@ -439,15 +439,13 @@ let get_binary_actions ({alg_size=n;
   amenable axioms, check checks if non-amenable axioms are still valid.
   k is the continuation.
 *)
-let gen_binary th ({alg_size=n; 
-                    alg_binary=binary_arr;
-                    alg_unary=unary_arr} as alg)
+let gen_binary th {alg_size=n; alg_binary=binary_arr; alg_unary=unary_arr}
     dodos doundos check k =
   let lb = Array.length th.th_binary in
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
   let rec gen_operation o = function
-    | _ when o = lb -> k alg
+    | _ when o = lb -> k ()
     | (i,_) when i = n -> gen_operation (o+1) (0,0)
     | (i,j) when j = n -> gen_operation o (i+1,0)
     | (i,j) when binary_arr.(o).(i).(j) = -1 ->
