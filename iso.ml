@@ -29,11 +29,11 @@ let check_relation iso r1 r2 =
 
 let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
              th_predicates=predicates_op; th_relations=relations_op}
-            ({alg_size=n1; alg_const=c1; alg_unary=u1; 
-              alg_binary=b1; alg_relations=r1; alg_predicates=p1}, i1)
-            ({alg_size=n2; alg_const=c2; alg_unary=u2;
-              alg_binary=b2; alg_relations=r2; alg_predicates=p2}, i2) =
-  if i1 <> i2
+            {alg_size=n1; alg_const=c1; alg_unary=u1; 
+              alg_binary=b1; alg_relations=r1; alg_predicates=p1}
+            {alg_size=n2; alg_const=c2; alg_unary=u2;
+              alg_binary=b2; alg_relations=r2; alg_predicates=p2}=
+  if n1 <> n2
   then false
   else
     let n = n1 in
@@ -159,5 +159,22 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
       gen_iso 0 ; false
     with Found -> true
 
-(* Have we already seen an algebra of this isomorphism type? *)
-let seen s a lst = List.exists (are_iso s a) lst
+(* Utility functions for checking whether we have already seen a given algebra. *)
+
+let empty_store () = Hashtbl.create 1000
+
+(* Return true if store contains an isomorphic copy of algebra a. Also return
+   the invariant for a. *)
+let seen th a store =
+  let i = invariant a in
+  let lst = (try Hashtbl.find store i with Not_found -> []) in
+    List.exists (are_iso th a) lst, i
+
+(* Store the given algebra. Warning: if you pass the optional
+   invariant [i] then it _must_ be the same as [invariant a]. This is
+   used so that we do not have to recompute invariants. *)
+let store s ?inv a = 
+  let i = (match inv with Some i -> i | None -> invariant a) in
+  let lst = (try Hashtbl.find s i with Not_found -> []) in
+    Hashtbl.replace s i (a::lst)
+

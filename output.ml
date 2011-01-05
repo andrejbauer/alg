@@ -202,11 +202,11 @@ struct
     Printf.fprintf ch "\n- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n%!" (* flush *)
 
   let count_header ch =
-    Printf.fprintf ch "size | count\n" ;
-    Printf.fprintf ch "-----|------\n"
+    Printf.fprintf ch "    size | count\n" ;
+    Printf.fprintf ch "    -----|------\n"
 
   let count_row ch n k =
-    Printf.fprintf ch "%4d | %d\n%!" n k
+    Printf.fprintf ch "    %4d | %d\n%!" n k
 
   let count_footer ch = function
     | None -> Printf.fprintf ch "\n"
@@ -323,7 +323,7 @@ struct
       ('@', "{@}");
       ('^', "{\\^}");
       ('|', "{:}");
-      ('~', "{\\sim}");
+      ('~', "{\\char126}");
     ]
     in
     let s = ref "" in
@@ -479,7 +479,7 @@ struct
 
       count_footer = begin fun lst ->
         Printf.fprintf ch
-          ",\n  [%s]\n"
+          ",\n  [%s]\n]\n"
           (String.concat ", " (List.map (fun (n,k) -> "[" ^ string_of_int n ^ "," ^ string_of_int k ^ "]") lst))
       end;
 

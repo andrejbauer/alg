@@ -21,9 +21,9 @@ type algebra = {
   alg_relations : int array array array;
 }
 
-(* For faster isomorphism checking we define invariants for structures. *)
+(* For faster isomorphism checking we define invariants for structures.
 
-(* Suppose f : {0,..,n} -> {0,..,n} is a map. For each x in {0,...,n} the sequence
+   Suppose f : {0,..,n} -> {0,..,n} is a map. For each x in {0,...,n} the sequence
 
       x_0 = x
       x_{k+1} = f (x_k)
@@ -45,7 +45,8 @@ type algebra = {
         x_{k+1} = f (x_k, x)
 
    * for a predicate or relation the corresponding invariant is the number of
-     elements or pairs that satisfy it.
+     elements or pairs that satisfy it (a better one would be a count of how
+     many elements of each in/out degree we have).
 *)
 
 exception Result of (int * int)
@@ -116,4 +117,5 @@ let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_r
     inv_relations = Array.map relation_invariant rs;
   } 
 
-let with_invariant a = (a, invariant a)
+
+

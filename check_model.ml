@@ -2,7 +2,7 @@ open Theory
 open Algebra
 open Util
 
-module FO=First_order
+module FO = First_order
 
 (* Evaluate equation in the context of vars. 
    operation arrays are assumed to be fully filled.
@@ -127,6 +127,12 @@ let are_iso th
     array_exists is_isomorphism perms
 
 (* 
-   Have we already seen an algebra of this isomorphism type. 
+   Have we already seen an algebra of this isomorphism type?
 *)
-let seen theory alg lst = List.exists (fun (alg',_) -> are_iso theory alg alg') lst
+exception AlreadySeen
+
+let seen theory alg store =
+  try
+    Hashtbl.iter (fun _ lst -> if List.exists (fun alg' -> are_iso theory alg alg') lst then raise AlreadySeen) store ;
+    false
+  with AlreadySeen -> true
