@@ -117,11 +117,11 @@ let rec array_iter2 f arr1 arr2 =
 
 (* Missing list functions. *)
 let enumFromTo s e =
-  let rec
-      loop = function
-        | n when n <= e -> n :: loop (n+1)
-        | _ -> [] in
-  loop s
+  let rec loop = function
+    | n when n <= e -> n :: loop (n+1)
+    | _ -> []
+  in
+    loop s
 
 (* Like List.map with indices. *)
 let map_enum f lst =

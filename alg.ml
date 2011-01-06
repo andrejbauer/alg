@@ -197,7 +197,8 @@ try begin (*A big wrapper for error reporting. *)
     let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
     let algebras = decomposables in
     let to_cache = ref [] in
-    Enum.enum n theory
+    Generate.generate n theory
+    (*Enum.enum n theory*)
       (fun a -> 
          (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
          let (seen, i) = Iso.seen theory a algebras in

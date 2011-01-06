@@ -1,5 +1,7 @@
 (* Algebras are models of theories. *)
 
+module T = Theory
+
 type map_invariant = int array array
 
 type invariant = {
@@ -20,6 +22,21 @@ type algebra = {
   alg_predicates : int array array;
   alg_relations : int array array array;
 }
+
+(* An aglebra with all -1's. *)
+let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_relations=r} =
+  if n < Array.length c
+  then Error.fatal "Algebra.empty: cannot create an algebra of size %d with %d constants." n (Array.length c)
+  else {
+    alg_name = None;
+    alg_prod = None;
+    alg_size = n;
+    alg_const = Array.init (Array.length c) (fun i -> i);
+    alg_unary = Array.create_matrix (Array.length u) n (-1);
+    alg_binary = Array.init (Array.length b) (fun i -> Array.create_matrix n n (-1));
+    alg_predicates = Array.create_matrix (Array.length p) n (-1);
+    alg_relations = Array.init (Array.length r) (fun i -> Array.create_matrix n n (-1));
+  }
 
 (* For faster isomorphism checking we define invariants for structures.
 
