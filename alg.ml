@@ -92,6 +92,9 @@ try begin (*A big wrapper for error reporting. *)
     ("--paranoid",
      Arg.Unit (fun () -> config.paranoid <- true),
      " Naively check all axioms and isomorphism before output. Use if you think there is a bug in alg.");
+    ("--bauer",
+     Arg.Unit (fun () -> config.bauer <- true),
+     " Use Bauer's inefficient algorithm.");
   ]
   in
 
@@ -197,8 +200,7 @@ try begin (*A big wrapper for error reporting. *)
     let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
     let algebras = decomposables in
     let to_cache = ref [] in
-    Generate.generate n theory
-    (*Enum.enum n theory*)
+      (if config.bauer then Generate.generate else Enum.enum) n theory
       (fun a -> 
          (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
          let (seen, i) = Iso.seen theory a algebras in

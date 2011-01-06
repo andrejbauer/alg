@@ -68,7 +68,8 @@ let apply_one_var_shallow n one_var_shallow unary_arr binary_arr =
 *)
 let eval_eq unary_arr binary_arr vars =
   let rec eval_eq' = function
-    | Const c -> c
+    | Const c -> c (* XXX This is fishy, shouldn't we lookup c? *)
+    | Elem e -> e
     | Var v -> vars.(v)
     | Unary (op, t) ->
       begin match eval_eq' t with

@@ -37,6 +37,8 @@ sig
   val algebra_header : out_channel -> string -> string option -> unit
   val algebra_unary : out_channel -> string array -> string -> int array -> unit
   val algebra_binary : out_channel -> string array -> string -> int array array -> unit
+  val algebra_predicate : out_channel -> string array -> string -> int array -> unit
+  val algebra_relation : out_channel -> string array -> string -> int array array -> unit
   val algebra_footer : out_channel -> unit
   val count_header : out_channel -> unit
   val count_row : out_channel -> int -> int -> unit
@@ -62,7 +64,8 @@ struct
       {C.sizes=sizes; C.source=source}
       ch
       src_lines
-      ({T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} as th) =
+      ({T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary;
+        T.th_predicates=th_pred; T.th_relations=th_rel} as th) =
 
     let count_footer lst =
       let lst = List.filter (fun (n,_) -> n >= 2) lst in
@@ -86,7 +89,8 @@ struct
           end;
 
         algebra =
-          begin fun ({A.alg_name=name; A.alg_prod=prod; A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary} as a) ->
+          begin fun ({A.alg_name=name; A.alg_prod=prod; A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary;
+                      A.alg_predicates=pred; A.alg_relations=rel} as a) ->
             let name = (match name with | None -> "Model of " ^ th_name | Some n -> n) in
             let info =
               begin match prod with
@@ -98,6 +102,8 @@ struct
             S.algebra_header ch name info ;
             Array.iteri (fun op t -> S.algebra_unary ch ns th_unary.(op) t) unary ;
             Array.iteri (fun op t -> S.algebra_binary ch ns th_binary.(op) t) binary ;
+            Array.iteri (fun p t -> S.algebra_predicate ch ns th_pred.(p) t) pred ;
+            Array.iteri (fun r t -> S.algebra_relation ch ns th_rel.(r) t) rel ;
             S.algebra_footer ch 
           end;
 
@@ -198,6 +204,36 @@ struct
       done ;
       Printf.fprintf ch "\n\n"
 
+  let algebra_predicate ch names p t =
+    let n = Array.length t in
+    let w = Array.fold_left (fun w s -> max w (String.length s)) 0 names in
+    let v = String.length p in
+    let ds = String.make w '-' in
+      Printf.fprintf ch "\n    %*s |" (max w v) p ;
+      for i = 0 to n-1 do Printf.fprintf ch "  %*s" w names.(i) done ;
+      Printf.fprintf ch "\n    %s-+" (String.make (max w v) '-');
+      for i = 0 to n-1 do Printf.fprintf ch "--%s" ds done;
+      Printf.fprintf ch "\n    %*s |" (max w v) " ";
+      for i = 0 to n-1 do Printf.fprintf ch "  %*d" w t.(i) done ;
+      Printf.fprintf ch "\n\n"
+
+  let algebra_relation ch names r t =
+    let n = Array.length t in
+    let w = Array.fold_left (fun w s -> max w (String.length s)) 0 names in
+    let v = String.length r in
+    let ds = String.make w '-' in
+      Printf.fprintf ch "\n    %*s |" (max w v) r;
+      for i = 0 to n-1 do Printf.fprintf ch "  %*s" w names.(i) done ;
+      Printf.fprintf ch "\n    %s-+" (String.make (max w v) '-') ;
+      for j = 0 to n-1 do Printf.fprintf ch "--%s" ds done ;
+      for i = 0 to n-1 do
+        Printf.fprintf ch "\n    %*s |" (max w v) names.(i) ;
+        for j = 0 to n-1 do
+          Printf.fprintf ch "  %*d" w t.(i).(j)
+        done
+      done ;
+      Printf.fprintf ch "\n\n"
+
   let algebra_footer ch =
     Printf.fprintf ch "\n- - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n%!" (* flush *)
 
@@ -280,6 +316,28 @@ struct
         Printf.fprintf ch "<tr><th><code>%s</code></th>" names.(i) ;
         for j = 0 to n-1 do
           Printf.fprintf ch "<td><code>%s</code></td>" names.(t.(i).(j))
+        done ;
+        Printf.fprintf ch "</tr>\n"
+      done ;
+      Printf.fprintf ch "</table></p>\n\n"
+
+  let algebra_predicate ch names p t =
+    let n = Array.length t in
+      Printf.fprintf ch "\n<p><table style=\"border-collapse: collapse\" cellpadding=\"5\" border=\"1\">\n<tr><th><code>%s</code></th>" p ;
+      for i = 0 to n-1 do Printf.fprintf ch "<th><code>%s</code></th>" names.(i) done ;
+      Printf.fprintf ch "</tr>\n<tr><td>&nbsp;</td>" ;
+      for i = 0 to n-1 do Printf.fprintf ch "<td><code>%d</code></td>" t.(i) done ;
+      Printf.fprintf ch "</tr>\n</table></p>\n\n"
+
+  let algebra_relation ch names r t =
+    let n = Array.length t in
+      Printf.fprintf ch "\n<p><table style=\"border-collapse: collapse\"  cellpadding=\"5\" border=\"1\">\n<tr><th><code>%s</code></th>" r;
+      for i = 0 to n-1 do Printf.fprintf ch "<th><code>%s</code></th>" names.(i) done ;
+      Printf.fprintf ch "</tr>\n" ;
+      for i = 0 to n-1 do
+        Printf.fprintf ch "<tr><th><code>%s</code></th>" names.(i) ;
+        for j = 0 to n-1 do
+          Printf.fprintf ch "<td><code>%d</code></td>" t.(i).(j)
         done ;
         Printf.fprintf ch "</tr>\n"
       done ;
@@ -408,6 +466,34 @@ struct
     done ;
     Printf.fprintf ch "\\end{tabular}\n\n"
 
+  let algebra_predicate ch names p t =
+    let n = Array.length t in
+    Printf.fprintf ch "\\begin{tabular}[t]{|" ;
+    for i = 0 to n do Printf.fprintf ch "c|" done ;
+    Printf.fprintf ch "}\n\\hline\n" ;
+    Printf.fprintf ch "%s " (ttfont p);
+    for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
+    Printf.fprintf ch "\\\\ \\hline\n" ;
+    for i = 0 to n-1 do Printf.fprintf ch "& %d " t.(i) done ;
+    Printf.fprintf ch "\\\\ \\hline\n\\end{tabular}\n\n"
+
+  let algebra_relation ch names r t =
+    let n = Array.length t in
+    Printf.fprintf ch "\\begin{tabular}[t]{|" ;
+    for i = 0 to n do Printf.fprintf ch "c|" done ;
+    Printf.fprintf ch "}\n\\hline\n" ;
+    Printf.fprintf ch "%s " (ttfont r);
+    for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
+    Printf.fprintf ch "\\\\ \\hline\n" ;
+    for i = 0 to n-1 do
+      Printf.fprintf ch "%s " names.(i) ;
+      for j = 0 to n-1 do
+        Printf.fprintf ch "& %d " t.(i).(j)
+      done ;
+      Printf.fprintf ch "\\\\ \\hline\n"
+    done ;
+    Printf.fprintf ch "\\end{tabular}\n\n"
+
   let algebra_footer ch = Printf.fprintf ch "\n\n%!"
 
   let count_header ch =
@@ -432,7 +518,8 @@ struct
   let sep i n = if i < n then ", " else ""
 
   let init config ch _
-      {T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} =
+      {T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary;
+       T.th_predicates=th_pred; T.th_relations=th_rel} =
 
     {
       header = begin fun () -> Printf.fprintf ch "[ \"%s\"" th_name end;
@@ -441,7 +528,7 @@ struct
 
       algebra =
         begin
-          fun {A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary} ->
+          fun {A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary; A.alg_predicates=pred; A.alg_relations=rel} ->
             Printf.fprintf ch ",\n  {\n";
             Array.iteri (fun i c -> Printf.fprintf ch "    \"%s\" : %d,\n" c const.(i)) th_const;
             let ulen = Array.length unary in
@@ -466,6 +553,28 @@ struct
                 Printf.fprintf ch "      ]%s\n" (sep op (blen-1))
               )
               binary;
+            let plen = Array.length pred in
+            Array.iteri
+              (fun p t -> 
+                let n = Array.length t in
+                Printf.fprintf ch "    \"%s\" : [" th_pred.(p) ;
+                for i = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i) (sep i (n-1)) done;
+                Printf.fprintf ch "]%s\n" (sep p plen)
+              )
+              pred;
+           let rlen = Array.length rel in
+            Array.iteri
+              (fun r t -> 
+                let n = Array.length t in
+                Printf.fprintf ch "    \"%s\" :\n      [\n" th_rel.(r) ;
+                for i = 0 to n-1 do
+                  Printf.fprintf ch "        [" ;
+                  for j = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i).(j) (sep j (n-1)) done ;
+                  Printf.fprintf ch "]%s\n" (sep i (n-1))
+                done ;
+                Printf.fprintf ch "      ]%s\n" (sep r (rlen-1))
+              )
+              rel;
             Printf.fprintf ch "  }"
         end;
 

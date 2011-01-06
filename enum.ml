@@ -8,7 +8,7 @@ let part_axioms axioms =
   let rec no_binary = function
     | Binary _ -> false
     | Unary (_, t) -> no_binary t
-    | Var _ | Const _ -> true in
+    | Var _ | Const _ | Elem _ -> true in
   let no_binary_axiom (eq1, eq2) = no_binary eq1 && no_binary eq2 in
     List.partition (apply_to_snd no_binary_axiom) axioms
 
@@ -86,7 +86,7 @@ let make_3d_array x y z initial =
   List of distinct variables of a term.
 *)
 let rec eq_vars acc = function
-  | Const _ -> acc
+  | Const _ | Elem _ -> acc
   | Var v -> if List.mem v acc then acc else (v :: acc)
   | Binary (_,t1,t2) -> let lv = eq_vars acc t1 in
       eq_vars lv t2

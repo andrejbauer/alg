@@ -10,6 +10,7 @@ let eval_term {alg_const=c; alg_unary=u; alg_binary=b} vars t =
   let rec eval = function
     | Const v -> c.(v)
     | Var v -> vars.(v)
+    | Elem e -> e
     | Unary (op, t) -> u.(op).(eval t)
     | Binary (op, t1, t2) -> b.(op).(eval t1).(eval t2)
   in

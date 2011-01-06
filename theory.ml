@@ -12,6 +12,7 @@ type variable = int
 (* A term *)
 type term =
   | Var of variable
+  | Elem of int
   | Const of operation
   | Unary of operation * term
   | Binary of operation * term * term
@@ -54,11 +55,34 @@ type theory = {
 (* Used to indicate that a permanent inconsistency has been discovered. *)
 exception InconsistentAxioms
 
+(* Substitution functions. Warning: they assume no shadowing will occur. *)
+let rec subst_term x t = function
+  | Var y -> if x = y then t else Var y
+  | Elem e -> Elem e
+  | Const k -> Const k
+  | Unary (f, s) -> Unary (f, subst_term x t s)
+  | Binary (f, s1, s2) -> Binary (f, subst_term x t s1, subst_term x t s2)
+
+let rec subst_formula x t = function
+  | True -> True
+  | False -> False
+  | Predicate (p, s) -> Predicate (p, subst_term x t s)
+  | Relation (r, s1, s2) -> Relation (r, subst_term x t s1, subst_term x t s2)
+  | Equal (s1, s2) -> Equal (subst_term x t s1, subst_term x t s2)
+  | Not f -> Not (subst_formula x t f)
+  | And (f1, f2) -> And (subst_formula x t f1, subst_formula x t f2)
+  | Or (f1, f2) -> Or (subst_formula x t f1, subst_formula x t f2)
+  | Imply (f1, f2) -> Imply (subst_formula x t f1, subst_formula x t f2)
+  | Iff (f1, f2) -> Iff (subst_formula x t f1, subst_formula x t f2)
+  | Forall (y, f) -> Forall (y, subst_formula x t f)
+  | Exists (y, f) -> Exists (y, subst_formula x t f)
+
 (* Conversion to string, for debugging purposes. *)
 let embrace s = "(" ^ s ^ ")"
 
 let rec string_of_term = function
   | Var k -> "x" ^ string_of_int k
+  | Elem e -> "e" ^ string_of_int e
   | Const k -> "c" ^ string_of_int k
   | Unary (f, t) -> "u" ^ string_of_int f ^ "(" ^ string_of_term t ^ ")"
   | Binary (f, t1, t2) -> "b" ^ string_of_int f ^ "(" ^ string_of_term t1 ^ ", " ^ string_of_term t2 ^ ")"
