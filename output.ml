@@ -517,7 +517,8 @@ struct
   let sep i n = if i < n then ", " else ""
 
   let init config ch _
-      {T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} =
+      {T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary;
+       T.th_binary=th_binary; T.th_predicates=th_predicates; T.th_relations=th_relations} =
 
     {
       header = begin fun () -> Printf.fprintf ch "[ \"%s\"" th_name end;
@@ -526,19 +527,23 @@ struct
 
       algebra =
         begin
-          fun {A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary} ->
+          fun {A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary;
+               A.alg_predicates=predicates; A.alg_relations=relations} ->
             Printf.fprintf ch ",\n  {\n";
             Array.iteri (fun i c -> Printf.fprintf ch "    \"%s\" : %d,\n" c const.(i)) th_const;
             let ulen = Array.length unary in
+            let left = if Array.length predicates + 
+                Array.length relations + Array.length binary > 0 then 0 else 1 in
             Array.iteri
               (fun op t -> 
                 let n = Array.length t in
                 Printf.fprintf ch "    \"%s\" : [" th_unary.(op) ;
                 for i = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i) (sep i (n-1)) done;
-                Printf.fprintf ch "]%s\n" (sep op ulen)
+                Printf.fprintf ch "]%s\n" (sep op (ulen-left))
               )
               unary;
            let blen = Array.length binary in
+           let left = if Array.length predicates + Array.length relations > 0 then 0 else 1 in
             Array.iteri
               (fun op t -> 
                 let n = Array.length t in
@@ -548,9 +553,32 @@ struct
                   for j = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i).(j) (sep j (n-1)) done ;
                   Printf.fprintf ch "]%s\n" (sep i (n-1))
                 done ;
-                Printf.fprintf ch "      ]%s\n" (sep op (blen-1))
+                Printf.fprintf ch "      ]%s\n" (sep op (blen-left))
               )
               binary;
+           let plen = Array.length predicates in
+           let left = if Array.length relations > 0 then 0 else 1 in
+            Array.iteri
+              (fun op t -> 
+                let n = Array.length t in
+                Printf.fprintf ch "    \"%s\" : [" th_predicates.(op) ;
+                for i = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i) (sep i (n-1)) done;
+                Printf.fprintf ch "]%s\n" (sep op (plen-left))
+              )
+              predicates ;
+           let rlen = Array.length relations in
+            Array.iteri
+              (fun op t -> 
+                let n = Array.length t in
+                Printf.fprintf ch "    \"%s\" :\n      [\n" th_relations.(op) ;
+                for i = 0 to n-1 do
+                  Printf.fprintf ch "        [" ;
+                  for j = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i).(j) (sep j (n-1)) done ;
+                  Printf.fprintf ch "]%s\n" (sep i (n-1))
+                done ;
+                Printf.fprintf ch "      ]%s\n" (sep op (rlen-1))
+              )
+              relations;
             Printf.fprintf ch "  }"
         end;
 
