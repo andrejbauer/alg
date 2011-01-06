@@ -1,10 +1,11 @@
 open Theory
+open Algebra
 
 (* ******************************************************************************* *)
 (* Auxiliary functions for unary axioms. *)
 
 (* Apply simple axioms to operation tables unary_arr *)
-let apply_simple simple unary_arr =
+let apply_simple simple {alg_unary=unary_arr} =
   (* Apply simple axioms *)
   List.iter
     (function
@@ -17,7 +18,7 @@ let apply_simple simple unary_arr =
     simple
 
 (* Get do and undo actions from axioms in normal form for use in main loop of gen_unary. *)
-let get_unary_actions n normal_axioms unary_arr =
+let get_unary_actions normal_axioms {alg_size=n; alg_unary=unary_arr} =
   (*
     Traces function applications in equation eq starting with start. If an unknown
     element comes up, it returns None.
@@ -166,20 +167,21 @@ let get_normal_axioms complicated =
   Generate unary operation tables. lc, lu and lb are numbers of constants,
   unary and binary operations.
 *)
-let gen_unary n th dodos doundos unary_arr k =
-  (* Main loop. *)
+let gen_unary th dodos doundos {alg_size=n; alg_unary=unary_arr} k =
   let lu = Array.length th.th_unary in
-  let rec gen_operation i = function
-    | j when j = n && i < lu - 1 -> gen_operation (i+1) 0
-    | j when j = n || i = lu -> k ()
-        (* || i = lu is necessary for when there aren't any unary operations *)
-    | j when unary_arr.(i).(j) = -1 ->
-        for k = 0 to n-1 do
-          unary_arr.(i).(j) <- k ;
-          if dodos (i,j) then gen_operation i (j+1) ;
-          doundos (i,j) ;
-          unary_arr.(i).(j) <- -1 ;
-        done
-    | j -> gen_operation i (j+1)
+  (* Main loop. *)
+  let rec
+      gen_operation i = function
+        | j when j = n && i < lu - 1 -> gen_operation (i+1) 0
+        | j when j = n || i = lu -> k ()
+          (* || i = lu is necessary for when there aren't any unary operations *)
+        | j when unary_arr.(i).(j) = -1 ->
+          for k = 0 to n-1 do
+            unary_arr.(i).(j) <- k ;
+            if dodos (i,j) then gen_operation i (j+1) ;
+            doundos (i,j) ;
+            unary_arr.(i).(j) <- -1 ;
+          done
+        | j -> gen_operation i (j+1)
   in gen_operation 0 0
 

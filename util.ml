@@ -216,7 +216,13 @@ let fac n =
 
 (* Make fresh copies of operation tables of a given algebra. *)
 let copy_algebra a =
-  { a with alg_unary = matrix_copy a.alg_unary ; alg_binary = array3d_copy a.alg_binary }
+  { a with 
+    alg_const = Array.copy a.alg_const;
+    alg_unary = matrix_copy a.alg_unary;
+    alg_binary = array3d_copy a.alg_binary;
+    alg_predicates = matrix_copy a.alg_predicates;
+    alg_relations = array3d_copy a.alg_relations 
+  }
 
 let alg_prod a1 a2 i1 i2 =
   match a1, a2, i1, i2 with

@@ -1,0 +1,7 @@
+Theory Strict_Poset.
+
+Relation <.
+
+Axiom irrexivity: not (x < x).
+Axiom transitivity: x < y /\ y < z -> x < z.
+Theorem asymmetric: x < y => not (y < x).

@@ -126,13 +126,13 @@ let relation_invariant r =
     done ;
     !k
 
-let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} =
+let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} = 
   { inv_size = n ;
     inv_unary = Array.map (fun u -> unary_invariant (fun k -> u.(k)) n) us;
     inv_binary = Array.map (fun b -> binary_invariant (fun k l -> b.(k).(l)) n) bs;
     inv_predicates = Array.map predicate_invariant ps;
     inv_relations = Array.map relation_invariant rs;
-  }
+  } 
 
 
 
