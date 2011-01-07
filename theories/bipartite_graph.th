@@ -1,0 +1,9 @@
+# Bipartatite graph with distinguished side (left).
+
+Theory BipartiteGraph.
+Predicate left.
+Relation --.
+
+Axiom irreflexive: not (x -- x).
+Axiom symmetric: x -- y -> y -- x.
+Axiom bipartite: x -- y -> not (left(x) <-> left(y)).
