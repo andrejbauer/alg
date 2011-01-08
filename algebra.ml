@@ -7,7 +7,7 @@ type invariant = {
   inv_unary : map_invariant array;
   inv_binary : map_invariant array;
   inv_predicates : int array;
-  inv_relations : int array;
+  inv_relations : (int array * int array) array;
 }
 
 type algebra = {
@@ -101,13 +101,20 @@ let predicate_invariant p =
     !k
 
 let relation_invariant r =
-  let k = ref 0 in
-    for i = 0 to Array.length r - 1 do
-      for j = 0 to Array.length r.(i) - 1 do
-        if r.(i).(j) = 1 then incr k
-      done
-    done ;
-    !k
+  let outdeg = Array.make (Array.length r) 0 in
+  let indeg = Array.make (Array.length r) 0 in
+  for i = 0 to Array.length r - 1 do
+    for j = 0 to Array.length r.(i) - 1 do
+      if r.(i).(j) = 1 then 
+        begin
+          outdeg.(i) <- outdeg.(i) + 1;
+          indeg.(j) <- indeg.(j) + 1
+        end
+    done
+  done ;
+  Array.sort compare outdeg; Array.sort compare indeg;
+  indeg, outdeg
+    
 
 let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} = 
   { inv_size = n ;
