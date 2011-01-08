@@ -1,0 +1,37 @@
+# The axioms for a (possibly non-commutative) ordered field.
+
+Constant 0 1.
+Unary neg.
+Binary + *.
+Relation <=.
+
+Axiom plus_commutative: x + y = y + x.
+Axiom plus_associative: (x + y) + z = x + (y + z).
+Axiom zero_neutral_left: 0 + x = x.
+Axiom negative_inverse: x + neg(x) = 0.
+Axiom mult_associative: (x * y) * z = x * (y * z).
+Axiom one_unit_left: 1 * x = x.
+Axiom one_unit_right: x * 1 = x.
+Axiom distrutivity_right: (x + y) * z = x * z + y * z.
+Axiom distributivity_left: x * (y + z) = x * y + x * z.
+
+# Consequences of axioms that make alg run faster:
+
+Axiom zero_neutral_right: x + 0 = x.
+Axiom negative_inverse: neg(x) + x = 0.
+Axiom zero_inverse: neg(0) = 0.
+Axiom inverse_involution: neg(neg(x)) = x.
+Axiom mult_zero_left: 0 * x = 0.
+Axiom mult_zero_right: x * 0 = 0.
+
+# The field axiom.
+Axiom field: forall x, x <> 0 -> exists y, x * y = 1 /\ y * x = 1.
+
+# order axioms
+Axiom reflexivity: x <= x.
+Axiom transitivity: x <= y /\ y <= z -> x <= z.
+Axiom antisymmetry: x <= y /\ y <= x -> x = y.
+Axiom totality: x <= y \/ y <= x.
+
+Axiom : x <= y => x + z <= y + z.
+Axiom : 0 <= x /\ 0 <= y => 0 <= x * y.

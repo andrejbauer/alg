@@ -97,7 +97,7 @@ let rec string_of_formula' = function
   | Relation (r, t1, t2) -> "r" ^ string_of_int r ^ " " ^ embrace (string_of_term t1 ^ ", " ^ string_of_term t2)
   | Equal (t1, t2) -> string_of_equation (t1, t2)
   | Not f -> "not " ^ embrace (string_of_formula' f)
-  | And (f1, f2) -> embrace (string_of_formula' f1) ^ " /\ " ^ embrace (string_of_formula' f2)
+  | And (f1, f2) -> embrace (string_of_formula' f1) ^ " /\\ " ^ embrace (string_of_formula' f2)
   | Or (f1, f2) -> embrace (string_of_formula' f1) ^ " \\/ " ^ embrace (string_of_formula' f2)
   | Imply (f1, f2) -> embrace (string_of_formula' f1) ^ " -> " ^ embrace (string_of_formula' f2)
   | Iff (f1, f2) -> embrace (string_of_formula' f1) ^ " <-> " ^ embrace (string_of_formula' f2)
