@@ -343,7 +343,7 @@ let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k
       in
         g 0
     in
-
+(*
     let rec prepare_formula acc = function
       | Forall (i, f) ->
           let rec loop k acc =
@@ -368,7 +368,7 @@ let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k
     let prepare_equation (i, (t1, t2)) =
       prepare_formula (List.fold_right (fun x g -> Forall (x, g)) (Util.enumFromTo 0 (i-1)) (Equal (t1, t2)))
     in
-
+*)
       force_equations eqs
         (fun () -> force_axioms axs
            (fun () -> fill_unary
