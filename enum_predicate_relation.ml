@@ -1,6 +1,16 @@
 open Theory
 open Algebra
 
+let select_usable axioms = 
+  let rec usable = function 
+    | True | False -> true
+    | Equal _ | Exists _ | Or _ | Imply _ | Iff _ -> false
+    | Forall (v,t) -> usable t
+    | And (t1,t2) -> usable t1 && usable t2
+    | Not t -> usable t
+    | Relation _ | Predicate _ -> true (* assuming binary and unary ops are filled *) in
+  List.partition (fun (_,a) -> usable a) axioms 
+
 (* Check if all of the axioms are still valid and fill 
    predicates or relations where possible. 
    Returns pair (b, undos) where b is true if no contradiction
@@ -181,18 +191,24 @@ let gen_predicate th ({alg_size=n;
 
 let gen_relation th ({alg_size=n; 
                       alg_relations=relation_arr} as alg) cont =
-  let lr = Array.length th.th_relations in
-  let rec gen_relation r = function
-    | _ when r = lr -> cont ()
-    | (i,_) when i = n -> gen_relation (r+1) (0,0)
-    | (i,j) when j = n -> gen_relation r (i+1,0)
-    | (i,j) when relation_arr.(r).(i).(j) = -1 ->
-      for b=0 to 1 do
-        relation_arr.(r).(i).(j) <- b ;
-        let (p, undos) = check_and_fill th.th_axioms alg in
-        if p then gen_relation r (i,j+1) ;
-        undo alg undos ;
-        relation_arr.(r).(i).(j) <- -1
-      done
-    | (i,j) ->  gen_relation r (i,j+1) in
-  gen_relation 0 (0,0)
+  let (usable, rest) = select_usable th.th_axioms in
+  (* We use usable axioms only once. Should improve speed. *)
+  let (r,_) = check_and_fill usable alg in 
+  if r then begin
+    let lr = Array.length th.th_relations in
+    let rec gen_relation r = function
+      | _ when r = lr -> let b, undos = check_and_fill th.th_axioms alg in
+                         if b && undos = [] then cont ()
+      | (i,_) when i = n -> gen_relation (r+1) (0,0)
+      | (i,j) when j = n -> gen_relation r (i+1,0)
+      | (i,j) when relation_arr.(r).(i).(j) = -1 ->
+        for b=0 to 1 do
+          relation_arr.(r).(i).(j) <- b ;
+          let (p, undos) = check_and_fill rest alg in
+          if p then gen_relation r (i,j+1) ;
+          undo alg undos ;
+          relation_arr.(r).(i).(j) <- -1
+        done
+      | (i,j) ->  gen_relation r (i,j+1) in
+    gen_relation 0 (0,0)
+  end
