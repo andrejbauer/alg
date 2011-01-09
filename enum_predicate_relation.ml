@@ -27,9 +27,17 @@ let check_and_fill axioms ({alg_const=c;
           if not t then (false, unds) else eval_forall unds (i+1)
         end in
       eval_forall undos 0 (* TODO: should probably set vars.(v) back to -1 *)
-    | Forall (v,f) -> (true, undos)
-    | Exists (v,f) when target -> (true, undos)
-    | Exists (v,f) -> eval_fill vars undos true (Forall (v,f))
+    | Forall (v,f) -> eval_fill vars undos true (Exists (v,Not f))
+    | Exists (v,f) when target -> 
+      let rec eval_exists = function
+        | i when i = n -> (false, undos)
+        | i -> begin
+          vars.(v) <- i;
+          match Eval.eval_formula alg vars f with
+            | None | Some true -> (true, undos)
+            | Some false -> eval_exists (i+1)
+        end in eval_exists 0
+    | Exists (v,f) -> eval_fill vars undos true (Forall (v,Not f))
     | And (f1,f2) when target -> 
       let (t,unds) = eval_fill vars undos true f1 in
       if not t then (false, unds) else eval_fill vars unds true f2
@@ -53,7 +61,7 @@ let check_and_fill axioms ({alg_const=c;
           | (None, Some false) -> eval_fill vars undos true f1
           | _ -> (true, undos)
       end
-    | Or (f1,f2) -> eval_fill vars undos true (And (f1,f2))
+    | Or (f1,f2) -> eval_fill vars undos true (And (Not f1,Not f2))
     | Imply (f1,f2) when target -> 
       let t1 = Eval.eval_formula alg vars f1 in
       let t2 = Eval.eval_formula alg vars f2 in
