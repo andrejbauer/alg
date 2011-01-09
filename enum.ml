@@ -233,7 +233,7 @@ let enum n ({th_const=const;
 
         let check = Enum_binary.get_checks all_tuples alg stubborn in
         
-        let (binary_dos, binary_undos) = Enum_binary.get_binary_actions alg assoc amenable in
+        let (binary_dos, binary_undos, reset_stack) = Enum_binary.get_binary_actions alg assoc amenable in
 
         let reset_binary_arr () =
           for o=0 to lb-1 do
@@ -275,6 +275,7 @@ let enum n ({th_const=const;
         let cont_binary () =
           try
             reset_binary_arr () ;
+            reset_stack () ;
             Enum_binary.apply_simple_binary simple_binary alg ;
             Enum_binary.apply_one_var_shallow one_var_shallow alg ;
             check_after_add () ; (* TODO: Move this into the above functions. *)

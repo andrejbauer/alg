@@ -127,10 +127,12 @@ let get_binary_actions ({alg_size=n;
     let vars = Array.make num_vars (-1) in
     let nfill = ref 0 in
     let undo id =
-      while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
-        let (_, op, left, right) = Stack.pop stack in
-        binary_arr.(op).(left).(right) <- -1
-      done in
+      if id <> (-1,-1,-1) then
+        while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
+          let (_, op, left, right) = Stack.pop stack in
+          binary_arr.(op).(left).(right) <- -1
+        done
+      else Stack.clear stack in
 
     (* free fills the rest of the variables with all possible values *)
     let rec free cont term =
@@ -407,10 +409,13 @@ let get_binary_actions ({alg_size=n;
           with Break -> false
         end in
       let undo id =
-        while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
-          let (_, op, left, right) = Stack.pop stack in
-          binary_arr.(op).(left).(right) <- -1
-        done in (f, undo)
+        if (-1,-1,-1) <> id then
+          while not (Stack.is_empty stack) && let (id', _, _,_) = Stack.top stack in id' = id do
+            let (_, op, left, right) = Stack.pop stack in
+            binary_arr.(op).(left).(right) <- -1
+          done
+        else Stack.clear stack 
+      in (f, undo)
     | _ -> invalid_arg "actions_from_assoc axiom given is not associativity" in
 
   let (dos, undos) = List.split (List.map actions_from_assoc assoc @
@@ -426,7 +431,8 @@ let get_binary_actions ({alg_size=n;
   let rec
       dodos id o i j = List.for_all (fun f -> f dodos id o i j) dos in
 
-  let doundos id = List.iter (fun f -> f id) undos in (dodos, doundos)
+  let doundos id = List.iter (fun f -> f id) undos in 
+  (dodos, doundos, fun () -> doundos (-1,-1,-1))
 
 (* ******************************************************************************* *)
 (* End of auxiliary functions for binary axioms *)
