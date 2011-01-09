@@ -133,6 +133,6 @@ exception AlreadySeen
 
 let seen theory alg store =
   try
-    Hashtbl.iter (fun _ lst -> if List.exists (fun alg' -> are_iso theory alg alg') lst then raise AlreadySeen) store ;
+    Hashtbl.iter (fun _ lst -> if List.exists (fun alg' -> are_iso theory alg (wo_cache alg')) lst then raise AlreadySeen) store ;
     false
   with AlreadySeen -> true

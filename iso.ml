@@ -29,10 +29,12 @@ let check_relation iso r1 r2 =
 
 let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
              th_predicates=predicates_op; th_relations=relations_op}
-            {alg_size=n1; alg_const=c1; alg_unary=u1; 
-              alg_binary=b1; alg_relations=r1; alg_predicates=p1}
-            {alg_size=n2; alg_const=c2; alg_unary=u2;
-              alg_binary=b2; alg_relations=r2; alg_predicates=p2}=
+            ({alg_size=n1; alg_const=c1; alg_unary=u1; 
+              alg_binary=b1; alg_relations=r1; alg_predicates=p1}, 
+             {indegs=indegs1; outdegs=outdegs1})
+            ({alg_size=n2; alg_const=c2; alg_unary=u2;
+              alg_binary=b2; alg_relations=r2; alg_predicates=p2},
+             {indegs=indegs2; outdegs=outdegs2}) = 
   if n1 <> n2
   then false
   else
@@ -124,7 +126,26 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
 
     let dos = check_predicates p1 p2 :: check_relations r1 r2 :: dos in
 
+    let allowin = Array.make_matrix lr n [] in
+    Array.iteri (fun r -> 
+      Array.iteri (fun i -> 
+        List.iter (fun x -> 
+          allowin.(r).(x) <- indegs2.(r).(i)))) indegs1 ;
 
+    let allowout = Array.make_matrix lr n [] in
+    Array.iteri (fun r -> 
+      Array.iteri (fun i -> 
+        List.iter (fun x -> 
+          allowout.(r).(x) <- Util.intersect allowin.(r).(x) outdegs2.(r).(i)))) outdegs1 ;
+
+    let all = Util.enumFromTo 0 (n-1) in
+    
+    (* we must set allow to all for the case when there are no relations *)
+    let allow = Array.make n all in
+    Array.iter (
+      Array.iteri (fun i x -> 
+        allow.(i) <- Util.intersect x allow.(i))) allowout ;
+    
     (*
       End check when iso is full. Check that it really is an isomorphism.
       Constants need not be checked because they are set independently.
@@ -138,23 +159,25 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
       if us && bs && ps && rs 
         then raise Found
     in
-
     let rec gen_iso = function
       | i when i = n -> check ()
       | i when iso.(i) <> -1 -> gen_iso (i+1)
       | i ->
-        for k=0 to n-1 do
-          if not used.(k) then
-            begin
-              used.(k) <- true ;
-              iso.(i) <- k ;
-              if List.for_all (fun f -> f i) dos then
-                gen_iso (i+1) ;
-              List.iter (fun f -> f i) undos ;
-              iso.(i) <- -1 ;
-              used.(k) <- false
-            end
-        done in
+        List.iter 
+          begin 
+            fun k -> 
+              if not used.(k) then
+                begin
+                  used.(k) <- true ;
+                  iso.(i) <- k ;
+                  if List.for_all (fun f -> f i) dos then
+                    gen_iso (i+1) ;
+                  List.iter (fun f -> f i) undos ;
+                  iso.(i) <- -1 ;
+                  used.(k) <- false
+                end
+          end
+          allow.(i) in
     try
       gen_iso 0 ; false
     with Found -> true
@@ -166,7 +189,7 @@ let empty_store () = Hashtbl.create 1000
 (* Return true if store contains an isomorphic copy of algebra a. Also return
    the invariant for a. *)
 let seen th a store =
-  let i = invariant a in
+  let i = invariant (wo_cache a) in
   let lst = (try Hashtbl.find store i with Not_found -> []) in
     List.exists (are_iso th a) lst, i
 
@@ -174,7 +197,7 @@ let seen th a store =
    invariant [i] then it _must_ be the same as [invariant a]. This is
    used so that we do not have to recompute invariants. *)
 let store s ?inv a = 
-  let i = (match inv with Some i -> i | None -> invariant a) in
+  let i = (match inv with Some i -> i | None -> invariant (wo_cache a)) in
   let lst = (try Hashtbl.find s i with Not_found -> []) in
     Hashtbl.replace s i (a::lst)
 

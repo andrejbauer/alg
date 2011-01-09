@@ -63,11 +63,24 @@ let rec union lst1 lst2 =
         then union xs ys
         else x :: union xs ys
 
+(* Lists as sets. *)
+let rec union lst1 lst2 =
+  match lst1, lst2 with
+    | [], lst2 -> lst2
+    | lst1, [] -> lst1
+    | x::xs, ys ->
+        if List.mem x ys
+        then union xs ys
+        else x :: union xs ys
+
 let rec remove x = function
   | [] -> []
   | y::ys ->
       if x = y then ys
       else y :: remove x ys
+
+let intersect lst1 lst2 =
+  List.fold_left (fun acc a -> if List.mem a lst2 then a::acc else acc) [] lst1
 
 (* Missing array functions. *)
 let array_for_all p a =
@@ -223,6 +236,19 @@ let copy_algebra a =
     alg_predicates = matrix_copy a.alg_predicates;
     alg_relations = array3d_copy a.alg_relations 
   }
+
+(* 
+   Make fresh copies of operation tables of a given algebra.
+   Do not copy cache.
+*)
+let copy_algebra_with_cache (a,cache) =
+  ({ a with 
+    alg_const = Array.copy a.alg_const;
+    alg_unary = matrix_copy a.alg_unary;
+    alg_binary = array3d_copy a.alg_binary;
+    alg_predicates = matrix_copy a.alg_predicates;
+    alg_relations = array3d_copy a.alg_relations 
+  }, cache)
 
 let alg_prod a1 a2 i1 i2 =
   match a1, a2, i1, i2 with

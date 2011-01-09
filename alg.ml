@@ -183,11 +183,11 @@ try begin (*A big wrapper for error reporting. *)
                   | None ->
                     let lst = ref [] in
                     process_size k (fun (algebra, indecomposable) -> 
-				     if indecomposable then lst := Util.copy_algebra algebra :: !lst) ;
+				      if indecomposable then lst := Util.copy_algebra algebra :: !lst) ;
                     !lst
                 end
               in
-                IntMap.add k lst m)
+              IntMap.add k lst m)
             IntMap.empty
             (Util.divisors n)
         in
@@ -201,21 +201,24 @@ try begin (*A big wrapper for error reporting. *)
     let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
     let algebras = decomposables in
     let to_cache = ref [] in
-      (if config.bauer then Generate.generate else Enum.enum) n theory
+    (if config.bauer then Generate.generate else Enum.enum) n theory
       (fun a -> 
-         (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
-         let (seen, i) = Iso.seen theory a algebras in
-           if not seen && First_order.check_axioms theory a then
-             if config.paranoid && CM.seen theory a algebras then
-               Error.fatal "There is a bug in isomorphism detection in alg.\nPlease report with example."
-             else
-               begin
-                 let b = Util.copy_algebra a in
-                   Iso.store algebras ~inv:i b ;
-                   if must_cache then to_cache := b :: !to_cache ;
-                   output (b, true)
-             end) ;
-      if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
+        (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
+        let ac = A.make_cache a in
+        let aa = A.with_cache ~cache:ac a in
+        let (seen, i) = Iso.seen theory aa algebras in
+        if not seen && First_order.check_axioms theory a then
+          if config.paranoid && CM.seen theory a algebras then
+            Error.fatal "There is a bug in isomorphism detection in alg.\nPlease report with example."
+          else
+            begin
+              let b = Util.copy_algebra a in
+              let bc = A.with_cache ~cache:ac b in
+              Iso.store algebras ~inv:i bc ;
+              if must_cache then to_cache := b :: !to_cache ;
+              output (b, true)
+            end) ;
+    if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
   in
 
   if config.format = "" then
@@ -262,11 +265,11 @@ try begin (*A big wrapper for error reporting. *)
               if not config.count_only && (not config.indecomposable_only || indecomposable)
               then out.algebra algebra
             in
-              process_size n output ;
-              counts := (n, !k) :: !counts ;
-              if config.count_only
-              then out.count n !k
-              else out.size_footer ())
+            process_size n output ;
+            counts := (n, !k) :: !counts ;
+            if config.count_only
+            then out.count n !k
+            else out.size_footer ())
           config.sizes
       with Sys.Break -> out.interrupted ()
     end ;

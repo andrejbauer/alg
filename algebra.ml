@@ -12,6 +12,15 @@ type invariant = {
   inv_relations : (int array * int array) array;
 }
 
+(* 
+   indegs.(r).(i) is a list of element indices with in degree i in relation r and
+   similar for out degrees.
+*)
+type cache = {
+  indegs : int list array array;
+  outdegs : int list array array;
+}
+
 type algebra = {
   mutable alg_name : string option;
   alg_prod : string list option;
@@ -23,7 +32,7 @@ type algebra = {
   alg_relations : int array array array;
 }
 
-(* An aglebra with all -1's. *)
+(* An algebra with all -1's. *)
 let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_relations=r} =
   if n < Array.length c
   then Error.fatal "Algebra.empty: cannot create an algebra of size %d with %d constants." n (Array.length c)
@@ -130,7 +139,7 @@ let relation_invariant r =
     done
   done ;
   Array.sort compare outdeg; Array.sort compare indeg;
-  indeg, outdeg
+  (indeg, outdeg)
     
 
 let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} = 
@@ -141,5 +150,32 @@ let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_r
     inv_relations = Array.map relation_invariant rs;
   } 
 
+let relation_cache r =
+  let outdeg = Array.make (Array.length r) 0 in
+  let indeg = Array.make (Array.length r) 0 in
+  for i = 0 to Array.length r - 1 do
+    for j = 0 to Array.length r.(i) - 1 do
+      if r.(i).(j) = 1 then 
+        begin
+          outdeg.(i) <- outdeg.(i) + 1;
+          indeg.(j) <- indeg.(j) + 1
+        end
+    done
+  done ;
+  (* One vertex can be connected to at most n-1 other + itself *)
+  let outdegs = Array.make (Array.length r + 1) [] in
+  let indegs = Array.make (Array.length r + 1) [] in
+  Array.iteri (fun i a -> outdegs.(a) <- i :: outdegs.(a)) outdeg ;
+  Array.iteri (fun i a -> indegs.(a) <- i :: indegs.(a)) indeg ;
 
+  indegs, outdegs
 
+let make_cache {alg_relations=rs} = 
+  let rc = Array.map relation_cache rs in
+  {indegs = Array.map fst rc; outdegs = Array.map snd rc}
+
+(* if cache is given it must correspond to algebra a.*)
+let with_cache ?cache a = let ac = match cache with Some c -> c | None -> make_cache a in
+                          (a, ac)
+
+let wo_cache a = fst a

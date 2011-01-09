@@ -60,13 +60,14 @@ let gen_decomposable theory n factors output =
        algebras of the same size), part is the tail of partition *)
     let rec gen_p last start acc = function
       | [] ->
-          (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
-          let (seen, i) = Iso.seen theory acc algebras in
-            if not seen && First_order.check_axioms theory acc
-            then begin
-              Iso.store algebras ~inv:i (Util.copy_algebra acc) ;
-              output acc
-            end
+        (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
+        let ac = with_cache acc in
+        let (seen, i) = Iso.seen theory ac algebras in
+        if not seen && First_order.check_axioms theory acc
+        then begin
+          Iso.store algebras ~inv:i (Util.copy_algebra_with_cache ac) ;
+          output acc
+        end
       | (p::ps) -> 
           let start = if last = p then start else 0 in
           let last = p in
