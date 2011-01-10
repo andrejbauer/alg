@@ -15,13 +15,29 @@
 open Theory
 open Algebra
 
-let partial_term =
+type partial_term =
   | TValue of int
   | TPartial of term * int
 
-let partial_formula =
+type partial_formula =
   | FValue of bool
-  | FPartial of formula * int
+  | FPartial of formula' * int
+
+let print_conjuncts cs =
+  Printf.printf "conjuncts (%d):\n%s\n"
+    (List.length cs)
+    (String.concat "\n" (List.map (function
+                                     | FValue b -> string_of_bool b
+                                     | FPartial (f, k) -> string_of_int k ^ " ... " ^ string_of_formula' f) cs))
+
+let compare_partial_formulas f1 f2 =
+  match f1, f2 with
+    | FValue b, FValue b' -> compare b b'
+    | FValue _, _ -> -1
+    | _, FValue _ -> 1
+    | FPartial (_, k1), FPartial (_, k2) -> k1 - k2
+
+exception Result of bool
 
 let and_of n i f =
   let rec loop k a =
@@ -41,7 +57,7 @@ let or_of n i f =
 
 (* Generate all algebras for theory [th] of size [n]. Pass each one to the
    continuation [k]. *)
-let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k =
+let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
   if n >= Array.length const then begin
     let a = Algebra.empty n th in
     let const = a.alg_const in
@@ -54,80 +70,134 @@ let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k
        with a count of how many table entries need to be filled in for the term to 
        become completely evaluated. *)
     let rec eval_term = function
-      | T.Var i -> Error.fatal "eval_term: variable encountered"
-      | T.Elem e -> (T.Elem e, e, 0)
-      | T.Const i -> (T.Elem const.(i), const.(i), 0) (* NB: We assume constants are always defined. *)
-      | T.Unary (op, t) ->
-          let (t, v, k) = eval_term t in
-            if v = -1 || unary.(op).(v) = -1 then (T.Unary (op, t), -1, k+1)
-            else (T.Elem unary.(op).(v), unary.(op).(v), 0)
-      | T.Binary (op, t1, t2) ->
-          let (t1, v1, k1) = eval_term t1 in
-          let (t2, v2, k2) = eval_term t2 in
-            if v1 = -1 || v2 = -1 || binary.(op).(v1).(v2) = -1 then (T.Binary (op, t1, t2), -1, k1+k2+1)
-            else let u = binary.(op).(v1).(v2) in (T.Elem u, u, 0)
+      | Var i -> Error.fatal "eval_term: variable encountered"
+      | Elem e -> TValue e
+      | Const i -> TValue const.(i) (* NB: We assume constants are always defined. *)
+      | Unary (op, t) ->
+          begin match eval_term t with
+            | TValue v ->
+                if unary.(op).(v) = -1
+                then TPartial (Unary(op, Elem v), 1)
+                else TValue unary.(op).(v)
+            | TPartial (t, k) -> TPartial (Unary (op, t), k+1)
+          end
+      | Binary (op, t1, t2) ->
+          begin match eval_term t1, eval_term t2 with
+            | TValue v1, TValue v2 ->
+                let u = binary.(op).(v1).(v2) in
+                  if u = -1
+                  then TPartial (Binary (op, Elem v1, Elem v2), 1)
+                  else TValue u
+            | TValue v1, TPartial (t2,k2) -> TPartial (Binary (op, Elem v1, t2), k2+1)
+            | TPartial (t1,k1), TValue v2 -> TPartial (Binary (op, t1, Elem v2), k1+1)
+            | TPartial (t1,k1), TPartial (t2,k2) -> TPartial (Binary (op, t1, t2), k1+k2+1)
+          end
     in
 
     let rec eval_formula = function
-      | T.True -> (T.True, 1, 0)
-      | T.False -> (T.False, 0, 0)
-      | T.Predicate (p, t) ->
-          let (t, v, k) = eval_term t in
-            if v = -1 || pred.(p).(v) = -1 then (T.Predicate (p, t), -1, k+1)
-            else if pred.(p).(v) = 1 then (True, 1, 0) else (False, 0, 0)
-      | T.Relation (r, t1, t2) ->
-          let (t1, v1, k1) = eval_term t1 in
-          let (t2, v2, k2) = eval_term t2 in
-            if v1 = -1 || v2 = -1 || rel.(r).(v1).(v2) = -1 then (T.Relation (r, t1, t2), -1, k1+k2+1)
-            else if rel.(r).(v1).(v2) = 1 then (True, 1, 0) else (False, 0, 0)
-      | T.Equal (t1, t2) ->
-          let (t1, v1, k1) = eval_term t1 in
-          let (t2, v2, k2) = eval_term t2 in
-            if v1 = -1 || v2 = -1 then (T.Equal (t1, t2), -1, k1 + k2)
-            else if v1 = v2 then (T.True, 1, 0)
-            else (T.False, 0, 0)
-      | T.Not f ->
-          let (f, v, k) = eval_formula f in
-            if v = -1 then (T.Not f, -1, k)
-            else if v = 1 then (T.False, 0, 0)
-            else (T.True, 1, 0)
-      | T.And (f1, f2) ->
-          let (f1, v1, k1) = eval_formula f1 in
-          let (f2, v2, k2) = eval_formula f2 in
-            if v1 = -1 || v2 = -1 then (T.And (f1, f2), -1, k1+k2)
-            else if v1 = 1 && v2 = 1 then (T.True, 1, 0)
-            else (T.False, 0, 0)
-      | T.Or (f1, f2) ->
-          let (f1, v1, k1) = eval_formula f1 in
-          let (f2, v2, k2) = eval_formula f2 in
-            if v1 = -1 || v2 = -1 then (T.Or (f1, f2), -1, k1+k2)
-            else if v1 = 1 || v2 = 1 then (T.True, 1, 0)
-            else (T.False, 0, 0)
-      | T.Imply (f1, f2) ->
-          let (f1, v1, k1) = eval_formula f1 in
-          let (f2, v2, k2) = eval_formula f2 in
-            if v1 = -1 || v2 = -1 then (T.Imply (f1, f2), -1, k1+k2)
-            else if v1 = 0 || v2 = 1 then (T.True, 1, 0)
-            else (T.False, 0, 0)
-      | T.Iff (f1, f2) ->
-          let (f1, v1, k1) = eval_formula f1 in
-          let (f2, v2, k2) = eval_formula f2 in
-            if v1 = -1 || v2 = -1 then (T.Iff (f1, f2), -1, k1+k2)
-            else if v1 = v2 then (T.True, 1, 0)
-            else (T.False, 0, 0)
-      | T.Forall _ -> Error.fatal "eval_formula: forall encountered"
-      | T.Exists _ -> Error.fatal "eval_formula: exists encountered"
+      | True -> FValue true
+      | False -> FValue false
+      | Predicate (p, t) ->
+          begin match eval_term t with
+            | TValue v ->
+                let u = pred.(p).(v) in
+                  if u = -1
+                  then FPartial (Predicate (p, Elem v), 1)
+                  else FValue (u = 1)
+            | TPartial (t, k) -> FPartial (Predicate (p, t), k+1)
+          end
+      | Relation (r, t1, t2) ->
+          begin match eval_term t1, eval_term t2 with
+            | TValue v1, TValue v2 ->
+                let u = rel.(r).(v1).(v2) in
+                  if u = -1
+                  then FPartial (Relation (r, Elem v1, Elem v2), 1)
+                  else FValue (u = 1)
+            | TValue v1, TPartial (t2,k2) -> FPartial (Relation (r, Elem v1, t2), k2+1)
+            | TPartial (t1,k1), TValue v2 -> FPartial (Relation (r, t1, Elem v2), k1+1)
+            | TPartial (t1,k1), TPartial (t2,k2) -> FPartial (Relation (r, t1, t2), k1+k2+1)
+          end
+      | Equal (t1, t2) ->
+          begin match eval_term t1, eval_term t2 with
+            | TValue v1, TValue v2 -> FValue (v1 = v2)
+            | TValue v1, TPartial (t2,k2) -> FPartial (Equal (Elem v1, t2), k2)
+            | TPartial (t1,k1), TValue v2 -> FPartial (Equal (Elem v2, t1), k1)
+            | TPartial (t1,k1), TPartial (t2,k2) ->
+                if k1 < k2
+                then FPartial (Equal(t1, t2), k1+k2)
+                else FPartial (Equal(t2, t1), k1+k2)
+          end
+      | Not f ->
+          begin match eval_formula f with
+            | FValue b -> FValue (not b)
+            | FPartial (f,k) -> FPartial (Not f, k)
+          end
+      | And (f1, f2) ->
+          begin match eval_formula f1 with
+            | FValue true -> eval_formula f2
+            | FValue false -> FValue false
+            | FPartial (f1,k1) ->
+                begin match eval_formula f2 with
+                  | FValue true -> FPartial (f1,k1)
+                  | FValue false -> FValue false
+                  | FPartial (f2,k2) ->
+                      if k1 < k2
+                      then FPartial (And (f1,f2), k1+k2)
+                      else FPartial (And (f2,f1), k1+k2)
+                end
+          end
+      | Or (f1, f2) ->
+          begin match eval_formula f1 with
+            | FValue false -> eval_formula f2
+            | FValue true -> FValue true
+            | FPartial (f1,k1) ->
+                begin match eval_formula f2 with
+                  | FValue false -> FPartial (f1,k1)
+                  | FValue true -> FValue true
+                  | FPartial (f2,k2) ->
+                      if k1 < k2
+                      then FPartial (Or (f1,f2), k1+k2)
+                      else FPartial (Or (f2,f1), k1+k2)
+                end
+          end
+      | Imply (f1, f2) ->
+          begin match eval_formula f1 with
+            | FValue true -> eval_formula f2
+            | FValue false -> FValue true
+            | FPartial (f1,k1) ->
+                begin match eval_formula f2 with
+                  | FValue false -> FPartial (Not f1,k1)
+                  | FValue true -> FValue true
+                  | FPartial (f2,k2) -> FPartial (Imply (f1, f2), k1+k2)
+                end
+          end
+      | Iff (f1, f2) ->
+          begin match eval_formula f1 with
+            | FValue true -> eval_formula f2
+            | FValue false -> eval_formula (Not f2)
+            | FPartial (f1,k1) ->
+                begin match eval_formula f2 with
+                  | FValue false -> FPartial (Not f1, k1)
+                  | FValue true -> FPartial (f1, k1)
+                  | FPartial (f2,k2) ->
+                      if k1 < k2
+                      then FPartial (Iff (f1, f2), k1+k2)
+                      else FPartial (Iff (f2, f1), k1+k2)
+                end
+          end
+      | Forall _ -> Error.fatal "eval_formula: forall encountered"
+      | Exists _ -> Error.fatal "eval_formula: exists encountered"
     in
 
-    (* Force [t] to have value [v]. *)
+    (* Force [t] to have value [v]. Pass the results, if any, to continuation [k]. *)
     let rec force_term t v k =
       match t with
-        | T.Var i -> Error.fatal "force_term: variable encountered"
-        | T.Elem e -> if v = -1 or e = v then k e
-        | T.Const i ->
+        | Var i -> Error.fatal "force_term: variable encountered"
+        | Elem e -> if v = -1 or e = v then k e
+        | Const i ->
             if v = -1 then k (const.(i))
             else if const.(i) = v then k v
-        | T.Unary (op, t) ->
+        | Unary (op, t) ->
             force_term t (-1)
               (fun w ->
                  if v = -1 then begin
@@ -150,7 +220,7 @@ let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k
                      unary.(op).(w) <- -1
                    end
                  end)
-        | T.Binary (op, t1, t2) ->
+        | Binary (op, t1, t2) ->
             force_term t1 (-1)
               (fun w1 -> force_term t2 (-1)
                  (fun w2 ->
@@ -206,20 +276,21 @@ let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k
                     end
                     else if rel.(r).(v1).(v2) = b then k ()))
         | Equal (t1, t2) ->
-            let (t1, v1, k1) = eval_term t1 in
-            let (t2, v2, k2) = eval_term t2 in
-              if v1 <> -1 && v2 <> -1 then (if v1 = v2 then k ())
-              else
-                let (s1, s2) = if k1 < k2 then (t1,t2) else (t2,t1) in
-                  force_term s1 (-1)
+            begin match eval_term t1, eval_term t2 with
+              | TValue v1, TValue v2 -> if v1 = v2 then k ()
+              | TValue v1, TPartial (t2,_) -> force_term t2 v1 (fun _ -> k ())
+              | TPartial (t2,_), TValue v2 -> force_term t1 v2 (fun _ -> k ())
+              | TPartial (t1,_), TPartial (t2,_) ->
+                  force_term t1 (-1)
                     (fun v ->
                        if b = 1
-                       then force_term s2 v (fun _ -> k ())
+                       then force_term t2 v (fun _ -> k ())
                        else begin
                          for w = 0 to n-1 do
-                           if w <> v then force_term s2 w (fun _ -> k ())
+                           if w <> v then force_term t2 w (fun _ -> k ())
                          done
                        end)
+            end
         | Not f -> force_formula f (1-b) k
         | And (f1, f2) ->
             if b = 1 then
@@ -253,23 +324,6 @@ let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k
             end
         | Forall _ -> Error.fatal "force_formula: forall encountered"
         | Exists _ -> Error.fatal "force_formula: exists encountered"
-    in
-      
-    let force_equation (i,(t1,t2)) b k =
-      let f = List.fold_right (fun x g -> Forall (x, g)) (Util.enumFromTo 0 (i-1)) (Equal (t1, t2)) in
-        force_formula f b k
-    in
-      
-    let rec force_equations eqs k =
-      match eqs with
-        | [] -> k ()
-        | eq :: eqs -> force_equation eq 1 (fun () -> force_equations eqs k)
-    in
-
-    let rec force_axioms axs k =
-      match axs with
-        | [] -> k ()
-        | (_,ax) :: axs -> force_formula ax 1 (fun () -> force_axioms axs k)
     in
       
     let rec fill_relation k =
@@ -374,21 +428,37 @@ let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k
         | And (f1, f2) -> conjuncts (conjuncts acc f1) f2
         | f -> f :: acc
       in
-        List.fold_left (fun cs (_,f) -> conjuncts cs (prepare_formula f))
-          (List.fold_left (fun cs e -> conjuncts cs (prepare_equation e)) [] eqs) axs        
+        List.sort compare_partial_formulas
+          (List.map eval_formula
+             (List.fold_left (fun cs (_,f) -> conjuncts cs (prepare_formula f))
+                (List.fold_left (fun cs e -> conjuncts cs (prepare_equation e)) [] eqs) axs))
     in
 
     let simplify_conjuncts cs =
-      List.map snd
-        (List.sort (fun (k,_) (m,_) -> k - m) (List.map (fun c -> let (d,_,k) = eval_formula c in (k,d)) cs))
+      let rec loop acc = function
+        | [] -> acc
+        | FValue true :: cs -> loop acc cs
+        | FValue false :: cs -> []
+        | FPartial (f,_) :: cs -> loop (eval_formula f :: acc) cs
+      in
+        List.sort compare_partial_formulas (loop [] cs)
     in
 
     let rec force_conjuncts cs k =
-      match cs with
-        | [] -> k ()
-        | c :: cs ->
-            let cs = simplify_conjuncts cs in
-              force_formula c 1 (fun () -> force_conjuncts cs k)
+      let cs =
+        (match cs with
+           | [] -> []
+           | FValue _ :: _ -> cs
+           | FPartial (_,k) :: _ ->
+               if k <= 1
+               then cs
+               else simplify_conjuncts cs)
+      in
+        match cs with
+          | [] -> k ()
+          | (FValue true) :: cs -> force_conjuncts cs k
+          | (FValue false) :: _ -> ()
+          | (FPartial (f,_)) :: cs -> force_formula f 1 (fun () -> force_conjuncts cs k)              
     in
 
     (* Body of the main function *)
