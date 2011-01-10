@@ -1,0 +1,9 @@
+#The axioms for a quasigroup
+Theory Quasigroup.
+
+Binary * \ /.
+
+Axiom: y = x * (x \ y).
+Axiom: y = x \ (x * y).
+Axiom: y = (y / x) * x.
+Axiom: y = (y * x) / x.

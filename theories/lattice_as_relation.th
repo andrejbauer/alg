@@ -1,0 +1,12 @@
+
+Relation <=.
+
+Axiom reflexivity: x <= x.
+Axiom transitivity: x <= y /\ y <= z -> x <= z.
+Axiom antisymmetry: x <= y /\ y <= x -> x = y.
+
+Axiom infimum: forall a b, exists c, c <= a /\ c <= b /\ 
+                           (forall d, d <= a /\ d <= b -> d <= c).
+
+Axiom supremum: forall a b, exists c, a <= c /\ b <= c /\ 
+                           (forall d, a <= d /\ b <= d -> c <= d).

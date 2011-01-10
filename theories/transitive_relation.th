@@ -1,0 +1,3 @@
+Theory Transitive_relation.
+Relation <=.
+Axiom transitivity: x <= y /\ y <= z -> x <= z.
