@@ -31,14 +31,6 @@ let or_of n i f =
   in
     if n = 0 then True else loop 1 (subst_formula i (Elem 0) f)
 
-let conjuncts f =
-  let rec conjuncts acc = function
-    | True -> acc
-    | And (f1, f2) -> conjuncts (conjuncts acc f1) f2
-    | f -> f :: acc
-  in
-    conjuncts []
-
 (* Generate all algebras for theory [th] of size [n]. Pass each one to the
    continuation [k]. *)
 let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k =
@@ -369,16 +361,35 @@ let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k
     in
 
     let prepare_axioms eqs axs =
-      let eqs = List.map prepare_equation eqs in
-      let axs = List.map prepare_formula axs in
-        ()
-    in        
-      force_equations eqs
-        (fun () -> force_axioms axs
-           (fun () -> fill_unary
-              (fun () -> fill_binary
-                 (fun () -> fill_predicate
-                    (fun () -> fill_relation
-                       (fun () -> k a))))))
-        
+      let rec conjuncts acc = function
+        | True -> acc
+        | And (f1, f2) -> conjuncts (conjuncts acc f1) f2
+        | f -> f :: acc
+      in
+        List.fold_left (fun cs (_,f) -> conjuncts cs (prepare_formula f))
+          (List.fold_left (fun cs e -> conjuncts cs (prepare_equation e)) [] eqs) axs        
+    in
+
+    let simplify_conjuncts cs =
+      List.map snd
+        (List.sort (fun (k,_) (m,_) -> k - m) (List.map (fun c -> let (d,_,k) = eval_formula c in (k,d)) cs))
+    in
+
+    let rec force_conjuncts cs k =
+      match cs with
+        | [] -> k ()
+        | c :: cs ->
+            let cs = simplify_conjuncts cs in
+              force_formula c 1 (fun () -> force_conjuncts cs k)
+    in
+
+    (* Body of the main function *)
+    let cs = prepare_axioms eqs axs in
+      force_conjuncts cs
+        (fun () -> fill_unary
+           (fun () -> fill_binary
+              (fun () -> fill_predicate
+                 (fun () -> fill_relation
+                    (fun () -> k a)))))
+
   end
