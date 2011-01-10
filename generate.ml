@@ -15,6 +15,14 @@
 open Theory
 open Algebra
 
+let partial_term =
+  | TValue of int
+  | TPartial of term * int
+
+let partial_formula =
+  | FValue of bool
+  | FPartial of formula * int
+
 let and_of n i f =
   let rec loop k a =
     if k = n
