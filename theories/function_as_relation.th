@@ -3,5 +3,5 @@
 Theory Function.
 
 Relation F.
-Axiom functional: forall x, exists y, F(x,y).
-Axiom left_total: F(x,y) /\ F(x,z) => y = z.
+Axiom left_total: exists y, F(x,y).
+Axiom functional: F(x,y) /\ F(x,z) => y = z.
