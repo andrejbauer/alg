@@ -10,7 +10,7 @@ type config = {
   mutable output_filename : string;
   mutable format : string;
   mutable paranoid : bool;
-  mutable bauer : bool;
+  mutable use_sat : bool;
 }
 
 let default = {
@@ -23,5 +23,5 @@ let default = {
   output_filename = "";
   format = "";
   paranoid = false;
-  bauer = false;
+  use_sat = false;
 }
