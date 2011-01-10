@@ -1,0 +1,9 @@
+Theory CubicGraph.
+Relation --.
+
+Axiom: not (x -- x).
+Axiom: x -- y -> y -- x.
+Axiom: forall x, exists a, x -- a /\
+                 exists b, a <> b /\ x -- b /\
+                 exists c, a <> c /\ b <> c /\ x -- c /\
+                 forall d, x -- d -> a = d \/ b = d \/ c = d.
