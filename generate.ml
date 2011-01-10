@@ -9,7 +9,7 @@
    - an axiom is valid, we continue
 
    - an axiom can be made valid in one of several ways, in which
-     case we branch on them.
+   case we branch on them.
 *)
 
 open Theory
@@ -117,44 +117,37 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
             | TPartial (t1,(k1,m1)), TPartial (t2,(k2,m2)) -> FPartial (Relation (r, t1, t2), (k1+k2,m1+m2+1))
           end
       | Equal (t1, t2) ->
-          if t1 = t2
-          then FValue true
-          else
-            begin match eval_term t1, eval_term t2 with
-              | TValue v1, TValue v2 -> FValue (v1 = v2)
-              | TValue v1, TPartial (t2,(k2,m2)) -> FPartial (Equal (Elem v1, t2), (k2,m2))
-              | TPartial (t1,(k1,m1)), TValue v2 -> FPartial (Equal (Elem v2, t1), (k1,m1))
-              | TPartial (t1,(k1,m1)), TPartial (t2,(k2,m2)) ->
-                  if compare_complexity (k1,m1) (k2,m2) <= 0
-                  then FPartial (Equal(t1, t2), (k1+k2,m1+m2))
+          begin match eval_term t1, eval_term t2 with
+            | TValue v1, TValue v2 -> FValue (v1 = v2)
+            | TValue v1, TPartial (t2,(k2,m2)) -> FPartial (Equal (Elem v1, t2), (k2,m2))
+            | TPartial (t1,(k1,m1)), TValue v2 -> FPartial (Equal (Elem v2, t1), (k1,m1))
+            | TPartial (t1,(k1,m1)), TPartial (t2,(k2,m2)) ->
+                if t1 = t2 then FValue true
+                else if compare_complexity (k1,m1) (k2,m2) <= 0
+                then FPartial (Equal(t1, t2), (k1+k2,m1+m2))
                 else FPartial (Equal(t2, t1), (k1+k2,m1+m2))
-            end
+          end
       | Not f ->
           begin match eval_formula f with
             | FValue b -> FValue (not b)
             | FPartial (f, (k,m)) -> FPartial (Not f, (k,m))
           end
       | And (f1, f2) ->
-          if f1 = f2
-          then eval_formula f1
-          else
-            begin match eval_formula f1 with
-              | FValue true -> eval_formula f2
-              | FValue false -> FValue false
-              | FPartial (f1,(k1,m1)) ->
-                  begin match eval_formula f2 with
-                    | FValue true -> FPartial (f1,(k1,m1))
-                    | FValue false -> FValue false
-                    | FPartial (f2,(k2,m2)) ->
-                        if compare_complexity (k1,m1) (k2,m2) <= 0
-                        then FPartial (And (f1,f2), (k1+k2,m1+m2))
-                        else FPartial (And (f2,f1), (k1+k2,m1+m2))
-                  end
-            end
+          begin match eval_formula f1 with
+            | FValue true -> eval_formula f2
+            | FValue false -> FValue false
+            | FPartial (f1,(k1,m1)) ->
+                begin match eval_formula f2 with
+                  | FValue true -> FPartial (f1,(k1,m1))
+                  | FValue false -> FValue false
+                  | FPartial (f2,(k2,m2)) ->
+                      if f1 = f2 then FPartial (f1, (k1, m1))
+                      else if compare_complexity (k1,m1) (k2,m2) <= 0
+                      then FPartial (And (f1,f2), (k1+k2,m1+m2))
+                      else FPartial (And (f2,f1), (k1+k2,m1+m2))
+                end
+          end
       | Or (f1, f2) ->
-          if f1 = f2
-          then eval_formula f1
-          else
           begin match eval_formula f1 with
             | FValue false -> eval_formula f2
             | FValue true -> FValue true
@@ -163,42 +156,39 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
                   | FValue false -> FPartial (f1,(k1,m1))
                   | FValue true -> FValue true
                   | FPartial (f2,(k2,m2)) ->
-                      if compare_complexity (k1,m1) (k2,m2) <= 0
+                      if f1 = f2 then FPartial (f1, (k1, m1))
+                      else if compare_complexity (k1,m1) (k2,m2) <= 0
                       then FPartial (Or (f1,f2), (k1+k2,m1+m2))
                       else FPartial (Or (f2,f1), (k1+k2,m1+m2))
                 end
           end
       | Imply (f1, f2) ->
-          if f1 = f2
-          then FValue true
-          else
-            begin match eval_formula f1 with
-              | FValue true -> eval_formula f2
-              | FValue false -> FValue true
-              | FPartial (f1,(k1,m1)) ->
-                  begin match eval_formula f2 with
-                    | FValue false -> FPartial (Not f1,(k1,m1))
-                    | FValue true -> FValue true
-                    | FPartial (f2,(k2,m2)) -> FPartial (Imply (f1, f2), (k1+k2,m1+m2))
-                  end
-            end
+          begin match eval_formula f1 with
+            | FValue true -> eval_formula f2
+            | FValue false -> FValue true
+            | FPartial (f1,(k1,m1)) ->
+                begin match eval_formula f2 with
+                  | FValue false -> FPartial (Not f1,(k1,m1))
+                  | FValue true -> FValue true
+                  | FPartial (f2,(k2,m2)) ->
+                      FPartial (Imply (f1, f2), (k1+k2,m1+m2))
+                end
+          end
       | Iff (f1, f2) ->
-          if f1 = f2
-          then FValue true
-          else
-            begin match eval_formula f1 with
-              | FValue true -> eval_formula f2
-              | FValue false -> eval_formula (Not f2)
-              | FPartial (f1,(k1,m1)) ->
-                  begin match eval_formula f2 with
-                    | FValue false -> FPartial (Not f1, (k1,m1))
-                    | FValue true -> FPartial (f1, (k1,m1))
-                    | FPartial (f2,(k2,m2)) ->
-                        if compare_complexity (k1,m1) (k2,m2) <= 0
-                        then FPartial (Iff (f1, f2), (k1+k2,m1+m2))
-                        else FPartial (Iff (f2, f1), (k1+k2,m1+m2))
-                  end
-            end
+          begin match eval_formula f1 with
+            | FValue true -> eval_formula f2
+            | FValue false -> eval_formula (Not f2)
+            | FPartial (f1,(k1,m1)) ->
+                begin match eval_formula f2 with
+                  | FValue false -> FPartial (Not f1, (k1,m1))
+                  | FValue true -> FPartial (f1, (k1,m1))
+                  | FPartial (f2,(k2,m2)) ->
+                      if f1 = f2 then FValue true
+                      else if compare_complexity (k1,m1) (k2,m2) <= 0
+                      then FPartial (Iff (f1, f2), (k1+k2,m1+m2))
+                      else FPartial (Iff (f2, f1), (k1+k2,m1+m2))
+                end
+          end
       | Forall _ -> Error.fatal "eval_formula: forall encountered"
       | Exists _ -> Error.fatal "eval_formula: exists encountered"
     in
@@ -471,13 +461,14 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
     in
 
     let rec force_conjuncts cs k =
+      print_conjuncts cs ;
       let cs =
         (match cs with
            | [] -> []
            | (_,(k,m)) :: _ ->
                if k+m <= 1
                then cs
-               else ((*print_conjuncts cs;*) simplify_conjuncts cs))
+               else simplify_conjuncts cs)
       in
         match cs with
           | [] -> k ()
