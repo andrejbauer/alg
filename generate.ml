@@ -31,6 +31,14 @@ let or_of n i f =
   in
     if n = 0 then True else loop 1 (subst_formula i (Elem 0) f)
 
+let conjuncts f =
+  let rec conjuncts acc = function
+    | True -> acc
+    | And (f1, f2) -> conjuncts (conjuncts acc f1) f2
+    | f -> f :: acc
+  in
+    conjuncts []
+
 (* Generate all algebras for theory [th] of size [n]. Pass each one to the
    continuation [k]. *)
 let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k =
@@ -343,32 +351,28 @@ let generate n ({T.th_const=const; T.th_equations=eqs; T.th_axioms=axs} as th) k
       in
         g 0
     in
-(*
-    let rec prepare_formula acc = function
-      | Forall (i, f) ->
-          let rec loop k acc =
-            if k = n then acc
-            else 
-              prepare_formula
-                (subst_formula i (Elem k) f)
 
-              loop (k+1) (prepare_formula (subst_formula i (Elem k) f) acc)
-
-              let f = subst_formula i (Elem k) f in
-              let acc = List.fold_left (fun f acc -> ) (prepare_formula f)
-
-
-          in
-            if n = 0 then [True] else [loop 1 (subst_formula i (Elem 0) f)]
-
-
-          List.fold_left ()
-
-      
-    let prepare_equation (i, (t1, t2)) =
-      prepare_formula (List.fold_right (fun x g -> Forall (x, g)) (Util.enumFromTo 0 (i-1)) (Equal (t1, t2)))
+    let rec prepare_formula = function
+      | (True _ | False _ | Equal _ | Predicate _ | Relation _) as f -> f
+      | Forall (i, f) -> prepare_formula (and_of n i f)
+      | Exists (i, f) -> prepare_formula (or_of n i f)
+      | Not f -> Not (prepare_formula f)
+      | And (f1, f2) -> And (prepare_formula f1, prepare_formula f2)
+      | Or (f1, f2) -> Or (prepare_formula f1, prepare_formula f2)
+      | Imply (f1, f2) -> Imply (prepare_formula f1, prepare_formula f2)
+      | Iff (f1, f2) -> Iff (prepare_formula f1, prepare_formula f2)
     in
-*)
+
+    let prepare_equation (i, (t1, t2)) =
+      prepare_formula
+        (List.fold_right (fun x g -> Forall (x, g)) (Util.enumFromTo 0 (i-1)) (Equal (t1, t2)))
+    in
+
+    let prepare_axioms eqs axs =
+      let eqs = List.map prepare_equation eqs in
+      let axs = List.map prepare_formula axs in
+        ()
+    in        
       force_equations eqs
         (fun () -> force_axioms axs
            (fun () -> fill_unary

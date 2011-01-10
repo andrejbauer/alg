@@ -3,7 +3,7 @@ Relation --.
 
 Axiom: not (x -- x).
 Axiom: x -- y -> y -- x.
-Axiom: forall x, exists a b c,
-         a <> b /\ a <> c /\ b <> c /\
-         x -- a /\ x -- b /\ x -- c /\
-         forall d, x -- d -> a = d \/ b = d \/ c = d.
+Axiom: forall x, exists a, x -- a /\
+                 exists b, a <> b /\ x -- b /\
+                 exists c, a <> c /\ b <> c /\ x -- c /\
+                 forall d, x -- d -> a = d \/ b = d \/ c = d.
