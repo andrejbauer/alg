@@ -461,7 +461,6 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
     in
 
     let rec force_conjuncts cs k =
-      print_conjuncts cs ;
       let cs =
         (match cs with
            | [] -> []
