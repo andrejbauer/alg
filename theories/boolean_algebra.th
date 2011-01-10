@@ -24,10 +24,10 @@ Axiom: x | (x & y) = x.
 
 #distributivity
 Axiom: x & (y | z) = (x & y) | (x & z).
-Theorem: (y | z) & x = (y & x) | (z & x).
+#Theorem: (y | z) & x = (y & x) | (z & x).
 
 Axiom: x | (y & z) = (x | y) & (x | z).
-Theorem: (y & z) | x = (y | x) & (z | x).
+#Theorem: (y & z) | x = (y | x) & (z | x).
 
 
 Theorem involution: ~(~x) = x.
