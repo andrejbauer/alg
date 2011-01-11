@@ -558,9 +558,10 @@ struct
               (fun p t -> 
                 let n = Array.length t in
                 Printf.fprintf ch "    \"%s\" : [" th_pred.(p) ;
-                for i = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i) (sep i (n-1)) done;
-                Printf.fprintf ch "]%s\n" (sep p plen)
-              )
+                for i = 0 to n-1 do
+                  Printf.fprintf ch "%s%s" (if t.(i) = 1 then "true" else "false") (sep i (n-1))
+                done;
+                Printf.fprintf ch "]%s\n" (sep p plen))
               pred;
            let rlen = Array.length rel in
             Array.iteri
@@ -569,11 +570,12 @@ struct
                 Printf.fprintf ch "    \"%s\" :\n      [\n" th_rel.(r) ;
                 for i = 0 to n-1 do
                   Printf.fprintf ch "        [" ;
-                  for j = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i).(j) (sep j (n-1)) done ;
+                  for j = 0 to n-1 do
+                    Printf.fprintf ch "%s%s" (if t.(i).(j) = 1 then "true" else "false") (sep j (n-1))
+                  done ;
                   Printf.fprintf ch "]%s\n" (sep i (n-1))
                 done ;
-                Printf.fprintf ch "      ]%s\n" (sep r (rlen-1))
-              )
+                Printf.fprintf ch "      ]%s\n" (sep r (rlen-1)))
               rel;
             Printf.fprintf ch "  }"
         end;

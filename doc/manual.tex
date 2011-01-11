@@ -27,13 +27,12 @@ xleftmargin=2em,basicstyle=\ttfamily\small}}{}
 \section{Introduction}
 \label{sec:introduction}
 
-Alg is a program for enumeration of finite models of algebraic
-theories. An algebraic theory is given by a signature (a list of
-constants and operations) and axioms expressed in first-order
-logic.\footnote{Strictly speaking, the axioms of an algebraic theory
-  must be equations, but alg can handle all of first-order logic.}
-Examples of algebraic theories include groups, lattices, rings,
-fields, and many others. Alg can do the following:
+Alg is a program for enumeration of finite models of single-sorted
+first-order theories. Such a theory is given by a signature (a list of
+constants, operations and relations) and axioms expressed in
+first-order logic. Examples of first-order theories include groups,
+lattices, rings, fields, posets, graphs, and many others. Alg can do
+the following:
 %
 \begin{itemize}
 \item list or count all non-isomorphic models of a given theory,
@@ -45,7 +44,9 @@ fields, and many others. Alg can do the following:
 Currently alg has the following limitations:
 %
 \begin{itemize}
+\item the theory must be single-sorted,
 \item only unary and binary operations are accepted,
+\item only (unary) predicates and binary relations are accepted,
 \item it is assumed that constants denote pairwise distinct elements.
 \end{itemize}
 %
@@ -239,15 +240,12 @@ Note that a Windows precompiled executable may be available at
 \section{Input}
 \label{sec:input}
 
-An alg input file has extension \texttt{.th} and it describes an
-algebraic theory.\footnote{Actually, we allow arbitrary first-order
-  statements, while an algebraic theory can only have equational
-  axioms.} The syntax vaguely follows the syntax of the Coq proof
-assistant. A typical input file might look like this:
+An alg input file has extension \texttt{.th} and it describes an a
+first-order theory. The syntax vaguely follows the syntax of the Coq
+proof assistant. A typical input file might look like this:
 %
 \begin{source}
-# The axioms of a group.
-Theory group.
+Theory Group.
 Constant 1.
 Unary inv.
 Binary *.
@@ -260,8 +258,9 @@ Axiom associativity: (x * y) * z = x * (y * z).
 %
 The file starts with an optional \texttt{Theory} declaration which
 names the theory, then we have declarations of constants, unary and
-binary operations, and after that there are the axioms. The precise
-syntax rules are as follows.
+binary operations, predicates and binary relations (none in the above
+example), and after that there are the axioms. The precise syntax
+rules are as follows.
 
 \subsection{Comments}
 
@@ -271,9 +270,10 @@ Comments are written as in Python, i.e., a comment begins with the
 \subsection{General syntactic rules}
 
 An alg input file consists of a sequence of declarations
-(\texttt{Theory}, \texttt{Constant}, \texttt{Unary}, \texttt{Binary})
-and axioms (\texttt{Axiom}, \texttt{Theorem}). Each declaration and
-axiom is terminated with a period.
+(\texttt{Theory}, \texttt{Constant}, \texttt{Unary}, \texttt{Binary},
+\texttt{Predicate}, \texttt{Relation}) and axioms (\texttt{Axiom},
+\texttt{Theorem}). Each declaration and axiom is terminated with a
+period.
 
 \subsection{The \texttt{Theory} keyword}
 
@@ -288,7 +288,7 @@ comments and whitespace. The theory name consists of letters, numbers,
 and the underscore. If you do not provide a theory name, alg will
 deduce one from the file name.
 
-\subsection{Declaration of operations}
+\subsection{Declaration of operations and relations}
 
 The declarations
 %
@@ -296,20 +296,26 @@ The declarations
 Constant /@$c_1$ $c_2$ $\ldots$ $c_k$@/.
 Unary /@$u_1$ $u_2$ $\ldots$ $u_m$@/.
 Binary /@$b_1$ $b_2$ $\ldots$ $b_n$@/.
+Predicate /@$p_1$ $p_2$ $\ldots$ $p_l$@/.
+Relation /@$r_1$ $r_2$ $\ldots$ $r_j$@/.
 \end{source}
 %
-are used to declare constants, unary, and binary operations
-respectively. You may declare several constants or operations with a
-single declaration, or one at a time. You may mix declarations and
-axioms, although it is probably a good idea to declare the constants
-and operations first.
+are used to declare constants, unary and binary operations,
+predicates, and binary relations, respectively. You may declare
+several constants or operations with a single declaration, or one at a
+time. You may mix declarations and axioms, although it is probably a
+good idea to declare the constants and operations first.
+
+The keywords \texttt{Constants}, \texttt{Predicates} and
+\texttt{Relations} are synonyms for their singular counterparts.
 
 A constant may be any string of letters, digits and the underscore
 character. In particular, a constant may consist just of digits, for
 example \texttt{0} or \texttt{1}.
 
-Unary and binary operations may be strings of letters, digits and the
-underscore character. For example, if we declare
+Predicates, relations, unary and binary operations may be strings of
+letters, digits and the underscore character. For example, if we
+declare
 %
 \begin{source}
 Unary inv.
@@ -342,7 +348,8 @@ where:
 \item \emph{infix operators} can be used as binary operations and have
   four levels of precedence, listed from lowest to highest:
   \begin{itemize}
-    \item left-associative operators starting with \texttt{|}, \texttt{\&}, \texttt{\$}
+    \item left-associative operators starting with \texttt{=},
+      \texttt{<}, \texttt{>}, \texttt{|}, \texttt{\&}, \texttt{\$}
     \item right-associative operators starting with \texttt{@} and \texttt{\^}
     \item left-associative operators starting with \texttt{+}, \texttt{-},
       and \texttt{\char92}
@@ -374,15 +381,16 @@ Theorem /@[name]@/: /@<formula>@/.
 \end{source}
 %
 There is no difference between an axiom and a theorem as far as alg is
-concerned. We use \texttt{Axiom} for the actual axioms and
-\texttt{Theorem} for statements that are consequences of axioms and
-are worth including in the theory because they make alg run faster,
-see Section~\ref{sec:optimization}.
+concerned. A good convention is to use \texttt{Axiom} for the actual
+axioms and \texttt{Theorem} for statements that are consequences of
+axioms and are worth including in the theory because they make alg run
+faster, see Section~\ref{sec:optimization}.
 
-The optional \texttt{\textit{[name]}} is a string of of
-letters, digits and the underscore characters. The
-\texttt{\textit{<formula>}} is a first-order formula built from the
-following logical operations, listed in order of increasing precedence:
+The optional \texttt{\textit{[name]}} is a string of of letters,
+digits and the underscore characters. Alg has no use for names, they
+are there for the user. The \texttt{\textit{<formula>}} is a
+first-order formula built from the following logical operations,
+listed in order of increasing precedence:
 %
 \begin{center}
   \begin{tabular}{rcl}
@@ -440,7 +448,7 @@ is what the output consists of:
   a model can be decomposed, a decomposition into indecomposable
   factors is given.\footnote{Please note that in general such a
     decomposition is \emph{not} unique.} Tables of all the operations
-  are displayed.
+  and relations are displayed.
 \item[Counts:] a table showing how many models of each size were found.
   If more than three sizes were considered, alg also provides a URL to
   query the counts at \texttt{http://oeis.org/}, the On-Line
@@ -450,15 +458,37 @@ is what the output consists of:
 \subsection{Available output formats}
 \label{sec:output-formats}
 
-Alg supports several output formats. The default output format is
-plain text and it is sent to the screen. You can choose a different
-format with the \texttt{--format} command-line option, and you can
-send the output to a file with the \texttt{--output} option. If you
-specify an output file but no format, alg guesses the correct format
-from the output filename. To see which formats are supported by alg,
-type \texttt{alg --help}.
+Alg supports several output formats. The default is plain text and it
+is sent to the screen. You can choose one of the following formats
+with the \texttt{--format} command-line option:
+%
+\begin{itemize}
+\item \texttt{text}: the default format is plain text. Actually, it is
+  not entirely plain, as it is also valid Markdown.\footnote{According
+    to Wikipedia, \emph{Markdown} is a lightweight markup language,
+    originally created by John Gruber and Aaron Swartz to help maximum
+    readability and "publishability" of both its input and output
+    forms.}
+\item \texttt{html}: Hypertext Markup Language, used for web pages.
+\item \texttt{latex}: {\LaTeX} format, suitable for showing
+  multiplication tables in published papers.
+\item \texttt{json}: the JSON format, suitable for futher processing,
+  as explained in Section~\ref{sec:json}.
+\end{itemize}
+
+If you specify an output file with the \texttt{--output} option but no
+\texttt{--format}, alg guesses the correct format from the output
+filename.
+
+\subsection{Redirection of output to a file}
+
+By default alg prints results on the standard output. You may redirect
+the output to a file with the \texttt{--output} option. If you use
+\texttt{--output} without \texttt{--format}, alg tries to guess the
+output format from the filename extension.
 
 \subsection{Output in JSON format for futher processing}
+\label{sec:json}
 
 For further processing of output use the JSON output format by
 specifying \texttt{--format json} or output to a file with the
@@ -473,9 +503,9 @@ The JSON output has one of two forms, depending on whether the
 %
 where $M_1, \ldots, M_n$ are the models found. Each model $M_i$ is
 given as a dictionary which maps constants, unary operations and
-binary operations to the corresponding integers, tables and matrices.
-For example, the only commutative ring of size~$6$ with unit is
-presented as
+binary operations, predicates and relations to the corresponding
+integers, tables and matrices. For example, the only commutative ring
+of size~$6$ with unit is presented as
 %
 \begin{shell}
 {
@@ -529,7 +559,6 @@ with open('mystuff.json','r') as f:
 In Mathematica just use the \texttt{Import["\textit{mystuff.json}"]}
 command.
 
-
 \section{Command-line Options}
 \label{sec:command-line-options}
 
@@ -547,10 +576,6 @@ where \texttt{\textit{theory.th}} is the input file, and the options are:
   also specify a size interval of the form
   \texttt{\texttt{m}-\textit{n}}. For example, \texttt{1,2,5-8} would
   mean that we consider sizes 1, 2, 5, 6, 7, 8.
-\item[\texttt{--axiom}]
-  Add an extra axiom to the theory. Use the option several times to
-  add several axioms. Note that on a command-line the axiom
-  should be enclosed in quotes.
 \item[\texttt{--count}]
   Do not print out the models, just report the counts.
 \item[\texttt{--format \textit{<format>}}]
@@ -559,16 +584,29 @@ where \texttt{\textit{theory.th}} is the input file, and the options are:
 \item[\texttt{--indecomposable}]
   Output only indecomposable models, i.e., those that are not products
   of smaller models.
-\item[\texttt{--no-products}]
-  Do not try to generate models as products of smaller models. Use
-  this option if you know that a model cannot be a product of smaller
-  ones. For example, a field can never be a product of two fields. If
-  all of your axioms are equations, then you should \emph{not} use
-  this option.
+\item[\texttt{--axiom}]
+  Add an extra axiom to the theory. Use the option several times to
+  add several axioms. Note that on a command-line the axiom
+  should be enclosed in quotes.
+\item[\texttt{--no-products}] Do not try to generate models as
+  products of smaller models. Use this option if you know that a model
+  cannot be a product of smaller ones. For example, a field can never
+  be a product of two fields. The option is assumed if the theory
+  contains predicates or relations. If all of your axioms are
+  equations, then you should \emph{not} use this option.
 \item[\texttt{--no-source}]
   Do not include the theory in the output.
 \item[\texttt{--output \textit{<filename>}}]
   Output to the given file rather than to screen.
+\item[\texttt{--paranoid}]
+  Perform additional checks to verify that the models really satisfy
+  the axioms. Use this option if you think there is a bug in alg.
+\item[\texttt{--sat}]
+  Use the alternative algorithm based on satisfying the axioms rather
+  than intelligent filling-in of multiplication tables. It works well
+  with theories that have predicates and relations. For theories with
+  unary and binary operations the standard algorithm typically
+  performs better.
 \item[\texttt{--help}]
   Print help.
 \end{description}
