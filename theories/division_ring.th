@@ -1,4 +1,4 @@
-# The axioms for a (possibly non-commutative) field.
+# The axioms for a division ring (non-commutative field).
 
 Constant 0 1.
 Unary neg.
@@ -13,7 +13,6 @@ Axiom one_unit_left: 1 * x = x.
 Axiom one_unit_right: x * 1 = x.
 Axiom distrutivity_right: (x + y) * z = x * z + y * z.
 Axiom distributivity_left: x * (y + z) = x * y + x * z.
-Axiom mult_commutative: x * y = y * x.
 
 # Consequences of axioms that make alg run faster:
 
