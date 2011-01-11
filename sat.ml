@@ -55,10 +55,11 @@ let compare_complexity (k1,m1) (k2,m2) =
   else (k1 + 3 * m1) - (k2 + 3 * m2)
 
 (* Generate all algebras for theory [th] of size [n]. Pass each one to the
-   continuation [k]. *)
-let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
-  if n >= Array.length const then begin
-    let a = Algebra.empty n th in
+   continuation [k]. You may optionally pass in a partially constructed algebra,
+   and the algorithm will fill in the rest. *)
+let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
+  if n >= Array.length const then
+    let a = (match start with None -> Algebra.empty n th | Some a -> a) in
     let const = a.alg_const in
     let unary = a.alg_unary in
     let binary = a.alg_binary in
@@ -171,7 +172,8 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
                   | FValue false -> FPartial (Not f1,(k1,m1))
                   | FValue true -> FValue true
                   | FPartial (f2,(k2,m2)) ->
-                      FPartial (Imply (f1, f2), (k1+k2,m1+m2))
+                      if f1 = f2 then FValue true
+                      else FPartial (Imply (f1, f2), (k1+k2,m1+m2))
                 end
           end
       | Iff (f1, f2) ->
@@ -337,11 +339,13 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
           let rec f (i,j) =
             if i >= n then g (r+1)
             else if rel.(r).(i).(j) = -1
-            then
+            then begin
               for b = 0 to 1 do
                 rel.(r).(i).(j) <- b ;
                 f (if j = n-1 then (i+1,0) else (i,j+1))
-              done
+              done ;
+              rel.(r).(i).(j) <- -1
+            end
             else f (if j = n-1 then (i+1,0) else (i,j+1))
           in
             f (0, 0)
@@ -357,11 +361,13 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
           let rec f i =
             if i >= n then g (p+1)
             else if pred.(p).(i) = -1
-            then
+            then begin
               for b = 0 to 1 do
                 pred.(p).(i) <- b ;
                 f (i + 1)
-              done
+              done ;
+              pred.(p).(i) <- -1
+            end
             else f (i + 1)
           in
             f 0
@@ -377,11 +383,13 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
           let rec f (i,j) =
             if i >= n then g (op+1)
             else if binary.(op).(i).(j) = -1
-            then
+            then begin
               for v = 0 to n-1 do
                 binary.(op).(i).(j) <- v ;
                 f (if j = n-1 then (i+1,0) else (i,j+1))
-              done
+              done ;
+              binary.(op).(i).(j) <- -1
+            end
             else f (if j = n-1 then (i+1,0) else (i,j+1))
           in
             f (0,0)
@@ -395,13 +403,18 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
         if op >= Array.length unary then k ()
         else begin
           let rec f i =
-            if i >= n then g (op+1)
+            if i >= n then
+              begin
+                g (op+1)
+              end
             else if unary.(op).(i) = -1
-            then
+            then begin
               for v = 0 to n-1 do
                 unary.(op).(i) <- v ;
                 f (i + 1)
-              done
+              done ;
+              unary.(op).(i) <- -1
+            end
             else f (i + 1)
           in
             f 0
@@ -474,13 +487,25 @@ let generate n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
           | (f,_) :: cs -> force_formula f 1 (fun () -> force_conjuncts cs k)              
     in
 
-    (* Body of the main function *)
-    let cs = prepare_axioms eqs axs in
-      force_conjuncts cs
-        (fun () -> fill_unary
-           (fun () -> fill_binary
-              (fun () -> fill_predicate
-                 (fun () -> fill_relation
-                    (fun () -> k a)))))
-
-  end
+      (* Body of the main function *)
+      if n <> a.alg_size then Error.fatal "Sat.generate: size mismatch."
+      else if n >= Array.length const then begin
+        (* Make sure constants are filled in. *)
+        let used = Array.to_list const in
+        let unused = ref (List.filter (fun k -> not (List.mem k used)) (Util.enumFromTo 0 (n-1))) in
+          for i = 0 to Array.length const - 1 do
+            if const.(i) = -1 then
+              match !unused with
+                | [] -> Error.fatal "Sat.generate: ran out of elements for constants."
+                | c::cs -> const.(i) <- c ; unused := cs
+          done ;
+          (* Prepare conjuncts *)
+          let cs = prepare_axioms eqs axs in
+            (* Force conjuncts to be true and fill in the rest. *)
+            force_conjuncts cs
+              (fun () -> fill_unary
+                 (fun () -> fill_binary
+                    (fun () -> fill_predicate
+                       (fun () -> fill_relation
+                          (fun () -> k a)))))
+      end
