@@ -70,4 +70,4 @@ windows:
 	fi
 
 publish:
-	scp alg-*.zip math.andrej.com:/usr/local/var/math/wp-content/uploads/alg
+	scp README.txt alg-*.zip math.andrej.com:/usr/local/var/math/wp-content/uploads/alg
