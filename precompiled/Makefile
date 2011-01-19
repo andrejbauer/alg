@@ -1,36 +1,73 @@
+OS=`uname`
+VERSION=`date +%Y-%m-%d`
+
 default:
-	echo "Please specify which bundle to make: upload, linux, mac, windows"
+	if [ $(OS) = "Linux" ] ; \
+	then \
+		make linux ; \
+	elif [ $(OS) = "Darwin" ] ; \
+	then \
+		make mac ; \
+	elif [ $(OS) = "CYGWIN_NT-6.1" ] ; \
+	then \
+		make windows ; \
+	else \
+		echo "Unknown operating system $(OS)." ; \
+	fi
 
 linux:
-	if [ `uname` != "Linux" ] ; \
+	if [ $(OS) != "Linux" ] ; \
 	then \
 		echo "This is not a Linux machine, is it?" ; \
 	else \
-		/bin/rm -rf alg-linux ; \
-		mkdir -p alg-linux/theories ; \
+		/bin/rm -rf alg-linux-* alg-*zip ; \
+		mkdir -p alg-linux-$(VERSION)/theories ; \
 		(cd .. ; make clean ; make native) ; \
 		(cd ../doc; latexmk -c ; latexmk -view=none -pdf manual.tex) ; \
-		/bin/cp ../alg.native alg-linux/alg ; \
-		/bin/cp ../doc/manual.pdf alg-linux/manual.pdf ; \
-		/bin/cp ../theories/*.th alg-linux/theories ; \
-		zip -r alg-linux.zip alg-linux ; \
+		/bin/cp ../alg.native alg-linux-$(VERSION)/alg ; \
+		/bin/cp ../doc/manual.pdf alg-linux-$(VERSION)/manual.pdf ; \
+		/bin/cp ../theories/*.th alg-linux-$(VERSION)/theories ; \
+		zip -r alg-linux-$(VERSION).zip alg-linux-$(VERSION) ; \
 		/bin/rm -rf alg-linux ; \
-		echo "Precompiled linux executable is now in alg-linux.zip" ; \
+		echo "Precompiled linux executable is now in alg-linux-$(VERSION).zip" ; \
+		echo "Type \"make publish\" to publish it on the web." ; \
 	fi
 
 mac:
-	if [ `uname` != "Darwin" ] ; \
+	if [ $(OS) != "Darwin" ] ; \
 	then \
 		echo "This is not a MacOS machine, is it?" ; \
 	else \
-		/bin/rm -rf alg-macosx ; \
-		mkdir -p alg-macosx/theories ; \
+		/bin/rm -rf alg-macosx-* alg-*.zip ; \
+		mkdir -p alg-macosx-$(VERSION)/theories ; \
 		(cd .. ; make clean ; make native) ; \
 		(cd ../doc; latexmk -c ; latexmk -view=none -pdf manual.tex) ; \
-		/bin/cp ../alg.native alg-macosx/alg ; \
-		/bin/cp ../doc/manual.pdf alg-macosx/manual.pdf ; \
-		/bin/cp ../theories/*.th alg-macosx/theories ; \
-		zip -r alg-macosx.zip alg-macosx ; \
-		/bin/rm -rf alg-macosx ; \
-		echo "Precompiled MacOS X executable is now in alg-macosx.zip" ; \
+		/bin/cp ../alg.native alg-macosx-$(VERSION)/alg ; \
+		/bin/cp ../doc/manual.pdf alg-macosx-$(VERSION)/manual.pdf ; \
+		/bin/cp ../theories/*.th alg-macosx-$(VERSION)/theories ; \
+		zip -r alg-macosx-$(VERSION).zip alg-macosx-$(VERSION) ; \
+		/bin/rm -rf alg-macosx-$(VERSION) ; \
+		echo "Precompiled MacOS X executable is now in alg-macosx-$(VERSION).zip" ; \
+		echo "Type \"make publish\" to publish it on the web." ; \
 	fi
+
+windows:
+	if [ $(OS) != "CYGWIN_NT-6.1" ] ; \
+	then \
+		echo "This is not a Windows machine, is it?" ; \
+	else \
+		/bin/rm -rf alg-windows alg-*.zip ; \
+		mkdir -p alg-windows-$(VERSION)/theories ; \
+		(cd .. ; make clean ; make native) ; \
+		echo "Assuming the manual is compiled already." ; \
+		/bin/cp ../alg.native alg-windows-$(VERSION)/alg ; \
+		/bin/cp ../doc/manual.pdf alg-windows-$(VERSION)/manual.pdf ; \
+		/bin/cp ../theories/*.th alg-windows-$(VERSION)/theories ; \
+		zip -r alg-windows-$(VERSION).zip alg-windows-$(VERSION) ; \
+		/bin/rm -rf alg-windows-$(VERSION) ; \
+		echo "Precompiled Windows executable is now in alg-windows-$(VERSION).zip" ; \
+		echo "Type \"make publish\" to publish it on the web." ; \
+	fi
+
+publish:
+	scp alg-*.zip math.andrej.com:/usr/local/var/math/wp-content/uploads/alg

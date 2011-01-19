@@ -71,30 +71,39 @@ try begin (*A big wrapper for error reporting. *)
     ("--count",
      Arg.Unit (fun () -> config.count_only <- true),
      " Just count the models, do not print them out.");
-    ("--format",
-     Arg.String (fun str -> config.format <- str),                     
-     " Output format, one of: " ^ String.concat ", " (List.map fst formats) ^ ".");
-    ("--indecomposable",
-     Arg.Unit (fun () -> config.indecomposable_only <- true),
-     " Output only indecomposable models.");
-    ("--no-products",
-     Arg.Unit (fun () -> config.products <- false),
-     " Do not generate algebras as products of smaller algebras.");
     ("--axiom",
      Arg.String (fun str -> cmd_axioms := ("Axiom: " ^ str ^ ".") :: !cmd_axioms),
      " Add an extra axiom to the theory.");
-    ("--no-source",
-     Arg.Unit (fun () -> config.source <- false),
-     " Do not include the theory source in the output.");
-    ("--output",
-     Arg.String (fun str -> config.output_filename <- str),
-     " Output to the specified file.");
+    ("--indecomposable",
+     Arg.Unit (fun () -> config.indecomposable_only <- true),
+     " Output only indecomposable models.");
     ("--paranoid",
      Arg.Unit (fun () -> config.paranoid <- true),
      " Naively check all axioms and isomorphism before output. Use if you think there is a bug in alg.");
     ("--sat",
      Arg.Unit (fun () -> config.use_sat <- true),
      " Use the satisfiability algorithm.");
+    ("--no-products",
+     Arg.Unit (fun () -> config.products <- false),
+     " Do not generate algebras as products of smaller algebras.");
+    ("--format",
+     Arg.String (fun str -> config.format <- str),                     
+     " Output format, one of: " ^ String.concat ", " (List.map fst formats) ^ ".");
+    ("--output",
+     Arg.String (fun str -> config.output_filename <- str),
+     " Output to the specified file.");
+    ("--no-source",
+     Arg.Unit (fun () -> config.source <- false),
+     " Do not include the theory source in the output.");
+    ("--version",
+     Arg.Unit (fun () ->
+                 Printf.printf "Copyright (c) 2011 Ales Bizjak and Andrej Bauer\n" ;
+                 Printf.printf "This is alg version %s compiled for %s.\n" Version.version Version.os;
+                 if Version.version.[String.length Version.version - 1] <> '+'
+                 then Printf.printf "The source code is at http://hg.andrej.com/alg/rev/%s\n" Version.version;
+                 exit 0
+              ),
+     " Print version information and exit.");
   ]
   in
 

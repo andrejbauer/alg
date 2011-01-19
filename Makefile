@@ -4,15 +4,17 @@ OCAMLBUILD=ocamlbuild -use-menhir
 
 default: native
 
-byte:
+.PHONY: version.ml
+
+byte:	version.ml
 	$(OCAMLBUILD) $(TARGET).byte
-native:
+native: version.ml
 	$(OCAMLBUILD) $(TARGET).native
-profile:
+profile: version.ml
 	$(OCAMLBUILD) $(TARGET).p.native
-debug:
+debug: version.ml
 	$(OCAMLBUILD) -cflags -g -lflags -g $(TARGET).native
-debug-byte:
+debug-byte: version.ml
 	$(OCAMLBUILD) -cflags -g -lflags -g $(TARGET).byte
 
 conflicts:
@@ -25,3 +27,8 @@ install: native
 clean:
 	$(OCAMLBUILD) -clean
 	/bin/rm -f parser.conflicts
+
+version.ml:
+	export VERSION=`hg id --id` ; \
+	export OS=`uname` ; \
+	echo "let version = \"$$VERSION\" ;; let os = \"$$OS\" ;;" > version.ml
