@@ -1,12 +1,7 @@
 The following precompiled executables are available:
 
-(sorry, nothing yet)
+* GNU/Linux: alg-linux.zip
+* MacOS: <not there yet>
+* Windows: <not there yet>
 
-If you download a precompiled executable, do not forget to
-also download the user manual and examples from
-
-    http://hg.andrej.com/alg/file/tip/doc/manual.pdf
-
-and
-
-    http://hg.andrej.com/alg/file/tip/theories
+Each archive file contains the executable, the manual and example theories.
