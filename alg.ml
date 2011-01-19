@@ -98,7 +98,7 @@ try begin (*A big wrapper for error reporting. *)
     ("--version",
      Arg.Unit (fun () ->
                  Printf.printf "Copyright (c) 2011 Ales Bizjak and Andrej Bauer\n" ;
-                 Printf.printf "This is alg version %s compiled for %s.\n" Version.version Version.os;
+                 Printf.printf "This is alg version %s compiled on %s for %s.\n" Version.version Version.date Version.os;
                  if Version.version.[String.length Version.version - 1] <> '+'
                  then Printf.printf "The source code is at http://hg.andrej.com/alg/rev/%s\n" Version.version;
                  exit 0
