@@ -31,4 +31,5 @@ clean:
 version.ml:
 	export VERSION=`hg id --id` ; \
 	export OS=`uname` ; \
-	echo "let version = \"$$VERSION\" ;; let os = \"$$OS\" ;;" > version.ml
+	export DATE=`date +%Y-%m-%d` ; \
+	echo "let version = \"$$VERSION\" ;; let os = \"$$OS\" ;; let date = \"$$DATE\"" > version.ml
