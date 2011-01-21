@@ -1,3 +1,6 @@
+# This Makefile which generates the ZIP files with precompiled binaries.
+# It is not very robust because it is meant to be used only by us (the authors).
+
 OS=`uname`
 VERSION=`date +%Y-%m-%d`
 
