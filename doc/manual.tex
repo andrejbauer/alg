@@ -128,14 +128,14 @@ options:
 \begin{shell}
 hg clone http://hg.andrej.com/alg/
 \end{shell}
-\item download a precompiled executable for your architecture from
+\item download a precompiled executable for your architecture, as
+  described at
+  %
   \begin{quote}
-    \url{http://hg.andrej.com/alg/file/tip/precompiled}
+    \url{http://math.andrej.com/alg/}
   \end{quote}
   %
-  if one is available. If you choose this option, make sure that you
-  still obtain the ZIP file because the \texttt{theories} subdirectory
-  contains a number of useful examples.
+  if one is available.
 \end{enumerate}
 
 \subsection{Installation for Linux and MacOS}
@@ -143,9 +143,12 @@ hg clone http://hg.andrej.com/alg/
 
 \subsubsection{Prerequisites}
 
-To compile alg you need the Make utility, Ocaml 3.11 or newer, and the
-menhir parser generator higher. We will assume you have Make. You can
-get Ocaml and menhir in several ways:
+To compile alg you need Ocaml 3.11 or newer. It is also highly
+desirable that you have the menhir parser generator and the Make
+utility. See sections~\ref{sec:nomake} and~\ref{sec:nomenhir} on how
+to compile without these.
+
+You can get Ocaml and menhir in several ways:
 %
 \begin{enumerate}
 \item On Ubuntu, install the packages \texttt{ocaml} and
@@ -176,12 +179,13 @@ sudo port install caml-menhir
   \end{quote}
 \end{enumerate}
 
-\subsubsection{Compiling to native code}
+\subsubsection{Compilation and installation}
 
-To compile alg, type \texttt{make} at the command line. If all goes
-well ocamlbuild will generate a subdirectory \texttt{\_build} and in
-it the \texttt{alg.native} executable. It will also create a link to
-\texttt{\_build/alg.native} from the top directory. To test alg type
+To compile alg, type \texttt{make native} at the command line. If all
+goes well ocamlbuild will generate a subdirectory \texttt{\_build} and
+in it the \texttt{alg.native} executable. It will also create a link
+to \texttt{\_build/alg.native} from the top directory. To test alg
+type
 %
 \begin{shell}
 ./alg.native --count --size 8 theories/group.th
@@ -201,6 +205,13 @@ This will simply copy \texttt{\_build/alg.native} to
 \texttt{\$(INSTALL\_DIR)/alg}. You may also wish to stash the
 \texttt{theories} subdirectory somewhere for future reference.
 
+\subsubsection{Compiling the manual}
+\label{sec:compiling-manual}
+
+You do not have to compile the manual because it is included in
+\texttt{doc/manual.pdf}. Nevertheless, you can recompile it by typing
+\texttt{make doc} or directly by {\LaTeX}-ing \texttt{doc/manual.tex}.
+
 \subsubsection{Compiling to bytecode}
 
 If your version of Ocaml does not compile to native code you can try
@@ -212,7 +223,30 @@ make byte
 %
 This will generate a (significantly slower) \texttt{alg.byte} executable.
 
+\subsubsection{Installation without menhir}
+\label{sec:nomenhir}
+
+If you do not have menhir you can try the following trick:
+%
+\begin{itemize}
+\item move the files \texttt{lexer.mll} and \texttt{parser.mly} out of
+  the way into some other folder,
+\item copy the files \texttt{nomenhir/lexer.ml} and
+  \texttt{nomenhir/parser.ml} to where \texttt{lexer.mll} and
+  \texttt{parser.mly} used to be,
+\item compile with \texttt{make}.
+\end{itemize}
+%
+In other words:
+%
+\begin{shell}
+\$ mv lexer.mll parser.mly nomenhir
+\$ cp nomenhir/lexer.ml nomenhir/parserl.ml .
+\$ make
+\end{shell}
+
 \subsubsection{Installation without Make}
+\label{sec:nomake}
 
 If you do not have the Make utility (how can that be?) you can compile
 alg directly with ocamlbuild:
@@ -227,15 +261,14 @@ To install alg just copy \texttt{\_build/alg.native} to
 \subsection{Installation for Microsoft Windows}
 \label{sec:comp-inst-micr}
 
-Sorry, this has not been written yet. But if you have Make and Ocaml
-3.11 and menhir, you should be able to just follow the instructions
-for Linux.
+With Ocaml 3.11, menhir and the MinGW or cygwin suite installed
+compilation should be essentially the same as for Linux and MacOS, as
+described in section~\ref{sec:comp-under-linux}. Also see
+sections~\ref{sec:nomenhir} and~\ref{sec:nomake} on how to compile
+without menhir and Make.
 
 Note that a Windows precompiled executable may be available at
-%
-\begin{quote}
-  \url{http://hg.andrej.com/alg/tip/precompiled/}
-\end{quote}
+\url{http://math.andrej.com/alg}.
 
 \section{Input}
 \label{sec:input}
@@ -607,6 +640,8 @@ where \texttt{\textit{theory.th}} is the input file, and the options are:
   with theories that have predicates and relations. For theories with
   unary and binary operations the standard algorithm typically
   performs better.
+\item[\texttt{--version}]
+  Print out version information and exit.
 \item[\texttt{--help}]
   Print help.
 \end{description}
@@ -619,17 +654,27 @@ force search with a few optimizations. In the worst case its running
 time is doubly exponential in the size of the models because there are
 $n^{n^2}$ tables for a binary operation on a set of size $n$.
 
-Alg is optimized for \emph{equational} theories, i.e., those whose
-axioms are equations (semigroups, monoids, groups, rings, lattices,
-etc., but \emph{not} integral domains and fields). Alg takes advantage
-of commutativity, associativity and idempotent laws, and to a smaller
-extent of other kinds of equational laws, such as absorption and
-distributivity.
+Alg contains two diffrent algorithms, the \emph{default} and the
+\emph{alternative} one. As a rule of thumb you should use the
+default algorithm, unless the signature of your theory consists mostly
+of predicates and relations. In any case, since the performance is not
+easily predicted, you should try both algorithms and experiment by
+rewriting the theory in various equivalent ways.
 
-Alg checks axioms which are not equations, but does not perform any
-optimizations based on them. You should have as few non-equational
-axioms as possible. Furthermore, you should always push all the
-quantifiers inside. For example, instead of
+\subsection{The default algorithm}
+\label{sec:default-algorithm}
+
+The default alg algorithm is optimized for \emph{equational} theories,
+i.e., those whose axioms are equations (semigroups, monoids, groups,
+rings, lattices, etc., but \emph{not} integral domains and fields).
+Alg takes advantage of commutativity, associativity and idempotent
+laws, and to a smaller extent of other kinds of equational laws, such
+as absorption and distributivity.
+
+Alg performs few optimizations based on non-equational axioms. Thus
+you should try to reduce their number. Furthermore, in non-equational
+axioms the quantifiers should always be pushed inside as much as
+possible. For example, instead of
 %
 \begin{shell}
 Axiom: forall x, exists y, x <> 0 -> x * y = 1.
@@ -684,5 +729,32 @@ generate tables for one operation than another, so you should experiment
 by switching the order of declarations. For example, the theory of a
 ring works much faster if addition $+$ is declared before
 multiplication $\times$.
+
+\subsection{The alternative algorithm}
+\label{sec:altern-algor}
+
+The alternative algorithm transforms the given axioms into constraints
+that need to be satisfied. It then solves the constraints in all
+possible ways by intelligent backtracking. The general rules for
+efficient use of the alternative algorithm are the same as those for
+the default one.
+
+It turns out that the alternative algorithm generally performs worse
+than the default one when the theory consists mostly of operations.
+However, the alternative algorithm usually outperforms the default one
+for theories which constist mostly of relations.
+
+\section{Support and bug reports}
+\label{sec:support-bug-reports}
+
+Please send bug reports and whishes to the authors: Andrej Bauer
+(\texttt{Andrej.Bauer@andrej.com}) and Aleš Bizjak
+(\texttt{Ales.Bizjak0@gmail.com}). If you report a bug, please send us
+the exact version number of alg, as printed out with the
+\texttt{--version} command-line option.
+
+The Mathematics and Computation blog at
+\texttt{http://math.andrej.com} may contain further information and
+discussion about alg.
 
 \end{document}

@@ -22,8 +22,7 @@ linux:
 	else \
 		/bin/rm -rf alg-linux-* alg-*zip ; \
 		mkdir -p alg-linux-$(VERSION)/theories ; \
-		(cd .. ; make clean ; make native) ; \
-		(cd ../doc; latexmk -c ; latexmk -view=none -pdf manual.tex) ; \
+		(cd .. ; make clean ; make default) ; \
 		/bin/cp ../alg.native alg-linux-$(VERSION)/alg ; \
 		/bin/cp ../doc/manual.pdf alg-linux-$(VERSION)/manual.pdf ; \
 		/bin/cp ../theories/*.th alg-linux-$(VERSION)/theories ; \
@@ -40,8 +39,7 @@ mac:
 	else \
 		/bin/rm -rf alg-macosx-* alg-*.zip ; \
 		mkdir -p alg-macosx-$(VERSION)/theories ; \
-		(cd .. ; make clean ; make native) ; \
-		(cd ../doc; latexmk -c ; latexmk -view=none -pdf manual.tex) ; \
+		(cd .. ; make clean ; make default) ; \
 		/bin/cp ../alg.native alg-macosx-$(VERSION)/alg ; \
 		/bin/cp ../doc/manual.pdf alg-macosx-$(VERSION)/manual.pdf ; \
 		/bin/cp ../theories/*.th alg-macosx-$(VERSION)/theories ; \
@@ -65,8 +63,8 @@ windows:
 		/bin/cp ../theories/*.th alg-windows-$(VERSION)/theories ; \
 		zip -r alg-windows-$(VERSION).zip alg-windows-$(VERSION) ; \
 		/bin/rm -rf alg-windows-$(VERSION) ; \
-		echo "Precompiled Windows executable is now in alg-windows-$(VERSION).zip" ; \
-		echo "Type \"make publish\" to publish it on the web." ; \
+		echo "Precompiled Windows executable is now in alg-windows-$(VERSION)" ; \
+		echo "You will have to zip and publish it yourself. Good luck."
 	fi
 
 publish:
