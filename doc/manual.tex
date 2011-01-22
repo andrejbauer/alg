@@ -240,10 +240,11 @@ If you do not have menhir you can try the following trick:
 In other words:
 %
 \begin{shell}
-\$ mv lexer.mll parser.mly nomenhir
-\$ cp nomenhir/lexer.ml nomenhir/parserl.ml .
-\$ make
+$ mv lexer.mll parser.mly nomenhir
+$ cp nomenhir/lexer.ml nomenhir/parserl.ml .
+$ make
 \end{shell}
+% $ to stop Emacs from misccoloring the rest of the text.
 
 \subsubsection{Installation without Make}
 \label{sec:nomake}
@@ -511,7 +512,7 @@ with the \texttt{--format} command-line option:
 
 If you specify an output file with the \texttt{--output} option but no
 \texttt{--format}, alg guesses the correct format from the output
-filename.
+filename extension.
 
 \subsection{Redirection of output to a file}
 
@@ -613,7 +614,7 @@ where \texttt{\textit{theory.th}} is the input file, and the options are:
   Do not print out the models, just report the counts.
 \item[\texttt{--format \textit{<format>}}]
   Output in the given format. Supported formats are \texttt{text},
-  \texttt{html}, and \texttt{latex}.
+  \texttt{html}, \texttt{latex}, and \texttt{json}.
 \item[\texttt{--indecomposable}]
   Output only indecomposable models, i.e., those that are not products
   of smaller models.
