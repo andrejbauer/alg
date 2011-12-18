@@ -2,9 +2,9 @@ INSTALL_DIR=/usr/local/bin
 TARGET=alg
 OCAMLBUILD=ocamlbuild -use-menhir
 
-default: native nomenhir doc
+default: native nomenhir
 
-.PHONY: version.ml nomenhir doc
+.PHONY: version.ml nomenhir
 
 byte:	version.ml
 	$(OCAMLBUILD) $(TARGET).byte
@@ -30,11 +30,7 @@ install: native
 
 clean:
 	$(OCAMLBUILD) -clean
-	cd doc ; latexmk -C
 	/bin/rm -f parser.conflicts
-
-doc:
-	cd doc ; latexmk -view=none -pdf manual.tex
 
 version.ml:
 	export VERSION=`hg id --id` ; \
