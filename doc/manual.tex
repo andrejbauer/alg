@@ -61,7 +61,7 @@ make
 and run
 %
 \begin{shell}
-./alg.native --size 8 theories/unital_commutative_ring.th
+./src/alg.native --size 8 theories/unital_commutative_ring.th
 \end{shell}
 %
 For usage information type \texttt{./alg.native -help} and for
@@ -181,20 +181,19 @@ sudo port install caml-menhir
 
 \subsubsection{Compilation and installation}
 
-To compile alg, type \texttt{make native} at the command line. If all
-goes well ocamlbuild will generate a subdirectory \texttt{\_build} and
-in it the \texttt{alg.native} executable. It will also create a link
-to \texttt{\_build/alg.native} from the top directory. To test alg
-type
+To compile alg, type \texttt{make native} at the command line. If all goes well
+ocamlbuild will generate a subdirectory \texttt{src/\_build} and in it the
+\texttt{alg.native} executable. It will also create a link to
+\texttt{src/\_build/alg.native} from the \texttt{src} directory. To test alg type
 %
 \begin{shell}
-./alg.native --count --size 8 theories/group.th
+./src/alg.native --count --size 8 theories/group.th
 \end{shell}
 %
 It should tell you within seconds that there are 5 groups of size 8. 
 
 We provided only a very rudimentary installation procedure for alg.
-First edit the \texttt{INSTALL\_DIR} setting in \texttt{Makefile} to
+First edit the \texttt{INSTALL\_DIR} setting in \texttt{src/Makefile} to
 set the directory in which alg should be installed, then run
 %
 \begin{shell}
@@ -221,7 +220,7 @@ compiling to bytecode with
 make byte
 \end{shell}
 %
-This will generate a (significantly slower) \texttt{alg.byte} executable.
+This will generate a (significantly slower) \texttt{src/alg.byte} executable.
 
 \subsubsection{Installation without menhir}
 \label{sec:nomenhir}
@@ -229,17 +228,18 @@ This will generate a (significantly slower) \texttt{alg.byte} executable.
 If you do not have menhir you can try the following trick:
 %
 \begin{itemize}
-\item move the files \texttt{lexer.mll} and \texttt{parser.mly} out of
+\item move the files \texttt{src/lexer.mll} and \texttt{src/parser.mly} out of
   the way into some other folder,
-\item copy the files \texttt{nomenhir/lexer.ml} and
-  \texttt{nomenhir/parser.ml} to where \texttt{lexer.mll} and
-  \texttt{parser.mly} used to be,
+\item copy the files \texttt{src/nomenhir/lexer.ml} and
+  \texttt{src/nomenhir/parser.ml} to where \texttt{src/lexer.mll} and
+  \texttt{src/parser.mly} used to be,
 \item compile with \texttt{make}.
 \end{itemize}
 %
 In other words:
 %
 \begin{shell}
+$ cd src
 $ mv lexer.mll parser.mly nomenhir
 $ cp nomenhir/lexer.ml nomenhir/parserl.ml .
 $ make
@@ -253,10 +253,11 @@ If you do not have the Make utility (how can that be?) you can compile
 alg directly with ocamlbuild:
 %
 \begin{shell}
+cd src
 ocamlbuild -use-menhir alg.native
 \end{shell}
 %
-To install alg just copy \texttt{\_build/alg.native} to
+To install alg just copy \texttt{src/\_build/alg.native} to
 \texttt{/usr/local/bin/alg} or some other reasonable place.
 
 \subsection{Installation for Microsoft Windows}
