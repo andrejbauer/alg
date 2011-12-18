@@ -1,3 +1,4 @@
 .*~$
+version.ml
 ^doc/.*(aux|log|mtc.?|maf|toc)$
-^_build
+^src/_build
