@@ -1,0 +1,1 @@
+For instalation instructions see doc/manual.pdf.
