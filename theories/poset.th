@@ -1,0 +1,7 @@
+Theory Poset.
+Relation <=.
+Axiom reflexivity: x <= x.
+Axiom transitivity: not x <= z -> not (x <= y /\ y <= z).
+#Axiom transitivity: not (x <= y /\ y <= z) \/ x <= z.
+#Axiom antisymmetry: x <= y /\ y <= x -> x = y.
+Axiom antisymmetry: not (x <= y) \/ not (y <= x) \/ x = y.

@@ -1,0 +1,7 @@
+#Function as a left-total functional relation
+
+Theory Function.
+
+Relation F.
+Axiom left_total: exists y, F(x,y).
+Axiom functional: F(x,y) /\ F(x,z) => y = z.

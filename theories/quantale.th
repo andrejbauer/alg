@@ -1,0 +1,36 @@
+# The theory of a quantale
+
+Constant 1 0.
+Binary &. # meet
+Binary |. # join
+Binary *. # multiplication
+
+### Lattice structure
+# properties of 0 and 1
+Axiom: 0 | x = x.
+Axiom: x | 0 = x.
+Axiom: x | 1 = 1.
+Axiom: 1 | x = 1.
+Axiom: 1 & x = x.
+Axiom: x & 1 = x.
+Axiom: 0 & x = 0.
+Axiom: x & 0 = 0.
+
+# properties of meet
+Axiom: x & x = x.
+Axiom: x & y = y & x.
+Axiom: x & (y & z) = (x & y) & z.
+
+# properties of join
+Axiom: x | x = x.
+Axiom: x | y = y | x.
+Axiom: x | (y | z) = (x | y) | z.
+
+# absorption laws
+Axiom: x & (x | y) = x.
+Axiom: x | (x & y) = x.
+
+### Multiplication
+Axiom: x * (y * z) = (x * y) * z.
+Axiom: x * (y | z) = (x | y) * (x | z).
+Axiom: (y | z) * x = (y | x) * (z | x).

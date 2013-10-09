@@ -1,0 +1,14 @@
+Theory abelian_group.
+Constant 0.
+Unary ~.
+Binary +.
+
+Axiom: (x + y) + z = x + (y + z).
+Axiom: x + y = y + x.
+Axiom: 0 + x = x.
+Axiom: x + 0 = x.
+Axiom: x + ~ x = 0.
+Axiom: ~ x + x = 0.
+
+Theorem: ~ 0 = 0.
+Theorem: ~ (~ x) = x.

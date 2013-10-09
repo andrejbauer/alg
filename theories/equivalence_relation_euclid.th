@@ -1,0 +1,8 @@
+# Equivalence relation using euclidean axiom
+
+Theory equivalence_relation.
+
+Relation ==.
+
+Axiom reflexive: x == x.
+Axiom euclidean: x == y /\ x==z => y == z.

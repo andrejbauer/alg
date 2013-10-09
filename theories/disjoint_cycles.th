@@ -1,0 +1,9 @@
+Theory DisjointCycles.
+
+Relation -- .
+Axiom irreflexive: not (x -- x).
+Axiom symmety: x -- y -> y -- x.
+
+Axiom degreetwo: forall x, exists y, x -- y /\
+                           exists z, y <> z /\ x -- z /\
+                           forall w, w -- x -> w = y \/ w = z.

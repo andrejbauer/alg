@@ -1,0 +1,7 @@
+# Idempotent monoids
+Constant 1.
+Binary *.
+Axiom: x * x = x.
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: x * (y * z) = (x * y) * z.

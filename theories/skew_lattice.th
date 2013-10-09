@@ -1,0 +1,18 @@
+Theory skew_lattice.
+
+Binary & |.
+
+# properties of meet
+Axiom: x & x = x.
+Axiom: x & (y & z) = (x & y) & z.
+
+# properties of join
+Axiom: x | x = x.
+Axiom: x | (y | z) = (x | y) | z.
+
+# absorption laws
+Axiom: x & (x | y) = x.
+Axiom: (x | y) & y = y.
+Axiom: x | (x & y) = x.
+Axiom: (x & y) | y = y.
+

@@ -1,0 +1,12 @@
+Theory group.
+Constant 1.
+Unary inv.
+Binary *.
+
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: inv(1) = 1.
+Axiom: inv(inv(x)) = x.
+Axiom: x * inv(x) = 1.
+Axiom: inv(x) * x = 1.
+Axiom: (x * y) * z = x * (y * z).

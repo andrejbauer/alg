@@ -1,0 +1,6 @@
+.*~$
+version.ml
+^doc/.*(aux|log|mtc.?|maf|toc)$
+^src/_build
+^src/alg.native
+^src/alg.byte

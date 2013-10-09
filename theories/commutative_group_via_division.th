@@ -1,0 +1,8 @@
+# Abelian group axiomatized by division and a single axiom.
+$
+# Reference:
+# A. Tarski, Ein Beitrag zur Axiomatik der Abelschen Gruppen.
+# Fundamenta Mathematicae 30:253--256, 1938.
+
+Binary /.
+Axiom:  (x / (y / (z / (x / y)))) = z.

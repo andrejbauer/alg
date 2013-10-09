@@ -1,0 +1,8 @@
+Theory GraphWithoutTriangles.
+Relation -- .
+Axiom irreflexive: not (x -- x).
+Axiom symmety: x -- y -> y -- x.
+
+Axiom no_triangle: x -- y -> not (exists z, x -- z /\ y -- z).
+
+# Axiom no_triangle: x -- y -> forall z, not (x -- z) \/ not (y -- z).

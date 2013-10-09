@@ -1,0 +1,2 @@
+Relation R.
+Axiom: R(x,y) /\ R(y,x) -> x = y.

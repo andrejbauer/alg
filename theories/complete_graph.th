@@ -1,0 +1,6 @@
+Theory Graph.
+Relation -- .
+Axiom irreflexive: not (x -- x).
+Axiom symmety: x -- y -> y -- x.
+
+Axiom completeness: x != y -> x -- y.

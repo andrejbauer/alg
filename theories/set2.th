@@ -1,0 +1,4 @@
+# The theory of a set with two elements.
+
+Axiom at_least_two: exists x y, x <> y.
+Axiom at_most_two: forall x y z, x = y \/ y = z \/ z = x.

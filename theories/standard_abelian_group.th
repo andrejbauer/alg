@@ -1,0 +1,5 @@
+# Classical axioms for an abelian group
+Binary *.
+Axiom: (x * y) * z = x * (y * z).
+Axiom: x * y = y * x.
+Axiom: exists e, forall x, x * e = x /\ (exists y, x * y = e).

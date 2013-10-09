@@ -1,0 +1,19 @@
+# A unital commutative semiring is like a unital commtative ring without subtraction.
+
+Theory unital_commutative_semiring.
+
+Constant 0 1.
+Binary + *.
+
+Axiom: 0 + x = x.
+Axiom: x + 0 = x.
+Axiom: x + (y + z) = (x + y) + z.
+Axiom: x + y = y + x.
+
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: x * (y * z) = (x * y) * z.
+Axiom: x * y = y * x.
+
+Axiom: (x + y) * z = x * z + y * z.
+Axiom: x * (y + z) = x * y + x * z.

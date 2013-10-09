@@ -1,0 +1,24 @@
+# Tarski's high school algebra (according to Wikipedia, which is a bit fishy)
+Constant 1.
+Binary + * ^.
+
+### + is a commutative semigroup
+Axiom: x + y = y + x.
+Axiom: x + (y + z) = (x + y) + z.
+
+### (1,*) is a commutative monoid
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: x * y = y * x.
+Axiom: x * (y * z) = (x * y) * z.
+
+### distributivity of + and *
+Axiom: x * (y + z) = x * y + x * z.
+Axiom: (x + y) * z = x * z + y * z.
+
+### Exponentiation
+Axiom: 1 ^ x = 1.
+Axiom: x ^ 1 = x.
+Axiom: (x * y) ^ z = (x ^ z) * (y ^ z).
+Axiom: x ^ (y + z) = (x ^ y) * (x ^ z).
+Axiom: x ^ (y * z) = (x ^ y) ^ z.

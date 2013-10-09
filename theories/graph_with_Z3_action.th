@@ -1,0 +1,7 @@
+Theory Graph.
+Relation -- .
+Unary move.
+Axiom irreflexive: not (x -- x).
+Axiom symmetry: x -- y -> y -- x.
+Axiom order3: move(move(move(x))) = x.
+Axiom compatible: x -- y <-> move(x) -- move(y).

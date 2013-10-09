@@ -1,0 +1,13 @@
+# Partially ordered semigroup
+
+Binary *.
+Relation <=.
+
+Axiom: x * (y * z) = (x * y) * z.
+
+Axiom: a <= b => a * c <= b * c.
+Axiom: a <= b => c * a <= c * b.
+
+Axiom reflexivity: x <= x.
+Axiom transitivity: x <= y /\ y <= z -> x <= z.
+Axiom antisymmetry: x <= y /\ y <= x -> x = y.

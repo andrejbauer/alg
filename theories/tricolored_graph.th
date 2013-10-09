@@ -1,0 +1,11 @@
+Theory TriColoredGraph.
+Predicates red green blue.
+Relation --.
+Axiom irreflexive: not (x -- x).
+Axiom symmetric: x -- y -> y -- x.
+
+Axiom: red(x) \/ green(x) \/ blue(x).
+Axiom: red(x) -> not green(x) /\ not blue(x).
+Axiom: green(x) -> not red(x) /\ not blue(x).
+Axiom: blue(x) -> not red(x) /\ not green(x).
+Axiom: x -- y -> (red(x) -> not red(y)) /\ (green(x) -> not green(y)) /\ (blue(x) -> not blue(y)).

@@ -1,0 +1,6 @@
+# Monoids
+Constant 1.
+Binary *.
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: x * (y * z) = (x * y) * z.

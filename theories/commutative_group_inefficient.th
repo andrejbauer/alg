@@ -1,0 +1,10 @@
+# An inefficient axiomatization of abelian groups in which the unit
+# and the inverse are postulated to exist. It would be more efficient
+# to introduce them as a constant and a unary operation.
+
+Binary *.
+
+Axiom: (x * y) * z = x * (y * z).
+Axiom: x * y = y * x.
+Axiom: exists e, forall x, x * e = x /\ (exists y, x * y = e).
+

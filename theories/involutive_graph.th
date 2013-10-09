@@ -1,0 +1,10 @@
+Theory GraphWithInvolution.
+
+Relation --.
+Unary inv.
+
+Axiom irreflexive: not (x -- x).
+Axiom symmetric: x -- y -> y -- x.
+
+Axiom involution: inv(inv(x)) = x.
+Axiom action: x -- y -> inv(x) -- inv(y).

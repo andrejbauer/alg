@@ -1,0 +1,3 @@
+# The theory of two commuting functions
+Unary f g.
+Equation: f(g(x)) = g(f(x)).

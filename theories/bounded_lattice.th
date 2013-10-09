@@ -1,0 +1,29 @@
+# The theory of a bounded lattice.
+
+Constant 0 1.
+Binary &. # meet
+Binary |. # join
+
+# properties of 0 and 1
+Axiom: 0 | x = x.
+Axiom: x | 0 = x.
+Theorem: x | 1 = 1.
+Theorem: 1 | x = 1.
+Axiom: 1 & x = x.
+Axiom: x & 1 = x.
+Theorem: 0 & x = 0.
+Theorem: x & 0 = 0.
+
+# properties of meet
+Axiom: x & x = x.
+Axiom: x & y = y & x.
+Axiom: x & (y & z) = (x & y) & z.
+
+# properties of join
+Axiom: x | x = x.
+Axiom: x | y = y | x.
+Axiom: x | (y | z) = (x | y) | z.
+
+# absorption laws
+Axiom: x & (x | y) = x.
+Axiom: x | (x & y) = x.

@@ -1,0 +1,3 @@
+# Semigroup
+Binary *.
+Axiom: x * (y * z) = (x * y) * z.

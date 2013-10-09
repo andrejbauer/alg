@@ -1,0 +1,37 @@
+# Boolean algebra
+Constant 0 1.
+Unary ~.
+Binary & |.
+
+
+# properties of meet
+Axiom: x & y = y & x.
+Axiom: x & (y & z) = (x & y) & z.
+Axiom: x & ~x = 0.
+Theorem: x & x = x.
+Theorem: x & 1 = x.
+
+# properties of join
+Axiom: x | y = y | x.
+Axiom: x | (y | z) = (x | y) | z.
+Axiom: x | ~x = 1.
+Theorem: x | x = x.
+Theorem: x | 0 = x.
+
+# absorption laws
+Axiom: x & (x | y) = x.
+Axiom: x | (x & y) = x.
+
+#distributivity
+Axiom: x & (y | z) = (x & y) | (x & z).
+#Theorem: (y | z) & x = (y & x) | (z & x).
+
+Axiom: x | (y & z) = (x | y) & (x | z).
+#Theorem: (y & z) | x = (y | x) & (z | x).
+
+
+Theorem involution: ~(~x) = x.
+
+Theorem DeMorgan1: ~(x | y) = ~x & ~y.
+Theorem DeMorgan2: ~(x & y) = ~x | ~y.
+
