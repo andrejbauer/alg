@@ -5,7 +5,7 @@ module T = Theory
 type map_invariant = int array array
 
 type invariant = {
-  inv_size : int;
+  inv_size : int array;
   inv_unary : map_invariant array;
   inv_binary : map_invariant array;
   inv_predicates : int array;
@@ -24,7 +24,7 @@ type cache = {
 type algebra = {
   mutable alg_name : string option;
   alg_prod : string list option;
-  alg_size : int;
+  alg_size : int array;
   alg_const : int array;
   alg_unary : int array array;
   alg_binary : int array array array;
@@ -33,18 +33,27 @@ type algebra = {
 }
 
 (* An algebra with all -1's. *)
-let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_relations=r} =
-  if n < Array.length c
-  then Error.fatal "Algebra.empty: cannot create an algebra of size %d with %d constants." n (Array.length c)
-  else {
+let empty ns {T.th_sort=s; T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_relations=r} =
+  if Array.length ns <> Array.length s
+  then Error.fatal "Algebra.empty: invalid size argument" ;
+  {
     alg_name = None;
     alg_prod = None;
-    alg_size = n;
-    alg_const = Array.init (Array.length c) (fun i -> i);
-    alg_unary = Array.create_matrix (Array.length u) n (-1);
-    alg_binary = Array.init (Array.length b) (fun i -> Array.create_matrix n n (-1));
-    alg_predicates = Array.create_matrix (Array.length p) n (-1);
-    alg_relations = Array.init (Array.length r) (fun i -> Array.create_matrix n n (-1));
+    alg_size = ns;
+    alg_const =
+      begin
+        let c_count = Array.make (Array.length s) (-1) in
+        Array.map (fun (_,k) ->
+          c_count.(k) <- c_count.(k) + 1 ;
+          if c_count.(k) >= ns.(k) then
+            Error.fatal "Algebra.empty: too many constants of sort %s" s.(k) ;
+          c_count.(k))
+          c ;
+      end ;
+    alg_unary = Array.map (fun (_,k,_) -> Array.make ns.(k) (-1)) u;
+    alg_binary = Array.map (fun (_,k1,k2,_) -> Array.create_matrix ns.(k1) ns.(k2) (-1)) b;
+    alg_predicates = Array.map (fun (_,k) -> Array.make ns.(k) (-1)) p;
+    alg_relations = Array.map (fun (_,k1,k2) -> Array.create_matrix ns.(k1) ns.(k2) (-1)) r
   }
 
 (* For faster isomorphism checking we define invariants for structures.
@@ -70,9 +79,11 @@ let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_
         x_0 = x
         x_{k+1} = f (x_k, x)
 
-   * for a predicate or relation the corresponding invariant is the number of
-     elements or pairs that satisfy it (a better one would be a count of how
-     many elements of each in/out degree we have).
+   * for a predicate the corresponding invariant is the number of
+     elements that satisfy it
+
+   * for a relation the corresponding invariant is the count
+     of how many elements of each in/out degree we have.
 *)
 
 exception Result of (int * int)
@@ -144,8 +155,8 @@ let relation_invariant r =
 
 let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} = 
   { inv_size = n ;
-    inv_unary = Array.map (fun u -> unary_invariant (fun k -> u.(k)) n) us;
-    inv_binary = Array.map (fun b -> binary_invariant (fun k l -> b.(k).(l)) n) bs;
+    inv_unary = Array.map (fun (u,k,_) -> unary_invariant (fun k -> u.(k)) n.(k)) us;
+    inv_binary = Array.map (fun (b,k1,k2,k3) -> binary_invariant (fun k l -> b.(k).(l)) n) bs;
     inv_predicates = Array.map predicate_invariant ps;
     inv_relations = Array.map relation_invariant rs;
   } 

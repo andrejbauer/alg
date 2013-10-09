@@ -4,8 +4,10 @@
    the original operation names so that results can be printed. *)
 type operation = int
 type relation = int
+
 type operation_name = string
 type relation_name = string
+type sort_name = string
 
 type variable = int
 
@@ -20,7 +22,7 @@ type term =
 (* An equation. *)
 type equation' = term * term
 
-type equation = int * equation'
+type equation = int array * equation' (* types of variables with an equation *)
 
 (* A raw formula. *)
 type formula' = 
@@ -29,8 +31,8 @@ type formula' =
   | Predicate of relation * term
   | Relation of relation * term * term
   | Equal of term * term
-  | Forall of variable * formula'
-  | Exists of variable * formula'
+  | Forall of variable * int * formula'
+  | Exists of variable * int * formula'
   | And of formula' * formula'
   | Or of formula' * formula'
   | Imply of formula' * formula'
@@ -43,11 +45,12 @@ and formula = int array * formula'
 
 type theory = {
   th_name : string;
-  th_const : operation_name array;
-  th_unary : operation_name array;
-  th_binary : operation_name array;
-  th_predicates : relation_name array;
-  th_relations : relation_name array;
+  th_sort : sort_name array;
+  th_const : (operation_name * int) array;
+  th_unary : (operation_name * int * int) array;
+  th_binary : (operation_name * int * int * int) array;
+  th_predicates : (relation_name * int) array;
+  th_relations : (relation_name * int * int) array;
   th_equations : equation list;
   th_axioms : formula list
 }
@@ -74,8 +77,8 @@ let rec subst_formula x t = function
   | Or (f1, f2) -> Or (subst_formula x t f1, subst_formula x t f2)
   | Imply (f1, f2) -> Imply (subst_formula x t f1, subst_formula x t f2)
   | Iff (f1, f2) -> Iff (subst_formula x t f1, subst_formula x t f2)
-  | Forall (y, f) -> Forall (y, subst_formula x t f)
-  | Exists (y, f) -> Exists (y, subst_formula x t f)
+  | Forall (y, k, f) -> Forall (y, k, subst_formula x t f)
+  | Exists (y, k, f) -> Exists (y, k, subst_formula x t f)
 
 (* Conversion to string, for debugging purposes. *)
 let embrace s = "(" ^ s ^ ")"
@@ -101,12 +104,13 @@ let rec string_of_formula' = function
   | Or (f1, f2) -> embrace (string_of_formula' f1) ^ " \\/ " ^ embrace (string_of_formula' f2)
   | Imply (f1, f2) -> embrace (string_of_formula' f1) ^ " -> " ^ embrace (string_of_formula' f2)
   | Iff (f1, f2) -> embrace (string_of_formula' f1) ^ " <-> " ^ embrace (string_of_formula' f2)
-  | Forall (x,f) -> "forall x" ^ string_of_int x ^ ", " ^ string_of_formula' f
-  | Exists (x,f) -> "exists x" ^ string_of_int x ^ ", " ^ string_of_formula' f
+  | Forall (x,k,f) -> "forall x : ?" ^ string_of_int x ^ ", " ^ string_of_formula' f
+  | Exists (x,k,f) -> "exists x : ?" ^ string_of_int x ^ ", " ^ string_of_formula' f
 
 let string_of_formula (a, f) = string_of_int (Array.length a) ^ " |- " ^ string_of_formula' f
 
 let string_of_theory {th_name=name;
+                      th_sort=sort;
                       th_const=const;
                       th_unary=unary;
                       th_binary=binary;
@@ -115,10 +119,10 @@ let string_of_theory {th_name=name;
                       th_equations=equations;
                       th_axioms=axioms} =
   "Theory: " ^ name ^ "\n" ^
-  "Constant: " ^ String.concat " " (Array.to_list const) ^ "\n" ^
-  "Unary: " ^ String.concat " " (Array.to_list unary) ^ "\n" ^
-  "Binary: " ^ String.concat " " (Array.to_list binary) ^ "\n" ^
-  "Predicates: " ^ String.concat " " (Array.to_list predicates) ^ "\n" ^
-  "Relations: " ^ String.concat " " (Array.to_list relations) ^ "\n" ^
+  "Constant: " ^ String.concat ", " (List.map (fun (c,k) -> c ^ " : " ^ sort.(k)) (Array.to_list const)) ^ "\n" ^
+  "Unary: " ^ String.concat " "  (List.map (fun (u,k1,k2) -> u ^ " : " ^ sort.(k1) ^ " -> " ^ sort.(k2)) (Array.to_list unary)) ^ "\n" ^
+  "Binary: " ^ String.concat " " (List.map (fun (b,k1,k2,k3) -> b ^ " : " ^ sort.(k1) ^ " * " ^ sort.(k2) ^ " -> " ^ sort.(k3)) (Array.to_list binary)) ^ "\n" ^
+  "Predicates: " ^ String.concat " "  (List.map (fun (p,k1) -> p ^ " : " ^ sort.(k1) ^ " -> bool") (Array.to_list predicates)) ^ "\n" ^
+  "Relations: " ^ String.concat " " (List.map (fun (r,k1,k2) -> r ^ " : " ^ sort.(k1) ^ " * " ^ sort.(k2) ^ " -> bool") (Array.to_list relations)) ^ "\n" ^
   "Equations:\n" ^ String.concat "\n" (List.map (fun (_,e) -> string_of_equation e) equations) ^ "\n" ^
   "Axioms:\n" ^ String.concat "\n" (List.map string_of_formula axioms) ^ "\n"
