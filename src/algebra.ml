@@ -21,7 +21,7 @@ let empty ns
      Theory.th_predicates=p;
      Theory.th_relations=r} =
   if Array.length ns <> Array.length s
-  then Error.fatal "Algebra.empty: invalid size argument" ;
+  then Error.internal_error ~loc:Common.Nowhere "Algebra.empty: invalid size argument" ;
   {
     alg_name = None;
     alg_prod = None;
@@ -32,7 +32,8 @@ let empty ns
         Array.map (fun (_,k) ->
           c_count.(k) <- c_count.(k) + 1 ;
           if c_count.(k) >= ns.(k) then
-            Error.fatal "Algebra.empty: too many constants of sort %s" s.(k) ;
+            Error.internal_error ~loc:Common.Nowhere
+              "Algebra.empty: too many constants of sort %s" s.(k) ;
           c_count.(k))
           c ;
       end ;

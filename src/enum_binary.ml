@@ -35,7 +35,7 @@ let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr} =
   in List.iter apply_simple simple
 
 (* Apply one variable shallow axioms to the binary_arr operation tables. *)
-let apply_one_var_shallow one_var_shallow {alg_size=ns;
+let apply_one_var_shallow one_var_shallow {alg_size=n;
                                            alg_unary=unary_arr;
                                            alg_binary=binary_arr} =
   (*
