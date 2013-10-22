@@ -1,5 +1,4 @@
 %{
-  open Syntax
 %}
 
 %token THEORY
@@ -31,21 +30,22 @@ theory_name:
   | THEORY n = IDENT DOT
     { n }
 
-theory_entry:
+theory_entry: mark_position(plain_theory_entry) { $1 }
+plain_theory_entry:
   | CONSTANT lst = nonempty_list(name)
-    { Constant lst }
+    { Syntax.Constant lst }
   | UNARY lst = nonempty_list(name_or_prefix)
-    { Unary lst }
+    { Syntax.Unary lst }
   | BINARY lst = nonempty_list(name_or_op)
-    { Binary lst }
+    { Syntax.Binary lst }
   | PREDICATE lst = nonempty_list(name_or_prefix)
-    { Predicate lst }
+    { Syntax.Predicate lst }
   | RELATION lst = nonempty_list(name_or_op)
-    { Relation lst }
+    { Syntax.Relation lst }
   | AXIOM n = option(IDENT) COLON a = expr
-    { Axiom (n, a) }
+    { Syntax.Axiom (n, a) }
   | THEOREM n = option(IDENT) COLON a = expr
-    { Axiom (n, a) }
+    { Syntax.Axiom (n, a) }
 
 name:
   | x = IDENT { x }
@@ -74,112 +74,147 @@ name_or_op:
   | op = INFIXOP4
     { op }
 
-args:
-  | 
-    { [] }
-  | t = term
-    { [t] }
-  | t = term COMMA ts = args
-    { t :: ts }
-
-expr:
-  | f = quantified_expr
-  | f = iff_expr
-  | f = imply_expr
+formula: mark_position(plain_formula) { $1 }
+plain_formula:
+  | f = plain_quantified_formula
+    { f }
+  | f = plain_iff_formula
+    { f }
+  | f = plain_imply_formula
     { f }
 
-expr_noquant:
-  | f = quantified_expr
-  | f = imply_expr
-  | f = iff_expr_noquant
+formula_noquant: mark_position(plain_formula_noquant) { $1 }
+plain_formula_noquant:
+  | f = plain_quantified_formula
+    { f }
+  | f = plain_imply_formula
+    { f }
+  | f = plain_iff_formula_noquant
     { f }
 
-quantified_expr:
-  | FORALL xs = vars COMMA f = expr_noquant
-    { List.fold_right (fun x f -> Forall (x, f)) xs f }
-  | EXISTS xs = vars COMMA f = expr_noquant
-    { List.fold_right (fun x f -> Exists (x, f)) xs f }
+quantified_formula: mark_position(plain_quantified_formula) { $1 }
+plain_quantified_formula:
+  | FORALL xs = vars COMMA f = formula_noquant
+    { List.fold_right (fun x f -> Syntax.Forall (x, f)) xs f }
+  | EXISTS xs = vars COMMA f = formula_noquant
+    { List.fold_right (fun x f -> Syntax.Exists (x, f)) xs f }
 
-iff_expr_noquant:
-  | f1 = or_expr_noquant IFF f2 = or_expr_noquant
-    { Iff (f1, f2) }
+iff_formula_noquant: mark_position(plain_iff_formula_noquant) { $1 }
+plain_iff_formula_noquant:
+  | f1 = or_formula_noquant IFF f2 = or_formula_noquant
+    { Syntax.Iff (f1, f2) }
 
-iff_expr:
-  | f1 = or_expr_noquant IFF f2 = or_expr
-    { Iff (f1, f2) }
+iff_formula: mark_position(plain_iff_formula) { $1 }
+plain_iff_formula:
+  | f1 = or_formula_noquant IFF f2 = or_formula
+    { Syntax.Iff (f1, f2) }
 
-imply_expr:
-  | f1 = or_expr_noquant IMPLY f2 = expr
-    { Imply (f1, f2) }
-  | f = or_expr
+imply_formula: mark_position(plain_imply_formula) { $1 }
+plain_imply_formula:
+  | f1 = or_formula_noquant IMPLY f2 = formula
+    { Syntax.Imply (f1, f2) }
+  | f = plain_or_formula
     { f }
 
-or_expr:
-  | f1 = or_expr_noquant OR f2 = and_expr
-    { Or (f1, f2) }
-  | f1 = or_expr_noquant OR f2 = quantified_expr
-    { Or (f1, f2) }
-  | f = and_expr
+or_formula: mark_position(plain_or_formula) { $1 }
+plain_or_formula:
+  | f1 = or_formula_noquant OR f2 = and_formula
+    { Syntax.Or (f1, f2) }
+  | f1 = or_formula_noquant OR f2 = quantified_formula
+    { Syntax.Or (f1, f2) }
+  | f = and_formula
     { f }
 
-or_expr_noquant:
-  | f1 = or_expr_noquant OR f2 = and_expr_noquant
-    { Or (f1, f2) }
-  | f = and_expr_noquant
+or_formula_noquant: mark_position(plain_or_formula_noquant) { $1 }
+plain_or_formula_noquant:
+  | f1 = or_formula_noquant OR f2 = and_formula_noquant
+    { Syntax.Or (f1, f2) }
+  | f = plain_and_formula_noquant
     { f }
 
-and_expr:
-  | f1 = and_expr_noquant AND f2 = negation_expr
-  | f1 = and_expr_noquant AND f2 = quantified_expr
-    { And (f1, f2) }
-  | f = negation_expr
+and_formula: mark_position(plain_and_formula) { $1 }
+plain_and_formula:
+  | f1 = and_formula_noquant AND f2 = negation_formula
+    { Syntax.And (f1, f2) }
+  | f1 = and_formula_noquant AND f2 = quantified_formula
+    { Syntax.And (f1, f2) }
+  | f = plain_negation_formula
     { f }
 
-and_expr_noquant:
-  | f1 = and_expr_noquant AND f2 = negation_expr_noquant
-    { And (f1, f2) }
-  | f = negation_expr_noquant
+and_formula_noquant: mark_position(plain_and_formula_noquant) { $1 }
+plain_and_formula_noquant:
+  | f1 = and_formula_noquant AND f2 = negation_formula_noquant
+    { Syntax.And (f1, f2) }
+  | f = negation_formula_noquant
     { f }
 
-negation_expr:
-  | NOT f = negation_expr
-  | NOT f = quantified_expr
-    { Not f }
-  | f = atomic_expr
+negation_formula: mark_position(plain_negation_formula) { $1 }
+plain_negation_formula:
+  | NOT f = negation_formula
+    { Syntax.Not f }
+  | NOT f = quantified_formula
+    { Syntax.Not f }
+  | f = plain_atomic_formula
     { f }
 
-negation_expr_noquant:
-  | NOT f = negation_expr_noquant
-    { Not f }
-  | f = atomic_expr
+negation_formula_noquant: mark_position(plain_negation_formula_noquant) { $1 }
+plain_negation_formula_noquant:
+  | NOT f = negation_formula_noquant
+    { Syntax.Not f }
+  | f = plain_atomic_formula
     { f }
 
-atomic_expr:
-  | t = term
-     { t }
-  | t1 = term EQUAL t2 = term
-    { Equal (t1, t2) }
-  | t1 = term NOTEQUAL t2 = term
-    { Not (Equal (t1, t2)) }
+atomic_formula: mark_position(plain_atomic_formula) { $1 }
+plain_atomic_formula:
   | TRUE
-    { True }
+    { Syntax.True }
   | FALSE
-    { False }
+    { Syntax.False }
+  | t1 = term EQUAL t2 = term
+    { Syntax.Equal (t1, t2) }
+  | t1 = term NOTEQUAL t2 = term
+    { Syntax.Not (Syntax.Equal (t1, t2)) }
+  | f = plain_predicate
+    { f }
+  | f = plain_relation
+    { f }
 
-term:
-  | t1 = term op = binop t2 = term
-    { Apply (op, [t1;t2]) }
+predicate: mark_position(plain_predicate) { $1 }
+plain_predicate:
   | op = PREFIXOP t = simple_term
-    { Apply (op, [t]) }
-  | t = simple_term
+    { Syntax.Predicate (op, t) }
+  | op = name t = simple_term
+    { Syntax.Predicate (op, t) }
+
+relation:
+  | t1 = term op = binop t2 = term
+    { Syntax.Relation (op, t1, t2) }
+  | op = name LPAREN t1 = term COMMA t2 = term RPAREN
+    { Syntax.Relation (op, t1, t2) }
+
+term: mark_position(plain_term) { $1 }
+plain_term:
+  | t1 = term op = binop t2 = term
+    { Syntax.BinaryOp (op, t1, t2) }
+  | op = PREFIXOP t = app_term
+    { Syntax.UnaryOp (op, t) }
+  | t = app_term
     { t }
 
-simple_term:
+app_term: mark_position(plain_app_term) { $1 }
+plain_app_term:
+  | op = name t = simple_term
+    { Syntax.UnaryOp (op, t) }
+  | op = name LPAREN t1 = term COMMA t2 = term RPAREN
+    { Syntax.BinaryOp (op, t1, t2) }
+  | t = plain_simple_term
+    { t }
+
+simple_term: mark_position(plain_simple_term) { $1 }
+plain_simple_term:
   | x = name
-    { Var x }
-  | op = name LPAREN lst = args RPAREN
-    { Apply (op, lst) }
-  | LPAREN t = expr RPAREN
+    { Syntax.Var x }
+  | LPAREN t = plain_term RPAREN
     { t }
 
 vars:
