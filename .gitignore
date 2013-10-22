@@ -7,3 +7,6 @@
 *.cmx
 *.cmxs
 *.cmxa
+src/version.ml
+src/_build
+_build

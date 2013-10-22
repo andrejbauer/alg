@@ -35,14 +35,14 @@ let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr} =
   in List.iter apply_simple simple
 
 (* Apply one variable shallow axioms to the binary_arr operation tables. *)
-let apply_one_var_shallow one_var_shallow {alg_size=n;
+let apply_one_var_shallow one_var_shallow {alg_size=ns;
                                            alg_unary=unary_arr;
                                            alg_binary=binary_arr} =
   (*
     Apply one variable shallow axioms. Typical example is axioms for
     a unit element in a monoid (forall a: a * e = e)
   *)
-  let apply_one_var (_,axiom) elem =
+  let apply_one_var (_,axiom) (elem, sort) =
     let rec get_value = function
       | (Const c) -> c
       | (Var _) -> elem
@@ -60,7 +60,7 @@ let apply_one_var_shallow one_var_shallow {alg_size=n;
           binary_arr.(op).(v1).(v2) <- v3
       | _ -> invalid_arg "not a legal axiom in apply_one_var"
   in
-  for i=0 to n-1 do
+  for i = 0 to n - 1 do
     List.iter (fun x -> apply_one_var x i) one_var_shallow
   done
 

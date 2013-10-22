@@ -33,7 +33,7 @@ clean:
 	/bin/rm -f parser.conflicts
 
 version.ml:
-	export VERSION=`git describe --always --long` ; \
+	export VERSION=`git log -1 --format="%H"` ; \
 	export OS=`uname` ; \
 	export DATE=`date +%Y-%m-%d` ; \
 	echo "let version = \"$$VERSION\" ;; let os = \"$$OS\" ;; let date = \"$$DATE\"" > version.ml

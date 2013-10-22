@@ -278,7 +278,7 @@ let enum n ({th_const=const;
             reset_stack () ;
             Enum_binary.apply_simple_binary simple_binary alg ;
             Enum_binary.apply_one_var_shallow one_var_shallow alg ;
-            check_after_add () ; (* TODO: Move this into the above functions. *)
+            check_after_add () ; (* XXX: Move this into the above functions. *)
             if not (check ()) then raise Enum_binary.Contradiction ; (* We might be lucky and fill everything already. *)
             Enum_binary.gen_binary th alg binary_dos binary_undos check cont_rel_pred
           with Enum_binary.Contradiction -> () in

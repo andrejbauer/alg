@@ -18,7 +18,7 @@ let eval_term {alg_const=c; alg_unary=u; alg_binary=b} vars t =
 
 (* Check if formula f is valid for algebra alg. *)
 let check_formula alg (vars,f) =
-  let n = alg.alg_size in
+  let ns = alg.alg_size in
   let rec eval = function
     | False -> false
     | True -> true
@@ -31,19 +31,19 @@ let check_formula alg (vars,f) =
     | Or (f1,f2) -> eval f1 || eval f2
     | Imply (f1,f2) -> eval f1 <= eval f2
     | Iff (f1, f2) -> eval f1 = eval f2
-    | Forall (i,f) ->
+    | Forall (i,s, f) ->
         let b = ref true in
         let v = ref 0 in
-          while !b && !v < n do
+          while !b && !v < ns.(s) do
             vars.(i) <- !v ;
             b := eval f ;
             incr v
           done ;
           !b
-    | Exists (i,f) ->
+    | Exists (i,s,f) ->
         let b = ref false in
         let v = ref 0 in
-          while not !b && !v < n do
+          while not !b && !v < ns.(s) do
             vars.(i) <- !v ;
             b := eval f ;
             incr v

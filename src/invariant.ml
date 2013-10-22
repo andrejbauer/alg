@@ -1,0 +1,153 @@
+(* For faster isomorphism checking we define invariants for structures.
+
+   Suppose f : {0,..,n} -> {0,..,n} is a map. For each x in {0,...,n} the sequence
+
+      x_0 = x
+      x_{k+1} = f (x_k)
+
+   is eventually periodic, i.e., there are minimal i and j such that 0 <= i < j <= n
+   and x_i = f(x_j). We call the pair (i,j) the "eventual period" of x. Given a pair
+   (i,j), let N_f(i,j) be the number of elements x whose eventual period is (i,j).
+   Then N_f is an invariant for f, i.e., if b : {0,...,n} -> {0,...n} is a bijection
+   then N_f = N_{b^{-1} o f o b}.
+
+   We define invariants for the operations and relations of an algebra as follows:
+
+   * for each unary operation f the corresponding invariant is N_f
+
+   * for each binary operation f we define the eventual period (i,j) of x as in the
+     case of a map except that we consider the sequence
+
+        x_0 = x
+        x_{k+1} = f (x_k, x)
+
+   * for a predicate the corresponding invariant is the number of
+     elements that satisfy it
+
+   * for a relation the corresponding invariant is the count
+     of how many elements of each in/out degree we have.
+*)
+
+type map_invariant = int array array
+
+type invariant = {
+  inv_size : int array; (* sizes of sorts *)
+  inv_unary : map_invariant array;
+  inv_binary : map_invariant array;
+  inv_predicates : int array;
+  inv_relations : (int array * int array) array;
+}
+
+(* 
+   indegs.(r).(i) is a list of element indices with in degree i in relation r and
+   similar for out degrees.
+*)
+type cache = {
+  indegs : int list array array;
+  outdegs : int list array array;
+}
+
+exception Result of (int * int)
+
+let unary_invariant f n =
+  let t = Array.make (n+1) 0 in
+  let eventual_period f x =
+    try
+      t.(0) <- x ;
+      for j = 1 to n do
+        t.(j) <- f t.(j-1) ;
+        for i = 0 to j-1 do
+          if t.(i) = t.(j) then raise (Result (i,j))
+        done
+      done ;
+      Error.fatal "map_invariant: internal error"
+    with Result r -> r
+  in
+  let a = Array.init n (fun j -> Array.make (j+1) 0) in
+    for x = 0 to n - 1 do
+      let (i,j) = eventual_period f x in
+        a.(j-1).(i) <- a.(j-1).(i) + 1
+    done ;
+    a
+
+let binary_invariant f n =
+  let t = Array.make (n+1) 0 in
+  let eventual_period f x =
+    try
+      t.(0) <- x ;
+      for j = 1 to n do
+        t.(j) <- f x t.(j-1) ;
+        for i = 0 to j-1 do
+          if t.(i) = t.(j) then raise (Result (i,j))
+        done
+      done ;
+      Error.fatal "map_invariant: internal error"
+    with Result r -> r
+  in
+  let a = Array.init n (fun j -> Array.make (j+1) 0) in
+    for x = 0 to n - 1 do
+      let (i,j) = eventual_period f x in
+        a.(j-1).(i) <- a.(j-1).(i) + 1
+    done ;
+    a
+
+let predicate_invariant p =
+  let k = ref 0 in
+    for i = 0 to Array.length p - 1 do
+      if p.(i) = 1 then incr k
+    done ;
+    !k
+
+let relation_invariant r =
+  let outdeg = Array.make (Array.length r) 0 in
+  let indeg = Array.make (Array.length r) 0 in
+  for i = 0 to Array.length r - 1 do
+    for j = 0 to Array.length r.(i) - 1 do
+      if r.(i).(j) = 1 then 
+        begin
+          outdeg.(i) <- outdeg.(i) + 1;
+          indeg.(j) <- indeg.(j) + 1
+        end
+    done
+  done ;
+  Array.sort compare outdeg; Array.sort compare indeg;
+  (indeg, outdeg)
+    
+
+let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} = 
+  { inv_size = n ;
+    inv_unary = Array.map (fun (u,k,_) -> unary_invariant (fun k -> u.(k)) n.(k)) us;
+    inv_binary = Array.map (fun (b,k1,k2,k3) -> binary_invariant (fun k l -> b.(k).(l)) n) bs;
+    inv_predicates = Array.map predicate_invariant ps;
+    inv_relations = Array.map relation_invariant rs;
+  } 
+
+let relation_cache r =
+  let outdeg = Array.make (Array.length r) 0 in
+  let indeg = Array.make (Array.length r) 0 in
+  for i = 0 to Array.length r - 1 do
+    for j = 0 to Array.length r.(i) - 1 do
+      if r.(i).(j) = 1 then 
+        begin
+          outdeg.(i) <- outdeg.(i) + 1;
+          indeg.(j) <- indeg.(j) + 1
+        end
+    done
+  done ;
+  (* One vertex can be connected to at most n-1 other + itself *)
+  let outdegs = Array.make (Array.length r + 1) [] in
+  let indegs = Array.make (Array.length r + 1) [] in
+  Array.iteri (fun i a -> outdegs.(a) <- i :: outdegs.(a)) outdeg ;
+  Array.iteri (fun i a -> indegs.(a) <- i :: indegs.(a)) indeg ;
+
+  indegs, outdegs
+
+let make_cache {alg_relations=rs} = 
+  let rc = Array.map relation_cache rs in
+  {indegs = Array.map fst rc; outdegs = Array.map snd rc}
+
+(* if cache is given it must correspond to algebra a.*)
+let with_cache ?cache a = let ac = match cache with Some c -> c | None -> make_cache a in
+                          (a, ac)
+
+let wo_cache a = fst a
