@@ -35,7 +35,7 @@ type algebra = {
 (* An algebra with all -1's. *)
 let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_relations=r} =
   if n < Array.length c
-  then Error.fatal "Algebra.empty: cannot create an algebra of size %d with %d constants." n (Array.length c)
+  then Error.internal_error "Algebra.empty: cannot create an algebra of size %d with %d constants." n (Array.length c)
   else {
     alg_name = None;
     alg_prod = None;
@@ -88,7 +88,7 @@ let unary_invariant f n =
           if t.(i) = t.(j) then raise (Result (i,j))
         done
       done ;
-      Error.fatal "map_invariant: internal error"
+      Error.internal_error "algebra.ml -- map_invariant"
     with Result r -> r
   in
   let a = Array.init n (fun j -> Array.make (j+1) 0) in
@@ -109,7 +109,7 @@ let binary_invariant f n =
           if t.(i) = t.(j) then raise (Result (i,j))
         done
       done ;
-      Error.fatal "map_invariant: internal error"
+      Error.internal_error "algebra.ml -- map_invariant"
     with Result r -> r
   in
   let a = Array.init n (fun j -> Array.make (j+1) 0) in

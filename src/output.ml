@@ -594,6 +594,6 @@ struct
           (String.concat ", " (List.map (fun (n,k) -> "[" ^ string_of_int n ^ "," ^ string_of_int k ^ "]") lst))
       end;
 
-      interrupted = begin fun () -> Error.fatal "interrupted by the user while producing JSON output" end;
+      interrupted = begin fun () -> Error.runtime_error "interrupted by the user while producing JSON output" end;
     }
 end

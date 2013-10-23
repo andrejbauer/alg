@@ -24,9 +24,9 @@ let print ?(max_level=9999) ?(at_level=0) ppf =
 (** Print the given source code position. *)
 let print_position loc ppf =
   match loc with
-  | Nowhere ->
+  | Common.Nowhere ->
       Format.fprintf ppf "unknown position"
-  | Position (begin_pos, end_pos) ->
+  | Common.Position (begin_pos, end_pos) ->
       let begin_char = begin_pos.Lexing.pos_cnum - begin_pos.Lexing.pos_bol in
       let end_char = end_pos.Lexing.pos_cnum - begin_pos.Lexing.pos_bol in
       let begin_line = begin_pos.Lexing.pos_lnum in
@@ -34,7 +34,7 @@ let print_position loc ppf =
 
       if String.length filename != 0 then
         Format.fprintf ppf "file %S, line %d, charaters %d-%d"
-                             filename begin_line begin_char end_char
+                             filename (begin_line+1) begin_char end_char
       else
         Format.fprintf ppf "line %d, characters %d-%d" (begin_line-1) begin_char end_char
 
@@ -46,3 +46,27 @@ let print_sequence ?(sep="") f lst ppf =
     | x :: xs -> print ppf "%t%s@ " (f x) sep ; seq xs
   in
     seq lst
+
+(** Support for printing of errors at various levels of verbosity. *)
+
+let verbosity = ref 2
+
+(** Print a message at a given location [loc] of message type [msg_type] and
+    verbosity level [v]. *)
+let print_message ?(loc=Common.Nowhere) msg_type v =
+  if v <= !verbosity then
+    begin
+      match loc with
+        | Common.Nowhere ->
+          Format.eprintf "%s:@\n@[" msg_type ;
+          Format.kfprintf (fun ppf -> Format.fprintf ppf "@]@.") Format.err_formatter
+        | Common.Position _ ->
+          Format.eprintf "%s at %t:@\n@[" msg_type (print_position loc) ;
+          Format.kfprintf (fun ppf -> Format.fprintf ppf "@]@.") Format.err_formatter
+    end
+  else
+    Format.ifprintf Format.err_formatter
+
+
+(** Print an error. *)
+let error (loc, err_type, msg) = print_message ~loc err_type 1 "%s" msg

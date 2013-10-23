@@ -70,7 +70,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
        with a count of how many table entries need to be filled in for the term to 
        become completely evaluated. *)
     let rec eval_term = function
-      | Var i -> Error.fatal "eval_term: variable encountered"
+      | Var i -> Error.internal_error "eval_term: variable encountered"
       | Elem e -> TValue e
       | Const i -> TValue const.(i) (* NB: We assume constants are always defined. *)
       | Unary (op, t) ->
@@ -191,15 +191,15 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
                       else FPartial (Iff (f2, f1), (k1+k2,m1+m2))
                 end
           end
-      | Forall _ -> Error.fatal "eval_formula: forall encountered"
-      | Exists _ -> Error.fatal "eval_formula: exists encountered"
+      | Forall _ -> Error.internal_error "eval_formula: forall encountered"
+      | Exists _ -> Error.internal_error "eval_formula: exists encountered"
     in
 
     (* Force [t] to have value [v]. Pass the results, if any, to continuation [k]. *)
     let rec force_term t v k =
       match t with
-        | Var i -> Error.fatal "force_term: variable encountered"
-        | Elem e -> if v = -1 or e = v then k e
+        | Var i -> Error.internal_error "force_term: variable encountered"
+        | Elem e -> if v = -1 || e = v then k e
         | Const i ->
             if v = -1 then k (const.(i))
             else if const.(i) = v then k v
@@ -328,8 +328,8 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
               force_formula f1 0 (fun () -> force_formula f2 0 k) ;
               force_formula f1 1 (fun () -> force_formula f2 1 k)
             end
-        | Forall _ -> Error.fatal "force_formula: forall encountered"
-        | Exists _ -> Error.fatal "force_formula: exists encountered"
+        | Forall _ -> Error.internal_error "force_formula: forall encountered"
+        | Exists _ -> Error.internal_error "force_formula: exists encountered"
     in
       
     let rec fill_relation k =
@@ -424,7 +424,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
     in
 
     let rec prepare_formula = function
-      | (True _ | False _ | Equal _ | Predicate _ | Relation _) as f -> f
+      | (True | False | Equal _ | Predicate _ | Relation _) as f -> f
       | Forall (i, f) -> prepare_formula (and_of n i f)
       | Exists (i, f) -> prepare_formula (or_of n i f)
       | Not f -> Not (prepare_formula f)
@@ -488,7 +488,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
     in
 
       (* Body of the main function *)
-      if n <> a.alg_size then Error.fatal "Sat.generate: size mismatch."
+      if n <> a.alg_size then Error.internal_error "Sat.generate: size mismatch."
       else if n >= Array.length const then begin
         (* Make sure constants are filled in. *)
         let used = Array.to_list const in
@@ -496,7 +496,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
           for i = 0 to Array.length const - 1 do
             if const.(i) = -1 then
               match !unused with
-                | [] -> Error.fatal "Sat.generate: ran out of elements for constants."
+                | [] -> Error.internal_error "Sat.generate: ran out of elements for constants."
                 | c::cs -> const.(i) <- c ; unused := cs
           done ;
           (* Prepare conjuncts *)

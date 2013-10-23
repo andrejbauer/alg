@@ -79,6 +79,12 @@ let rec remove x = function
       if x = y then ys
       else y :: remove x ys
 
+let rec remove_many xs = function
+  | [] -> []
+  | y :: ys ->
+    if List.mem y xs then ys
+    else y :: remove_many xs ys
+
 let intersect lst1 lst2 =
   List.fold_left (fun acc a -> if List.mem a lst2 then a::acc else acc) [] lst1
 

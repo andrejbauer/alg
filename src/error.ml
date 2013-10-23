@@ -14,9 +14,10 @@ let error ~loc err_type =
     Format.kfprintf k Format.str_formatter
 
 (** Common error kinds. *)
-let internal_error ~loc msg = error ~loc "Internal error" msg
-let fatal_error ~loc msg = error ~loc "Fatal error" msg
+let unknown_error msg = error ~loc:Common.Nowhere "Error" msg
+let internal_error msg = error ~loc:Common.Nowhere "Internal error" msg
+let runtime_error msg = error ~loc:Common.Nowhere "Fatal error" msg
+let usage_error msg = error ~loc:Common.Nowhere "Usage error" msg
 let syntax_error ~loc msg = error ~loc "Syntax error" msg
 let typing_error ~loc msg = error ~loc "Typing error" msg
-let runtime_error ~loc msg = error ~loc "Runtime error" msg
 let warning_error ~loc msg = error ~loc "Warning" msg

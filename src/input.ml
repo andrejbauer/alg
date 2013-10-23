@@ -14,10 +14,11 @@ and formula' =
   | True
   | False
   | Equal of term * term
-  | Predicate of operation * term
-  | Relation of operation * term * term
-  | Forall of variable * formula
-  | Exists of variable * formula
+  | NotEqual of term * term
+  | UnaryPr of operation * term
+  | BinaryPr of operation * term * term
+  | Forall of variable list * formula
+  | Exists of variable list * formula
   | And of formula * formula
   | Or of formula * formula
   | Imply of formula * formula
@@ -42,5 +43,6 @@ let rec as_equation (f, _) =
   match f with
     | Equal (t1, t2) -> Some (t1, t2)
     | Forall (_, f) -> as_equation f
-    | False | True | Predicate _ | Relation _ | 
-        Exists _ | And _ | Or _ | Imply _ | Iff _ | Not _ -> None
+    | False | True | NotEqual _ | UnaryPr _ | BinaryPr _ | 
+      Exists _ | And _ | Or _ | Imply _ | Iff _ | Not _ -> None
+

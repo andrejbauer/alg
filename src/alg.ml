@@ -16,7 +16,7 @@ let sizes_of_str str =
       let a = int_of_string (String.sub str 0 k) in
       let b = int_of_string (String.sub str (k+1) (String.length str - k - 1)) in
       if a < 0 || b < 0 then
-        Error.fatal "--size does not accept negative integers"
+        Error.usage_error "--size does not accept negative integers"
       else
         Util.enumFromTo a b
     with
@@ -33,7 +33,7 @@ let sizes_of_str str =
     !lst
   with
     | Failure "int_of_string" ->
-      Error.fatal "--size accepts a comma-separated list of non-negative integers and intervals, e.g., 1,2,5-7,9"
+      Error.usage_error "--size accepts a comma-separated list of non-negative integers and intervals, e.g., 1,2,5-7,9"
 ;;
 
 
@@ -125,21 +125,21 @@ try begin (*A big wrapper for error reporting. *)
       | "" -> Arg.usage options usage; exit 1
       | filename ->
         try Util.read_lines filename
-        with Sys_error msg -> Error.fatal "could not read %s" msg
+        with Sys_error msg -> Error.runtime_error "could not read %s" msg
     end @ !cmd_axioms
   in
 
   let lex = Lexing.from_string (String.concat "\n" lines) in
 
-  let theory_name, raw_theory =
+  let {Input.th_name=theory_name; Input.th_entries=raw_theory} =
     begin
       try
         Parser.theory Lexer.token lex
       with
         | Parser.Error ->
-          Error.syntax ~pos:(Lexing.lexeme_start_p lex, Lexing.lexeme_end_p lex) ""
+          Error.syntax_error ~loc:(Common.position_of_lex lex) "I got confused here"
         | Failure "lexing: empty token" ->
-          Error.syntax ~pos:(Lexing.lexeme_start_p lex, Lexing.lexeme_end_p lex) "Unrecognised symbol."
+          Error.syntax_error ~loc:(Common.position_of_lex lex) "Unrecognized symbol."
     end
   in
 
@@ -218,7 +218,7 @@ try begin (*A big wrapper for error reporting. *)
         let (seen, i) = Iso.seen theory aa algebras in
         if not seen && First_order.check_axioms theory a then
           if config.paranoid && CM.seen theory a algebras then
-            Error.fatal "There is a bug in isomorphism detection in alg.\nPlease report with example."
+            Error.internal_error "There is a bug in isomorphism detection in alg.\nPlease report with example."
           else
             begin
               let b = Util.copy_algebra a in
@@ -249,7 +249,7 @@ try begin (*A big wrapper for error reporting. *)
     begin
       try List.assoc config.format formats config outch lines theory
       with Not_found ->
-        Error.fatal "unknown output format, should be one of: %s" (String.concat ", " (List.map fst formats))
+        Error.runtime_error "unknown output format, should be one of: %s" (String.concat ", " (List.map fst formats))
     end
   in
 
@@ -268,7 +268,7 @@ try begin (*A big wrapper for error reporting. *)
             let k = ref 0 in
             let output (algebra, indecomposable) =
               if config.paranoid && not (CM.check_model theory algebra) then
-                Error.fatal "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
+                Error.internal_error "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
@@ -287,4 +287,4 @@ try begin (*A big wrapper for error reporting. *)
     else out.footer (List.rev !counts)
   end
 end
-with Error.Error (pos, err, msg) -> Error.report (pos, err, msg)
+with Error.Error err -> Print.error err
