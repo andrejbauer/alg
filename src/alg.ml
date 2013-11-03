@@ -143,20 +143,8 @@ try begin (*A big wrapper for error reporting. *)
     end
   in
 
-  (* Compute the theory name from the file name, if needed. *)
-  let theory_name =
-    begin match theory_name with
-      | Some n -> n
-      | None ->
-        begin
-          let n = Filename.basename config.input_filename in
-          try String.sub n 0 (String.index n '.') with Not_found -> n
-        end
-    end ^ (if !cmd_axioms = [] then "" else "_with_extras")
-  in
-
   (* Parse the theory. *)
-  let theory = Cook.cook_theory theory_name raw_theory in
+  let theory = Typing.cook_theory theory_name raw_theory in
 
   let theory_with_relations = Array.length theory.Theory.th_predicates > 0 || Array.length theory.Theory.th_relations > 0 in
 

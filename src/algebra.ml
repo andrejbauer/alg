@@ -1,15 +1,13 @@
 (* Algebras are models of theories. *)
 
-module T = Theory
-
 type map_invariant = int array array
 
 type invariant = {
   inv_size : int;
   inv_unary : map_invariant array;
   inv_binary : map_invariant array;
-  inv_predicates : int array;
-  inv_relations : (int array * int array) array;
+  inv_predicate : int array;
+  inv_relation : (int array * int array) array;
 }
 
 (* 
@@ -22,29 +20,33 @@ type cache = {
 }
 
 type algebra = {
-  mutable alg_name : string option;
-  alg_prod : string list option;
-  alg_size : int;
+  alg_name : string option;
+  alg_comment : string list;
+  alg_size : int array;
   alg_const : int array;
   alg_unary : int array array;
   alg_binary : int array array array;
-  alg_predicates : int array array;
-  alg_relations : int array array array;
+  alg_predicate : int array array;
+  alg_relation : int array array array;
 }
 
-(* An algebra with all -1's. *)
-let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_relations=r} =
-  if n < Array.length c
-  then Error.internal_error "Algebra.empty: cannot create an algebra of size %d with %d constants." n (Array.length c)
-  else {
-    alg_name = None;
-    alg_prod = None;
-    alg_size = n;
-    alg_const = Array.init (Array.length c) (fun i -> i);
-    alg_unary = Array.create_matrix (Array.length u) n (-1);
-    alg_binary = Array.init (Array.length b) (fun i -> Array.create_matrix n n (-1));
-    alg_predicates = Array.create_matrix (Array.length p) n (-1);
-    alg_relations = Array.init (Array.length r) (fun i -> Array.create_matrix n n (-1));
+(* An algebra with all -1's, including the constants. *)
+let empty ?nameopt ?(comment=[]) size
+    {Syntax.th_const=const;
+     Syntax.th_sort=sort;
+     Syntax.th_unary=unary;
+     Syntax.th_binary=binary;
+     Syntax.th_predicate=predicate;
+     Syntax.th_relation=relation} =
+  {
+    alg_name = nameopt;
+    alg_comment = comment;
+    alg_size = size;
+    alg_const = Array.make (Array.length const) (-1);
+    alg_unary = Array.map (fun (_, (s, _)) -> Array.make size.(s) (-1)) unary;
+    alg_binary = Array.map (fun (_, (s1, s2, _)) -> Array.create_matrix size.(s1) size.(s2) (-1)) binary;
+    alg_predicate = Array.map (fun (_, s) -> Array.make size.(s) (-1)) predicate;
+    alg_relation = Array.map (fun (_, (s1, s2)) -> Array.create_matrix size.(s1) size.(s2) (-1)) relation
   }
 
 (* For faster isomorphism checking we define invariants for structures.
@@ -141,8 +143,7 @@ let relation_invariant r =
   Array.sort compare outdeg; Array.sort compare indeg;
   (indeg, outdeg)
     
-
-let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} = 
+let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicate=ps; alg_relation=rs} = 
   { inv_size = n ;
     inv_unary = Array.map (fun u -> unary_invariant (fun k -> u.(k)) n) us;
     inv_binary = Array.map (fun b -> binary_invariant (fun k l -> b.(k).(l)) n) bs;

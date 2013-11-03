@@ -17,6 +17,7 @@ rule token = parse
   | '#' [^'\n']* ('\n' | eof) { new_line lexbuf; token lexbuf }
   | '\n'                { new_line lexbuf; token lexbuf }
   | [' ' '\t']          { token lexbuf }
+  | "Prop"              { PROP }
   | "Theory"            { THEORY }
   | "Constants"         { CONSTANT }
   | "Constant"          { CONSTANT }
@@ -36,7 +37,7 @@ rule token = parse
   | "and"               { AND }
   | "\\/"               { OR }
   | "or"                { OR }
-  | "->"                { IMPLY }
+  | "->"                { ARROW }
   | "<->"               { IFF }
   | "=>"                { IMPLY }
   | "<=>"               { IFF }
@@ -45,7 +46,7 @@ rule token = parse
   | "!="                { NOTEQUAL }
   | "not"               { NOT }
   | "."                 { DOT }
-
+  | '*'                 { STAR }
   | ident               { IDENT (lexeme lexbuf) }
   | prefixop            { PREFIXOP (Lexing.lexeme lexbuf) }
   | infixop0            { INFIXOP0 (Lexing.lexeme lexbuf) }

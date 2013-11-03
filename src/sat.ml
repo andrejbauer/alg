@@ -15,6 +15,10 @@
 open Theory
 open Algebra
 
+(* The value of a term is either an int, or a partially evaluated term,
+   together with a pair of numbers (k, m) which tell how many unary
+   and how many binary entries still have to be filled in in order for
+   the term to become fully defined. *)
 type partial_term =
   | TValue of int
   | TPartial of term * (int * int)
@@ -22,12 +26,6 @@ type partial_term =
 type partial_formula =
   | FValue of bool
   | FPartial of formula' * (int * int)
-
-let print_conjuncts cs =
-  Printf.printf "conjuncts (%d):\n%s\n"
-    (List.length cs)
-    (String.concat "\n" (List.map (fun (f, (k1,k2)) ->
-                                     string_of_int k1 ^ "," ^ string_of_int k2 ^ " ... " ^ string_of_formula' f) cs))
 
 let and_of n i f =
   let rec loop k a =
@@ -283,9 +281,17 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
                     else if rel.(r).(v1).(v2) = b then k ()))
         | Equal (t1, t2) ->
             begin match eval_term t1, eval_term t2 with
-              | TValue v1, TValue v2 -> if v1 = v2 then k ()
-              | TValue v1, TPartial (t2,_) -> force_term t2 v1 (fun _ -> k ())
-              | TPartial (t2,_), TValue v2 -> force_term t1 v2 (fun _ -> k ())
+              | TValue v1, TValue v2 ->
+                if b = 1 then (if v1 = v2 then k ())
+                else (if v1 <> v2 then k ())
+              | TValue v, TPartial (t,_)
+              | TPartial (t,_), TValue v ->
+                if b = 1 then (force_term t v (fun _ -> k ()))
+                else begin
+                  for w = 0 to n-1 do
+                    if w <> v then force_term t w (fun _ -> k ())
+                  done
+                end
               | TPartial (t1,_), TPartial (t2,_) ->
                   force_term t1 (-1)
                     (fun v ->
