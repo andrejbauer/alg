@@ -1,11 +1,52 @@
 (* Algebras are models of theories. *)
 
-type map_invariant = int array array
+(* For faster isomorphism checking we define invariants for structures.
+
+   We have two kinds of invariants: for endo-operations and for operations
+   between different sorts.
+
+   Consider an endoperation f : {0,..,n} -> {0,..,n}. For each x in {0,...,n}
+   the sequence
+
+      x_0 = x
+      x_{k+1} = f (x_k)
+
+   is eventually periodic, i.e., there are minimal i and j such that 0 <= i < j <= n
+   and x_i = f(x_j). We call the pair (i,j) the "eventual period" of x. Given a pair
+   (i,j), let N_f(i,j) be the number of elements x whose eventual period is (i,j).
+   Then N_f is an invariant for f, i.e., if b : {0,...,n} -> {0,...n} is a bijection
+   then N_f = N_{b^{-1} o f o b}.
+
+   We define invariants for the operations and relations of an algebra as follows:
+
+   * for a unary endooperation f the corresponding invariant is N_f
+
+   * for a binary endooperation f we define the eventual period (i,j) of x as
+     in the unary case except that we consider the sequence
+
+        x_0 = x
+        x_{k+1} = f (x_k, x)
+
+     (We could do better if considered pairs (x,y) but we want to keep the invariant
+      small.)
+
+   * for a unary or binary operation f which is not an endo-operation, think of it as
+     a coloring of the domain. We can count how many elements there are of each color,
+     then sort the resulting list in increasing order to get an invariant.
+
+   * for a predicate or relation the corresponding invariant is the number of
+     elements or pairs that satisfy it (a better one would be a count of how
+     many elements of each in/out degree we have).
+*)
+
+type invariant =
+  | Endo of int array array (* for each (i,j) we have the corresponding N_f(i,j) *)
+  | Nonendo of int array (* in-degrees sorted in ascending order *)
 
 type invariant = {
-  inv_size : int;
-  inv_unary : map_invariant array;
-  inv_binary : map_invariant array;
+  inv_size : int array;
+  inv_unary : invariant array;
+  inv_binary : invariant array;
   inv_predicate : int array;
   inv_relation : (int array * int array) array;
 }
@@ -49,50 +90,38 @@ let empty ?nameopt ?(comment=[]) size
     alg_relation = Array.map (fun (_, (s1, s2)) -> Array.create_matrix size.(s1) size.(s2) (-1)) relation
   }
 
-(* For faster isomorphism checking we define invariants for structures.
-
-   Suppose f : {0,..,n} -> {0,..,n} is a map. For each x in {0,...,n} the sequence
-
-      x_0 = x
-      x_{k+1} = f (x_k)
-
-   is eventually periodic, i.e., there are minimal i and j such that 0 <= i < j <= n
-   and x_i = f(x_j). We call the pair (i,j) the "eventual period" of x. Given a pair
-   (i,j), let N_f(i,j) be the number of elements x whose eventual period is (i,j).
-   Then N_f is an invariant for f, i.e., if b : {0,...,n} -> {0,...n} is a bijection
-   then N_f = N_{b^{-1} o f o b}.
-
-   We define invariants for the operations and relations of an algebra as follows:
-
-   * for each unary operation f the corresponding invariant is N_f
-
-   * for each binary operation f we define the eventual period (i,j) of x as in the
-     case of a map except that we consider the sequence
-
-        x_0 = x
-        x_{k+1} = f (x_k, x)
-
-   * for a predicate or relation the corresponding invariant is the number of
-     elements or pairs that satisfy it (a better one would be a count of how
-     many elements of each in/out degree we have).
-*)
-
+let eventual_period n f x =
+  let t = Array.make n (-1) in
+  let i = ref 0 in
+  let k = ref x in
+    while t.(!k) = -1 do
+      t.(!k) <- !i ;
+      incr i ;
+      k := f (!k)
+    done ;
+    (t.(!k), !i)
+    
+(* OBSOLETE
 exception Result of (int * int)
 
-let unary_invariant f n =
+let eventual_period n f x =
   let t = Array.make (n+1) 0 in
-  let eventual_period f x =
-    try
-      t.(0) <- x ;
-      for j = 1 to n do
-        t.(j) <- f t.(j-1) ;
-        for i = 0 to j-1 do
-          if t.(i) = t.(j) then raise (Result (i,j))
-        done
-      done ;
-      Error.internal_error "algebra.ml -- map_invariant"
-    with Result r -> r
-  in
+  try
+    t.(0) <- x ;
+    for j = 1 to n do
+      t.(j) <- f t.(j-1) ;
+      for i = 0 to j-1 do
+        if t.(i) = t.(j) then raise (Result (i,j))
+      done
+    done ;
+    Error.internal_error "algebra.ml -- map_invariant"
+  with Result r -> r
+*)
+
+let unary_invariant f n1 n2 =
+  if n1 = n2 then
+  begin
+    
   let a = Array.init n (fun j -> Array.make (j+1) 0) in
     for x = 0 to n - 1 do
       let (i,j) = eventual_period f x in
