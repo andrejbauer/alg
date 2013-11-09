@@ -56,5 +56,5 @@ type theory = {
   th_predicate : (Input.predicate * sort) array;
   th_relation : (Input.relation * (sort * sort)) array;
   th_equation : equation_ctx list;
-  th_axiom : formula list (* NB: all formulas must be closed *)
+  th_axiom : (element array * formula) list (* NB: all formulas must be closed *)
 }

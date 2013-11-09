@@ -1,6 +1,3 @@
-open Theory
-open Algebra
-
 module IntMap =
   Map.Make(struct
     type t = int
@@ -232,29 +229,6 @@ let fac n =
   for i=2 to n do
     r := !r * i
   done ; !r
-
-(* Make fresh copies of operation tables of a given algebra. *)
-let copy_algebra a =
-  { a with 
-    alg_const = Array.copy a.alg_const;
-    alg_unary = matrix_copy a.alg_unary;
-    alg_binary = array3d_copy a.alg_binary;
-    alg_predicates = matrix_copy a.alg_predicates;
-    alg_relations = array3d_copy a.alg_relations 
-  }
-
-(* 
-   Make fresh copies of operation tables of a given algebra.
-   Do not copy cache.
-*)
-let copy_algebra_with_cache (a,cache) =
-  ({ a with 
-    alg_const = Array.copy a.alg_const;
-    alg_unary = matrix_copy a.alg_unary;
-    alg_binary = array3d_copy a.alg_binary;
-    alg_predicates = matrix_copy a.alg_predicates;
-    alg_relations = array3d_copy a.alg_relations 
-  }, cache)
 
 let alg_prod a1 a2 i1 i2 =
   match a1, a2, i1, i2 with
