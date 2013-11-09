@@ -1,6 +1,3 @@
-open Theory
-open Algebra
-
 exception Contradiction
 
 exception Break
@@ -18,10 +15,9 @@ let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr} =
   *)
   let apply_simple (_,axiom) =
     let rec get_value = function
-      | (Const c) -> c
-      | (Unary (op,v)) -> unary_arr.(op).(get_value v)
-      | _ -> invalid_arg "Ooops, binary operation or variable in apply_simple.get_value.
-                          This shouldn't happen!"
+      | Syntax.Const c -> c
+      | Syntax.Unary (op,v) -> unary_arr.(op).(get_value v)
+      | Syntax.Var _ | Syntax.Binary _ -> Error.internal "binary operation or variable in apply_simple_binary"
     in match axiom with
       | (Binary (op, t1, t2), Const c)
       | (Const c, Binary (op, t1, t2)) ->
@@ -31,7 +27,7 @@ let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr} =
           raise Contradiction
         else
           binary_arr.(op).(v1).(v2) <- c
-      | _ -> invalid_arg "Not a simple binary axiom."
+      | _ -> Error.internal "not a simple binary axiom in apply_simple_binary"
   in List.iter apply_simple simple
 
 (* Apply one variable shallow axioms to the binary_arr operation tables. *)

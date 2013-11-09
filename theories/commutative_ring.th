@@ -8,7 +8,7 @@ Axiom zero_neutral_left: 0 + x = x.
 Axiom zero_neutral_right: x + 0 = x.
 Axiom negative_inverse: x + ~ x = 0.
 Axiom negative_inverse: ~ x + x = 0.
-Axiom zero_inverse: ~ x = 0.
+Theorem zero_inverse: ~ 0 = 0.
 Axiom inverse_involution: ~ (~ x) = x.
 
 Axiom mult_commutative: x * y = y * x.

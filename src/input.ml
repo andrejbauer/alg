@@ -1,13 +1,20 @@
 (* Abstract syntax as produced by the parser. *)
 
-type variable = string
-type operation = string
+type ident = string
+
+type var = ident
+type sort = ident
+type const = ident
+type unary = ident
+type binary = ident
+type predicate = ident
+type relation = ident
 
 type term = term' * Common.position
 and term' =
-  | Var of variable
-  | UnaryOp of operation * term
-  | BinaryOp of operation * term * term
+  | Ident of var
+  | UnaryOp of unary * term
+  | BinaryOp of binary * term * term
 
 type formula = formula' * Common.position
 and formula' =
@@ -15,10 +22,10 @@ and formula' =
   | False
   | Equal of term * term
   | NotEqual of term * term
-  | UnaryPr of operation * term
-  | BinaryPr of operation * term * term
-  | Forall of variable list * formula
-  | Exists of variable list * formula
+  | UnaryPr of predicate * term
+  | BinaryPr of relation * term * term
+  | Forall of (var list * sort option) list * formula
+  | Exists of (var list * sort option) list * formula
   | And of formula * formula
   | Or of formula * formula
   | Imply of formula * formula
@@ -27,22 +34,12 @@ and formula' =
 
 type theory_entry = theory_entry' * Common.position
 and theory_entry' =
-  | Constant of operation list
-  | Unary of operation list
-  | Binary of operation list
-  | Predicate of operation list
-  | Relation of operation list
+  | Sort of sort list
+  | Constant of const list * sort
+  | Unary of unary list * (sort * sort)
+  | Binary of binary list * (sort * sort * sort)
+  | Predicate of predicate list * sort
+  | Relation of relation list * (sort * sort)
   | Axiom of string option * formula
 
-type theory_name = string
-
-type theory = { th_name : theory_name option ; th_entries : theory_entry list }
-
-(* [as_equation f] tries to convert an axiom to an equation. *)
-let rec as_equation (f, _) =
-  match f with
-    | Equal (t1, t2) -> Some (t1, t2)
-    | Forall (_, f) -> as_equation f
-    | False | True | NotEqual _ | UnaryPr _ | BinaryPr _ | 
-      Exists _ | And _ | Or _ | Imply _ | Iff _ | Not _ -> None
-
+type theory = { th_name : string ; th_entries : theory_entry list }

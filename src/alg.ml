@@ -3,9 +3,6 @@
 open Config
 open Output
 
-module A = Algebra
-module CM = Check_model
-
 module IntMap = Util.IntMap ;;
 
 (* Convert a string given via the --size command-line option to a list of sizes. *)
@@ -143,20 +140,8 @@ try begin (*A big wrapper for error reporting. *)
     end
   in
 
-  (* Compute the theory name from the file name, if needed. *)
-  let theory_name =
-    begin match theory_name with
-      | Some n -> n
-      | None ->
-        begin
-          let n = Filename.basename config.input_filename in
-          try String.sub n 0 (String.index n '.') with Not_found -> n
-        end
-    end ^ (if !cmd_axioms = [] then "" else "_with_extras")
-  in
-
   (* Parse the theory. *)
-  let theory = Cook.cook_theory theory_name raw_theory in
+  let theory = Typing.cook_theory theory_name raw_theory in
 
   let theory_with_relations = Array.length theory.Theory.th_predicates > 0 || Array.length theory.Theory.th_relations > 0 in
 
@@ -210,19 +195,18 @@ try begin (*A big wrapper for error reporting. *)
     let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
     let algebras = decomposables in
     let to_cache = ref [] in
-    (if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory
+    (if config.use_sat then Sat.generate ?start:None else Error.internal "you must use --sat") n theory
       (fun a -> 
         (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
-        let ac = A.make_cache a in
-        let aa = A.with_cache ~cache:ac a in
-        let (seen, i) = Iso.seen theory aa algebras in
+        let i = Algebra.invariant a in
+        let (seen, i) = Iso.seen theory (a, i) algebras in
         if not seen && First_order.check_axioms theory a then
-          if config.paranoid && CM.seen theory a algebras then
+          if config.paranoid && Check_model.seen theory a algebras then
             Error.internal_error "There is a bug in isomorphism detection in alg.\nPlease report with example."
           else
             begin
               let b = Util.copy_algebra a in
-              let bc = A.with_cache ~cache:ac b in
+              let bc = Algebra.with_cache ~cache:ac b in
               Iso.store algebras ~inv:i bc ;
               if must_cache then to_cache := b :: !to_cache ;
               output (b, true)
@@ -267,7 +251,7 @@ try begin (*A big wrapper for error reporting. *)
             if not config.count_only then out.size_header n ;
             let k = ref 0 in
             let output (algebra, indecomposable) =
-              if config.paranoid && not (CM.check_model theory algebra) then
+              if config.paranoid && not (Check_model.check_model theory algebra) then
                 Error.internal_error "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;

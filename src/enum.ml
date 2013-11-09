@@ -145,16 +145,14 @@ let enum n ({th_const=const;
 
       (* Main operation tables for unary operations. *)
       let unary_arr = Array.make_matrix lu n (-1) in
-      (*
-        Main operation tables for binary operations.
-      *)
+
+      (* Main operation tables for binary operations. *)
       let binary_arr = make_3d_array lb n n (-1) in
 
       (* Main operation tables for predicates. *)
       let pred_arr = Array.make_matrix lp n (-1) in
-      (*
-        Main operation tables for relations.
-      *)
+
+      (* Main operation tables for relations. *)
       let rel_arr = make_3d_array lr n n (-1) in
       
       let alg = {alg_size = n;

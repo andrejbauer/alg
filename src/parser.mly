@@ -2,20 +2,22 @@
 %}
 
 %token THEORY
+%token SORT
 %token CONSTANT UNARY BINARY PREDICATE RELATION
 %token AXIOM THEOREM
 %token <string> IDENT
 %token <string> PREFIXOP INFIXOP0 INFIXOP1 INFIXOP2 INFIXOP3 INFIXOP4
+%token STAR PROP
 %token LPAREN RPAREN
 %token COLON COMMA DOT
 %token FALSE TRUE
-%token AND OR IMPLY IFF NOT EQUAL NOTEQUAL EXISTS FORALL
+%token AND OR ARROW IMPLY IFF NOT EQUAL NOTEQUAL EXISTS FORALL
 %token EOF
 
 %left  INFIXOP0
 %right INFIXOP1
 %left  INFIXOP2
-%left  INFIXOP3
+%left  INFIXOP3 STAR
 %right INFIXOP4
 
 %start theory
@@ -23,7 +25,7 @@
 
 %%
 
-theory: n = option(theory_name) lst = list(terminated(theory_entry, DOT)) EOF
+theory: n = theory_name lst = list(terminated(theory_entry, DOT)) EOF
   { {Input.th_name = n; Input.th_entries = lst} }
 
 theory_name:
@@ -32,20 +34,25 @@ theory_name:
 
 theory_entry: mark_position(plain_theory_entry) { $1 }
 plain_theory_entry:
-  | CONSTANT lst = nonempty_list(name)
-    { Input.Constant lst }
-  | UNARY lst = nonempty_list(name_or_prefix)
-    { Input.Unary lst }
-  | BINARY lst = nonempty_list(name_or_op)
-    { Input.Binary lst }
-  | PREDICATE lst = nonempty_list(name_or_prefix)
-    { Input.Predicate lst }
-  | RELATION lst = nonempty_list(name_or_op)
-    { Input.Relation lst }
+  | SORT lst = nonempty_list(sort)
+    { Input.Sort lst }
+  | CONSTANT lst = nonempty_list(name) COLON s = sort
+    { Input.Constant (lst, s) }
+  | UNARY lst = nonempty_list(name_or_prefix) COLON s1 = sort ARROW s2 = sort
+    { Input.Unary (lst, (s1, s2)) }
+  | BINARY lst = nonempty_list(name_or_op) COLON s1 = sort STAR s2 = sort ARROW s3 = sort
+    { Input.Binary (lst, (s1, s2, s3)) }
+  | PREDICATE lst = nonempty_list(name_or_prefix) COLON s = sort ARROW PROP
+    { Input.Predicate (lst, s) }
+  | RELATION lst = nonempty_list(name_or_op) COLON s1 = sort STAR s2 = sort ARROW PROP
+    { Input.Relation (lst, (s1, s2)) }
   | AXIOM n = option(IDENT) COLON a = formula
     { Input.Axiom (n, a) }
   | THEOREM n = option(IDENT) COLON a = formula
     { Input.Axiom (n, a) }
+
+sort:
+  | x = IDENT { x }
 
 name:
   | x = IDENT { x }
@@ -69,6 +76,8 @@ name_or_op:
     { op }
   | op = INFIXOP2
     { op }
+  | STAR
+    { "*" }
   | op = INFIXOP3
     { op }
   | op = INFIXOP4
@@ -94,10 +103,10 @@ plain_formula_noquant:
 
 quantified_formula: mark_position(plain_quantified_formula) { $1 }
 plain_quantified_formula:
-  | FORALL xs = vars COMMA f = formula_noquant
-    { Input.Forall (xs, f) }
-  | EXISTS xs = vars COMMA f = formula_noquant
-    { Input.Exists (xs, f) }
+  | FORALL lst = nonempty_list(binder) COMMA f = formula_noquant
+    { Input.Forall (lst, f) }
+  | EXISTS lst = nonempty_list(binder) COMMA f = formula_noquant
+    { Input.Exists (lst, f) }
 
 (* iff_formula_noquant: mark_position(plain_iff_formula_noquant) { $1 } *)
 plain_iff_formula_noquant:
@@ -112,6 +121,8 @@ plain_iff_formula:
 (* imply_formula: mark_position(plain_imply_formula) { $1 } *)
 plain_imply_formula:
   | f1 = or_formula_noquant IMPLY f2 = formula
+    { Input.Imply (f1, f2) }
+  | f1 = or_formula_noquant ARROW f2 = formula
     { Input.Imply (f1, f2) }
   | f = plain_or_formula
     { f }
@@ -214,13 +225,17 @@ plain_app_term:
 simple_term: mark_position(plain_simple_term) { $1 }
 plain_simple_term:
   | x = name
-    { Input.Var x }
+    { Input.Ident x }
   | LPAREN t = plain_term RPAREN
     { t }
 
-vars:
-  | vs = nonempty_list(name)
-    { vs }
+binder:
+  | x = name
+    { ([x], None) }
+  | LPAREN xs = nonempty_list(name) RPAREN
+    { (xs, None) }
+  | LPAREN xs = nonempty_list(name) COLON s = sort RPAREN
+    { (xs, Some s) }
 
 mark_position(X):
   x = X
