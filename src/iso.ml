@@ -2,37 +2,37 @@ exception Break
 exception Found
 
 (*
-  Checks if a function commutes with permutation.
-  f(i(a)) = i(f(a)).
+  Check if iso commutes with unary operations u1 and u2:
+  u1(iso(a)) = iso(u2(a)).
 *)
 let check_unary iso u1 u2 =
   let l = Array.length iso in
   Util.for_all (fun i -> iso.(u1.(i)) = u2.(iso.(i))) 0 (l-1)
 
-(*
-  Checks if binary operation is multiplicative.
-*)
+(* Check if binary operations commute with a permutation. *)
 let check_binary iso b1 b2 =
   let l = Array.length iso in
   Util.for_all2 (fun i j -> iso.(b1.(i).(j)) = b2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
 
+(* Check if predicates commute with a permutation. *)
 let check_predicate iso p1 p2 = 
   let l = Array.length iso in
   Util.for_all (fun i -> p1.(i) = p2.(iso.(i))) 0 (l-1)
 
+(* Chech if relations commutes with a permutation. *)
 let check_relation iso r1 r2 =
   let l = Array.length iso in
   Util.for_all2 (fun i j -> r1.(i).(j) = r2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
 
 let are_iso {Syntax.th_const=const_op; Syntax.th_unary=unary_op; Syntax.th_binary=binary_op;
              Syntax.th_predicate=predicate_op; Syntax.th_relation=relation_op}
-            ({Algebra.alg_size=n1; Algebra.alg_const=c1; Algebra.alg_unary=u1; 
+            ({Algebra.alg_size=size1; Algebra.alg_const=c1; Algebra.alg_unary=u1; 
               Algebra.alg_binary=b1; Algebra.alg_relation=r1; Algebra.alg_predicate=p1}, 
-             {indegs=indegs1; outdegs=outdegs1})
-            ({Algebra.alg_size=n2; Algebra.alg_const=c2; Algebra.alg_unary=u2;
+             inv1)
+            ({Algebra.alg_size=size2; Algebra.alg_const=c2; Algebra.alg_unary=u2;
               Algebra.alg_binary=b2; Algebra.alg_relation=r2; Algebra.alg_predicate=p2},
-             {indegs=indegs2; outdegs=outdegs2}) = 
-  if n1 <> n2
+             inv2) = 
+  if inv1 <> inv2
   then false
   else
     let n = n1 in
