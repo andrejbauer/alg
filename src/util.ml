@@ -1,3 +1,5 @@
+type comparison = Less | Equal | Greater
+
 module IntMap =
   Map.Make(struct
     type t = int

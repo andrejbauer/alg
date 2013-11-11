@@ -1,4 +1,4 @@
-(* gebras are models of theories. *)
+(* algebras are models of theories. *)
 
 (* For faster isomorphism checking we define invariants for structures.
 
