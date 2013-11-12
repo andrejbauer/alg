@@ -1,7 +1,7 @@
 (* Type checking and conversion from [Input] to [Syntax]. *)
 
 type env = {
-  const : (Input.operation * (Syntax.index * Syntax.sort)) list ;
+  const : (Input.operation * (Syntax.index * (int * Syntax.sort)) list ;
   unary : (Input.operation * (Syntax.index * (Syntax.sort * Syntax.sort))) list ;
   binary : (Input.operation * (Syntax.index * (Syntax.sort * Syntax.sort * Syntax.sort))) list ;
   predicate : (Input.operation * (Syntax.index * Syntax.sort)) list ;

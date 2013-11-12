@@ -14,7 +14,7 @@ sig
   val is_empty : t -> bool
   val insert : E.t -> t -> t
   val peek : t -> E.t
-  val dequeue : t -> E.t * t
+  val dequeue : t -> (E.t * t) option
   val delete : E.t -> t -> E.t option * t
 end
 
@@ -69,8 +69,8 @@ struct
         node x l r
 
   let is_empty = function
-    | Empty -> false
-    | Node _ -> true
+    | Empty -> true
+    | Node _ -> false
 
   let rec insert x = function
     | Empty -> Node (x, Empty, Empty, 1)
@@ -87,11 +87,11 @@ struct
     | Node (_, t, _, _) -> peek t
 
   let rec dequeue = function
-    | Empty -> Error.internal_error "Queue.dequeue"
-    | Node (x, Empty, r, _) -> (x, r)
+    | Empty -> None
+    | Node (x, Empty, r, _) -> Some (x, r)
     | Node (x, l, r, _) ->
       let y, l = dequeue l in
-        y, build x l r
+        Some (y, build x l r)
 
   let rec delete x = function
     | Empty -> None, Empty

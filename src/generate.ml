@@ -139,13 +139,56 @@ let add_dependents ((p, f) as c) =
   in
     add_formula f
 
-let search state conditions compute_actions cont =
-  match dequeue conditions with
-    | None ->
-      (* All conditions have been satisfied, pass the solution to the continuation *)
-      cont state
-    | Some c ->
-      let actions = compute_actions state c in
-        List.iter
-          (fun (act, unact) -> )
-          (compute_actions state c)
+let rec force_or k state lst = function
+  | [] -> ()
+  | f :: fs ->
+
+and force_predicate k state p i b =
+    
+and force_formula state f b k =
+  let {Algebra.alg_size=size;
+       Algebra.alg_predicate=predicate} = state.st_model
+  in
+  match b, f with
+  | false, False -> k state
+  | true, False -> ()
+  | false, True -> ()
+  | true, True -> k state
+
+  | true, Equal (s, t1, t2)
+  | false, Unequal (s, t1, t2) ->
+
+  | false, Equal (s, t1, t2)
+  | true, Unequal (s, t1, t2) -> 
+
+
+  | b, Predicate (p, t) ->
+    let v = eval_term alg t in
+      
+    begin match eval_term alg t with
+
+    | Elem i -> force_predicate state p i b k
+    | t ->
+      let (_, s) = predicate.(p) in
+      let n = size.(s) in
+        for i = 0 to n - 1 do
+          force_term state t i
+            (fun state -> force_predicate state p i b k)
+        done ;
+    end
+
+  | b, Relation (r, t1, t2) ->
+    
+  | true, And lst -> 
+    k (List.fold_left (fun state f -> enqueue_formula state f true) lst)
+  | false, Or lst ->
+    k (List.fold_left (fun state f -> enqueue_formula state f false) lst)
+  | false, Or lst -> force_
+
+
+let rec generate k state =
+  match Q.dequeue state.st_queue with
+   | None -> k state.st_model
+   | Some (f, b), queue -> force_formula (generate k) { state with st_queue = queue } b f
+
+

@@ -50,7 +50,7 @@ type formula =
 type theory = {
   th_name : string;
   th_sort : Input.sort array;
-  th_const : (Input.const * sort) array;
+  th_const : (Input.const * int * sort) array; (* the int is the max value a constant may take *)
   th_unary : (Input.unary * (sort * sort)) array;
   th_binary : (Input.binary * (sort * sort * sort)) array;
   th_predicate : (Input.predicate * sort) array;
