@@ -7,7 +7,7 @@ open Util
 let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; alg_binary=b1; alg_predicates=pr1; alg_relations=r1}
             {alg_size=n2; alg_name=a2; alg_prod=p2; alg_const=c2; alg_unary=u2; alg_binary=b2; alg_predicates=pr2; alg_relations=r2} =
   if Array.length pr1 <> 0 || Array.length r1 <> 0 || Array.length pr2 <> 0 || Array.length r2 <> 0
-  then Error.fatal "cannot form products of structures with predicates and relations"
+  then Error.runtime_error "cannot form products of structures with predicates and relations"
   else begin
     let size = n1 * n2 in
     let mapping i j = n2 * i + j in

@@ -4,8 +4,8 @@
    the original operation names so that results can be printed. *)
 type operation = int
 type relation = int
-type operation_name = string
-type relation_name = string
+type operation_name = Input.operation
+type relation_name = Input.operation
 
 type variable = int
 
