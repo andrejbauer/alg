@@ -95,6 +95,12 @@ try begin (*A big wrapper for error reporting. *)
     ("--no-source",
      Arg.Unit (fun () -> config.source <- false),
      " Do not include the theory source in the output.");
+    ("--load",
+     Arg.String  (fun str -> config.load_file <- str),
+     "Loads precomputed theoreies from file.");
+    ("--save",
+     Arg.String (fun str -> config.save_file <- str),
+     "Saves the computed theories in the file.");
     ("--version",
      Arg.Unit (fun () ->
                  Printf.printf "Copyright (c) 2011 Ales Bizjak and Andrej Bauer\n" ;
@@ -119,7 +125,17 @@ try begin (*A big wrapper for error reporting. *)
 
   if !cmd_axioms <> [] then cmd_axioms := "" :: "# Extra command-line axioms" :: !cmd_axioms ;
 
-  (* Read the input file. *)
+  (*Read the precomputed theories.??? make it so, that it only reads if argument present*)
+  let precomputed = 
+    begin match config.load_file with
+      | "" -> []
+      | filename -> 
+	  try Marshall.from_channel filename
+	  with  Sys error msg -> Error.fatal "could not read %s" msg
+    end @ !cmd_axioms
+  in
+
+  (* Read the input files. *)
   let lines =
     begin match config.input_filename with
       | "" -> Arg.usage options usage; exit 1
@@ -201,8 +217,8 @@ try begin (*A big wrapper for error reporting. *)
             (Util.divisors n)
         in
         begin
-          (* make decomposables *)
-          Indecomposable.gen_decomposable theory n factors (fun a -> output (a, false))
+          (* make (or load) decomposables *)
+          Indecomposable.gen_decomposable theory n factors precomputed (fun a -> output (a, false))
         end
     in
     (* Generate indecomposable algebras. *)
@@ -272,13 +288,23 @@ try begin (*A big wrapper for error reporting. *)
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
-              then out.algebra algebra
+              then out.algebra algebra (*??? How do we generate all the solutions? Add saving here.*)
             in
+	      
             process_size n output ;
             counts := (n, !k) :: !counts ;
             if config.count_only
             then out.count n !k
             else out.size_footer ())
+
+	  (*Save the computed theories if specified.??? will this work?*)
+	  begin match config.save_file with
+	   | "" -> ()
+	   | filename -> 
+	       try Marshall.to_channel filename
+	       with  Sys error msg -> Error.fatal "could not write to %s" msg
+	  end @ !cmd_axioms
+
           config.sizes
       with Sys.Break -> out.interrupted ()
     end ;

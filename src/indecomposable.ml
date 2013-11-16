@@ -49,7 +49,8 @@ let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; 
   end
 
 (* factors is a map of possible factors *)
-let gen_decomposable theory n factors output = 
+let gen_decomposable theory n factors precomputed output = 
+  (*??? Add the requiered code for loading theories from precomputed.*)
   let algebras = Iso.empty_store () in
   (* Generate all products of algebras which partition into algebras of sizes in partition.
      partition is assumed to be in some order (descending or ascending). *)
