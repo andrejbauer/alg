@@ -131,7 +131,7 @@ try begin (*A big wrapper for error reporting. *)
       | "" -> []
       | filename -> 
 	  try Marshall.from_channel filename
-	  with  Sys error msg -> Error.fatal "could not read %s" msg
+	  with  Sys_error msg -> Error.fatal "could not read %s" msg
     end @ !cmd_axioms
   in
 
@@ -289,7 +289,7 @@ try begin (*A big wrapper for error reporting. *)
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
 	      (*??? How do we generate all the solutions? Add saving here.*)
-	      save_theories := (!k, algebra) :: !save_theories
+	      save_theories := (!k, algebra) :: !save_theories ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
               then out.algebra algebra 
             in
@@ -305,7 +305,7 @@ try begin (*A big wrapper for error reporting. *)
 	   | "" -> ()
 	   | filename -> 
 	       try Marshall.to_channel save_theories filename
-	       with  Sys error msg -> Error.fatal "could not write to %s" msg
+	       with  Sys_error msg -> Error.fatal "could not write to %s" msg
 	  end @ !cmd_axioms
 
           config.sizes
