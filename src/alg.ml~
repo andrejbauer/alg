@@ -125,7 +125,7 @@ try begin (*A big wrapper for error reporting. *)
 
   if !cmd_axioms <> [] then cmd_axioms := "" :: "# Extra command-line axioms" :: !cmd_axioms ;
 
-  (*Read the precomputed theories.??? If possible: make it so, that it only reads if argument present*)
+  (*Read the precomputed theories.??? make it so, that it only reads if argument present*)
   let precomputed = 
     begin match config.load_file with
       | "" -> []
@@ -270,8 +270,7 @@ try begin (*A big wrapper for error reporting. *)
   in
 
   let counts = ref [] in
-  let save_theories = ref [] in
-  
+
   (* The main loop *)
   begin
     Sys.catch_break true ;
@@ -288,10 +287,8 @@ try begin (*A big wrapper for error reporting. *)
                 Error.internal_error "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
-	      (*??? How do we generate all the solutions? Add saving here.*)
-	      save_theories := (!k, algebra) :: !save_theories
               if not config.count_only && (not config.indecomposable_only || indecomposable)
-              then out.algebra algebra 
+              then out.algebra algebra (*??? How do we generate all the solutions? Add saving here.*)
             in
 	      
             process_size n output ;
@@ -304,7 +301,7 @@ try begin (*A big wrapper for error reporting. *)
 	  begin match config.save_file with
 	   | "" -> ()
 	   | filename -> 
-	       try Marshall.to_channel save_theories filename
+	       try Marshall.to_channel filename
 	       with  Sys error msg -> Error.fatal "could not write to %s" msg
 	  end @ !cmd_axioms
 
