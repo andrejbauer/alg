@@ -75,20 +75,21 @@ let gen_decomposable theory n factors precomputed output =
               (fun i a -> if i >= start then gen_p last i (product acc a) ps)
               (IntMap.find last factors)
    in
-     let empt : theory = {th_name = "Empty"; th_const = ([||] : operation_name array); th_unary = ([||] : operation_name array) ; th_binary =([||] : operation_name array); th_predicates =([||] : operation_name array); th_relations =([||] : operation_name array); th_equations =([] : equation  list); th_axioms =([] : equation  list)}
-      in 
+     let empt : Algebra.T.theory = {th_name = "Empty"; th_const = ([||] : operation_name array); th_unary = ([||] : operation_name array) ; th_binary =([||] : operation_name array); th_predicates =([||] : operation_name array); th_relations =([||] : operation_name array); th_equations =([] : equation  list); th_axioms =([] : formula  list)}
+     in 
 
      let rec find1 p lst = match lst with
-       | [] -> empt
+       | [] -> Algebra.empty p empt
        | (p,a)::q -> a
        | _::q -> find1 p q
    in
      match partition with
        | [] -> ()
        | p::ps ->
-	 match find1 p precomputed with
-	   | empt -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
-	   | a -> List.iter (fun x  -> gen_p p 0 a []) 1
+	    let em = Algebra.empty p empt in
+		match find1 p precomputed with
+		  | em -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
+	      | a -> List.iter (fun x  -> gen_p p 0 a []) [1]
 
   in (* end of gen_product *)
     List.iter gen_product (Util.partitions n) ;

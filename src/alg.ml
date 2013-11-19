@@ -126,13 +126,19 @@ try begin (*A big wrapper for error reporting. *)
   if !cmd_axioms <> [] then cmd_axioms := "" :: "# Extra command-line axioms" :: !cmd_axioms ;
 
   (*Read the precomputed theories.??? If possible: make it so, that it only reads if argument present*)
-  let precomputed = 
+  let precomputed : int * Algebra.algebra list= 
+	let empt : Algebra.T.theory = {th_name = "Empty"; th_const = ([||] : Theory.operation_name array); th_unary = ([||] : Theory.operation_name array) ; th_binary =([||] : Theory.operation_name array); th_predicates =([||] : Theory.operation_name array); th_relations =([||] : Theory.operation_name array); th_equations =([] : Theory.equation  list); th_axioms =([] : Theory.formula  list)}
+    in 
+	let em = Algebra.empty 1 empt
+	in
     begin match config.load_file with
-      | "" -> []
+      | "" -> ([1,em])
       | filename -> 
-	  try Marshall.from_channel filename
-	  with  Sys_error msg -> Error.fatal "could not read %s" msg
-    end @ !cmd_axioms
+		let ic = open_in filename in 
+		try 
+			(Marshal.from_channel ic : (int * Algebra.algebra) list)
+		with Sys_error msg -> Error.runtime_error "could not read %s" msg
+    end @ !cmd_axioms (*??? How do we fix this, so the function returns the right type (and not string list).*)
   in
 
   (* Read the input files. *)
@@ -304,7 +310,7 @@ try begin (*A big wrapper for error reporting. *)
 	  begin match config.save_file with
 	   | "" -> ()
 	   | filename -> 
-	       try Marshall.to_channel save_theories filename
+	       try Marshal.to_channel save_theories filename
 	       with  Sys_error msg -> Error.fatal "could not write to %s" msg
 	  end @ !cmd_axioms
 
