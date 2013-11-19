@@ -75,7 +75,8 @@ let gen_decomposable theory n factors precomputed output =
               (fun i a -> if i >= start then gen_p last i (product acc a) ps)
               (IntMap.find last factors)
    in
-     let empt : theory = {th_name = "Empty"; th_const : operation_name array = [||]; th_unary : operation_name array= [||]; th_binary : operation_name array= [||]; th_predicates : operation_name array= [||]; th_relations : .operation_name array= [||]; th_equations : operation_name list= []; th_axioms : operation_name list= []} in (*???Why is this a syntax error?*)
+     let empt : theory = {th_name = "Empty"; th_const = ([||] : operation_name array); th_unary = ([||] : operation_name array) ; th_binary =([||] : operation_name array); th_predicates =([||] : operation_name array); th_relations =([||] : operation_name array); th_equations =([] : equation  list); th_axioms =([] : equation  list)}
+      in 
 
      let rec find1 p lst = match lst with
        | [] -> empt
