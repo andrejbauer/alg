@@ -97,10 +97,10 @@ try begin (*A big wrapper for error reporting. *)
      " Do not include the theory source in the output.");
     ("--load",
      Arg.String  (fun str -> config.load_file <- str),
-     "Loads precomputed theoreies from file.");
+     " Loads precomputed theoreies from file.");
     ("--save",
      Arg.String (fun str -> config.save_file <- str),
-     "Saves the computed theories in the file.");
+     " Saves the computed theories in the file.");
     ("--version",
      Arg.Unit (fun () ->
                  Printf.printf "Copyright (c) 2011 Ales Bizjak and Andrej Bauer\n" ;
@@ -126,19 +126,15 @@ try begin (*A big wrapper for error reporting. *)
   if !cmd_axioms <> [] then cmd_axioms := "" :: "# Extra command-line axioms" :: !cmd_axioms ;
 
   (*Read the precomputed theories.??? If possible: make it so, that it only reads if argument present*)
-  let precomputed : int * Algebra.algebra list= 
-	let empt : Algebra.T.theory = {th_name = "Empty"; th_const = ([||] : Theory.operation_name array); th_unary = ([||] : Theory.operation_name array) ; th_binary =([||] : Theory.operation_name array); th_predicates =([||] : Theory.operation_name array); th_relations =([||] : Theory.operation_name array); th_equations =([] : Theory.equation  list); th_axioms =([] : Theory.formula  list)}
-    in 
-	let em = Algebra.empty 1 empt
-	in
+  let precomputed : (int * Algebra.algebra) list= 
     begin match config.load_file with
-      | "" -> ([1,em])
+      | "" -> ([] : (int * Algebra.algebra) list)
       | filename -> 
-		let ic = open_in filename in 
+		let ic = open_in_bin filename in 
 		try 
 			(Marshal.from_channel ic : (int * Algebra.algebra) list)
 		with Sys_error msg -> Error.runtime_error "could not read %s" msg
-    end @ !cmd_axioms (*??? How do we fix this, so the function returns the right type (and not string list).*)
+    end  (*??? How do we fix this, so the function returns the right type (and not string list).*)
   in
 
   (* Read the input files. *)
@@ -285,7 +281,7 @@ try begin (*A big wrapper for error reporting. *)
     if config.count_only then out.count_header () ;
     begin 
       try
-        List.iter
+        let sth = List.iter
           (fun n -> 
             if not config.count_only then out.size_header n ;
             let k = ref 0 in
@@ -294,8 +290,8 @@ try begin (*A big wrapper for error reporting. *)
                 Error.internal_error "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
-	      (*??? How do we generate all the solutions? Add saving here.*)
-	      save_theories := (!k, algebra) :: !save_theories ;
+	          (*??? How do we generate all the solutions? Add saving here.*)
+			  save_theories := (!k, algebra) :: !save_theories ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
               then out.algebra algebra 
             in
@@ -304,18 +300,24 @@ try begin (*A big wrapper for error reporting. *)
             counts := (n, !k) :: !counts ;
             if config.count_only
             then out.count n !k
-            else out.size_footer ())
-
-	  (*Save the computed theories if specified.??? will this work?*)
-	  begin match config.save_file with
-	   | "" -> ()
-	   | filename -> 
-	       try Marshal.to_channel save_theories filename
-	       with  Sys_error msg -> Error.fatal "could not write to %s" msg
-	  end @ !cmd_axioms
-
-          config.sizes
-      with Sys.Break -> out.interrupted ()
+            else out.size_footer ()
+		  )
+			
+			config.sizes
+		in
+		(*Save the computed theories if specified.??? will this work?*)
+		begin match config.save_file with
+		  | "" -> ()
+		  | filename -> 
+			 
+			 try 
+				let oc = open_out_bin filename in
+				Marshal.to_channel oc save_theories [(Compat_32 : Marshal.extern_flags)] ;
+				close_out oc ;
+		     with Sys_error msg -> Error.runtime_error "could not write to %s" msg
+		end ;
+		sth
+	  with Sys.Break -> out.interrupted ()
     end ;
     if config.count_only
     then out.count_footer (List.rev !counts)
