@@ -309,7 +309,6 @@ try begin (*A big wrapper for error reporting. *)
 		begin match config.save_file with
 		  | "" -> ()
 		  | filename -> 
-			 
 			 try 
 				let oc = open_out_bin filename in
 				Marshal.to_channel oc save_theories [(Compat_32 : Marshal.extern_flags)] ;

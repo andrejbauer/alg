@@ -79,8 +79,8 @@ let gen_decomposable theory n factors precomputed output =
      in 
 
      let rec find1 p lst = match lst with
-       | [] -> Algebra.empty p empt
-       | (p,a)::q -> a
+       | [] -> [Algebra.empty p empt]
+       | (p,a)::q -> (find1 p q) :: [a]
        | _::q -> find1 p q
    in
      match partition with
@@ -88,8 +88,8 @@ let gen_decomposable theory n factors precomputed output =
        | p::ps ->
 	    let em = Algebra.empty p empt in
 		match find1 p precomputed with
-		  | em -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
-	      | a -> List.iter (fun x  -> gen_p p 0 a []) [1]
+		  | [em] -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
+	      | _::x -> List.iter (fun a  -> gen_p p 0 a []) x
 
   in (* end of gen_product *)
     List.iter gen_product (Util.partitions n) ;
