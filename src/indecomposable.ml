@@ -77,12 +77,11 @@ let gen_decomposable theory n factors precomputed output =
    in
      let empt : Algebra.T.theory = {th_name = "Empty"; th_const = ([||] : operation_name array); th_unary = ([||] : operation_name array) ; th_binary =([||] : operation_name array); th_predicates =([||] : operation_name array); th_relations =([||] : operation_name array); th_equations =([] : equation  list); th_axioms =([] : formula  list)}
      in 
-
      let rec find1 p lst = match lst with
        | [] -> [Algebra.empty p empt]
        | (p,a)::q -> (find1 p q) :: [a]
        | _::q -> find1 p q
-   in
+	 in
      match partition with
        | [] -> ()
        | p::ps ->

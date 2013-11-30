@@ -228,9 +228,15 @@ try begin (*A big wrapper for error reporting. *)
     let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
     let algebras = decomposables in
     let to_cache = ref [] in
-    (if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory
-      (fun a -> 
+	let rec find1 p lst = match lst with
+       | [] -> [Algebra.empty p empt]
+       | (p,a)::q -> (find1 p q) :: [a]
+       | _::q -> find1 p q
+	in
+	let sth = (fun a -> 
         (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
+		save_theories := (n, algebra) :: !save_theories ; (*Initialised just before the main loop, here 
+		theories are stored.*)
         let ac = A.make_cache a in
         let aa = A.with_cache ~cache:ac a in
         let (seen, i) = Iso.seen theory aa algebras in
@@ -244,7 +250,13 @@ try begin (*A big wrapper for error reporting. *)
               Iso.store algebras ~inv:i bc ;
               if must_cache then to_cache := b :: !to_cache ;
               output (b, true)
-            end) ;
+            end)
+	in	
+	match find1 n precomputed with
+		| [Algebra.empty p empt] -> 
+			(if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth
+		| lst -> List.iter sth lst
+    
     if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
   in
 
@@ -291,7 +303,6 @@ try begin (*A big wrapper for error reporting. *)
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
 	          (*??? How do we generate all the solutions? Add saving here.*)
-			  save_theories := (!k, algebra) :: !save_theories ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
               then out.algebra algebra 
             in
