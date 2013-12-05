@@ -134,7 +134,7 @@ try begin (*A big wrapper for error reporting. *)
 		try 
 			(Marshal.from_channel ic : (int * Algebra.algebra) list)
 		with Sys_error msg -> Error.runtime_error "could not read %s" msg
-    end  (*??? How do we fix this, so the function returns the right type (and not string list).*)
+    end
   in
 
   (* Read the input files. *)
@@ -229,13 +229,13 @@ try begin (*A big wrapper for error reporting. *)
     let algebras = decomposables in
     let to_cache = ref [] in
 	let rec find1 p lst = match lst with
-       | [] -> [Algebra.empty p empt]
-       | (p,a)::q -> (find1 p q) :: [a]
+       | [] -> ([] : (int*Algebra.algebra) list)
+       | (p,a)::q -> [a] :: (find1 p q)
        | _::q -> find1 p q
 	in
 	let sth = (fun a -> 
         (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
-		save_theories := (n, algebra) :: !save_theories ; (*Initialised just before the main loop, here 
+		save_theories := (n, a) :: !save_theories ; (*Initialised just before the main loop, here 
 		theories are stored.*)
         let ac = A.make_cache a in
         let aa = A.with_cache ~cache:ac a in
@@ -253,7 +253,7 @@ try begin (*A big wrapper for error reporting. *)
             end)
 	in	
 	match find1 n precomputed with
-		| [Algebra.empty p empt] -> 
+		| [] ->
 			(if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth
 		| lst -> List.iter sth lst
     
@@ -302,21 +302,17 @@ try begin (*A big wrapper for error reporting. *)
                 Error.internal_error "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
-	          (*??? How do we generate all the solutions? Add saving here.*)
               if not config.count_only && (not config.indecomposable_only || indecomposable)
               then out.algebra algebra 
             in
-	      
             process_size n output ;
             counts := (n, !k) :: !counts ;
             if config.count_only
             then out.count n !k
             else out.size_footer ()
 		  )
-			
 			config.sizes
 		in
-		(*Save the computed theories if specified.??? will this work?*)
 		begin match config.save_file with
 		  | "" -> ()
 		  | filename -> 

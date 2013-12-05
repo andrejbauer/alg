@@ -78,17 +78,16 @@ let gen_decomposable theory n factors precomputed output =
      let empt : Algebra.T.theory = {th_name = "Empty"; th_const = ([||] : operation_name array); th_unary = ([||] : operation_name array) ; th_binary =([||] : operation_name array); th_predicates =([||] : operation_name array); th_relations =([||] : operation_name array); th_equations =([] : equation  list); th_axioms =([] : formula  list)}
      in 
      let rec find1 p lst = match lst with
-       | [] -> [Algebra.empty p empt]
-       | (p,a)::q -> (find1 p q) :: [a]
+       | [] -> ([] : (int*Algebra.algebra) list)
+       | (p,a)::q -> [a] :: (find1 p q)
        | _::q -> find1 p q
 	 in
      match partition with
        | [] -> ()
-       | p::ps ->
-	    let em = Algebra.empty p empt in
+       | p::ps -> t in
 		match find1 p precomputed with
-		  | [em] -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
-	      | _::x -> List.iter (fun a  -> gen_p p 0 a []) x
+		  | [] -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
+	      | x -> List.iter (fun a  -> gen_p p 0 a []) x
 
   in (* end of gen_product *)
     List.iter gen_product (Util.partitions n) ;
