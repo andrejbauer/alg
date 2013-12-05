@@ -136,7 +136,8 @@ try begin (*A big wrapper for error reporting. *)
 		with Sys_error msg -> Error.runtime_error "could not read %s" msg
     end
   in
-
+  let save_theories = ref [] in
+  
   (* Read the input files. *)
   let lines =
     begin match config.input_filename with
@@ -229,14 +230,13 @@ try begin (*A big wrapper for error reporting. *)
     let algebras = decomposables in
     let to_cache = ref [] in
 	let rec find1 p lst = match lst with
-       | [] -> ([] : (int*Algebra.algebra) list)
-       | (p,a)::q -> [a] :: (find1 p q)
-       | _::q -> find1 p q
+       | ([] : (int*Algebra.algebra) list) -> ([] : Algebra.algebra list)
+       | (s, a) :: q -> if p = s then a :: (find1 p q) else find1 p q
 	in
 	let sth = (fun a -> 
         (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
 		save_theories := (n, a) :: !save_theories ; (*Initialised just before the main loop, here 
-		theories are stored.*)
+		theories are stored. ??? Why is this a syntax error?*)
         let ac = A.make_cache a in
         let aa = A.with_cache ~cache:ac a in
         let (seen, i) = Iso.seen theory aa algebras in
@@ -253,11 +253,11 @@ try begin (*A big wrapper for error reporting. *)
             end)
 	in	
 	match find1 n precomputed with
-		| [] ->
-			(if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth
-		| lst -> List.iter sth lst
-    
-    if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
+		| [] -> 
+			(if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth ;
+		| lst -> List.iter sth lst ;
+	if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
+    (*if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras*)
   in
 
   if config.format = "" then
@@ -284,7 +284,6 @@ try begin (*A big wrapper for error reporting. *)
   in
 
   let counts = ref [] in
-  let save_theories = ref [] in
   
   (* The main loop *)
   begin
