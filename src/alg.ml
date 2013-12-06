@@ -132,10 +132,13 @@ try begin (*A big wrapper for error reporting. *)
       | filename -> 
 		let ic = open_in_bin filename in 
 		try 
-			(Marshal.from_channel ic : (int * Algebra.algebra) list)
+			let sth = (Marshal.from_channel ic : (int * Algebra.algebra) list) in
+			close_in ic ;
+			sth
 		with Sys_error msg -> Error.runtime_error "could not read %s" msg
     end
   in
+  
   let save_theories = ref [] in
   
   (* Read the input files. *)
