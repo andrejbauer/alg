@@ -97,10 +97,18 @@ try begin (*A big wrapper for error reporting. *)
      " Do not include the theory source in the output.");
     ("--load",
      Arg.String  (fun str -> config.load_file <- str),
-     " Loads precomputed theoreies from file.");
+     " Loads precomputed theories from file.");
     ("--save",
      Arg.String (fun str -> config.save_file <- str),
      " Saves the computed theories in the file.");
+	("--counter",
+		Arg.String (fun str -> Config.counter_example_to <- str)),
+	 " Find the smallest counter example (only with groups) to the provided expression.");
+	("--groups",
+	 Arg.String (fun str -> config.groups <- match str with 
+												| "" -> List.of_enum (1--200)
+												| st -> List.sort compare (Util.union config.sizes (sizes_of_str str))),
+	 " Comma-separated list of group sizes and size intervals from-to, that you want included. If empty it assumes all grpups. Maximum size is 200.");
     ("--version",
      Arg.Unit (fun () ->
                  Printf.printf "Copyright (c) 2011 Ales Bizjak and Andrej Bauer\n" ;
@@ -130,12 +138,22 @@ try begin (*A big wrapper for error reporting. *)
     begin match config.load_file with
       | "" -> ([] : (int * Algebra.algebra) list)
       | filename -> 
-		let ic = open_in_bin filename in 
-		try 
-			(Marshal.from_channel ic : (int * Algebra.algebra) list)
-		with Sys_error msg -> Error.runtime_error "could not read %s" msg
+			let ic = open_in_bin filename in 
+			try 
+				(Marshal.from_channel ic : (int * Algebra.algebra) list)
+			with Sys_error msg -> Error.runtime_error "could not read %s" msg
     end
   in
+  if (config.groups <> []) then 
+	precomputed = union precomputed (Loading_saving_groups.read ());
+  
+  if (Config.counter_example_to <> "") then
+	(*???Najdi protiprimer in ga sprintaj*)
+	while b = true do
+		najdi protiprimer algebre iz precomputed
+		if našel : b = false ; vrni algebro
+	done
+
   let save_theories = ref [] in
   
   (* Read the input files. *)

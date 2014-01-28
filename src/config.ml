@@ -13,6 +13,8 @@ type config = {
   mutable use_sat : bool;
   mutable load_file : string;
   mutable save_file : string;
+  mutable groups : int list;
+  mutable counter_example_to : string;
 }
 
 let default = {
@@ -28,4 +30,6 @@ let default = {
   use_sat = false;
   load_file = "";
   save_file = "";
+  groups = [];
+  counter_example_to = ""; 
 }
