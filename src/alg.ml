@@ -138,10 +138,12 @@ try begin (*A big wrapper for error reporting. *)
     begin match config.load_file with
       | "" -> ([] : (int * Algebra.algebra) list)
       | filename -> 
+		try 
 			let ic = open_in_bin filename in 
-			try 
-				(Marshal.from_channel ic : (int * Algebra.algebra) list)
-			with Sys_error msg -> Error.runtime_error "could not read %s" msg
+			let sth = (Marshal.from_channel ic : (int * Algebra.algebra) list) in
+			close_in ic ;
+			sth
+		with Sys_error msg -> Error.runtime_error "could not read %s" msg
     end
   in
   if (config.groups <> []) then 
