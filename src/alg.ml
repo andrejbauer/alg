@@ -102,7 +102,7 @@ try begin (*A big wrapper for error reporting. *)
      Arg.String (fun str -> config.save_file <- str),
      " Saves the computed theories in the file.");
 	("--counter",
-		Arg.String (fun str -> Config.counter_example_to <- str)),
+	 Arg.String (fun str -> config.counter_example_to <- str),
 	 " Find the smallest counter example (only with groups) to the provided expression.");
 	("--groups",
 	 Arg.String (fun str -> config.groups <- match str with 
@@ -149,13 +149,14 @@ try begin (*A big wrapper for error reporting. *)
   if (config.groups <> []) then 
 	precomputed = union precomputed (Loading_saving_groups.read ());
   
+(*
   if (Config.counter_example_to <> "") then
 	(*???Najdi protiprimer in ga sprintaj*)
 	while b = true do
 		najdi protiprimer algebre iz precomputed
 		if našel : b = false ; vrni algebro
 	done
-
+*)
   let save_theories = ref [] in
   
   (* Read the input files. *)
