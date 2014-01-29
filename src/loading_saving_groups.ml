@@ -1,17 +1,17 @@
 (*Included groups reader/writer and helping functions.*)
 
-let search table i size my_unit=
+let search_inverse table i size my_unit=
 	let lis = table in
-	for j = 0 to i * size do
-		lis = match lis with
+	let rec pomo1 lis j =
+		match lis with
 			| [] -> [] (*not going to happen.*)
-			| h::x -> x ;
-	done
-	let rec pomo lis j = match lis with
-		| [] -> Error.usage_error "A group does not have a unit."
-		| h::x -> if j < (i+1)*size then (if h = my_unit then j else pomo x (j+1)) else Error.usage_error "A group does not have a unit."
+			| h::x -> if (j < i * size) then pomo1 x (j + 1) else x
 	in
-	pomo lis j
+	let rec pomo2 lis j = match lis with
+		| [] -> Error.usage_error "A group does not have a unit."
+		| h::x -> if j < size then (if h = my_unit then j else pomo2 x (j+1)) else Error.usage_error "A group does not have a unit."
+	in
+	pomo (pomo lis 0) 0
 in
 let find_unit table size =
 	let head = hd table in
@@ -22,6 +22,7 @@ let find_unit table size =
 						(for z = 0 to (size - k - 1) do
 							x = tl x;
 						done
+						head = hd x ;
 						find x size (i + 1) 0)
 					)
 					else i
@@ -33,12 +34,18 @@ let fill binary table size=
 		match table with
 			| [] -> binary
 			| h::x ->  ( if j = size then j = 0; i = i + 1; else j = j + 1; done
-						 binary.(i* size).j = h;
+						 binary.(i * size).j = h;
 						 fil binary x i j)
 	in
 	fil binary table 0 -1
 in
+let rec substract_list table c = 
+	match table with
+		| [] -> []
+		| h::x -> (h-c):: (substract_list table c)
+in
 
+(*??? Do we want to rename elements, so that 0 is always the unit?*)
 let read () = 
 	let algebras : (int*Algebra.algebra) list = [] in
 	List.iter (fun size -> 
@@ -49,11 +56,12 @@ let read () =
 			while true; do
 				let line = input_line ic in
 				let table = split ("\t") line in
+				table = substract_list table 1; (*Substract 1 from all elements, because they range from 1 to n instead from 0 to n-1.*)
 				
 				let my_unit = find_unit table size in
 				let unary = Array.make_matrix (1) size (-1) in
 				for i = 0 to size do
-					unary.1.i = search table i size my_unit;
+					unary.1.i = search_inverse table i size my_unit;
 				done
 				let binary = Array.init (1) (fun i -> Array.create_matrix size size (-1)) in
 				binary = fill binary table size;
