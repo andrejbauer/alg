@@ -1,6 +1,6 @@
 INSTALL_DIR=/usr/local/bin
 TARGET=alg
-OCAMLBUILD=ocamlbuild -use-menhir
+OCAMLBUILD=ocamlbuild -use-menhir -lib str
 
 default: native nomenhir
 
@@ -16,10 +16,10 @@ profile: version.ml
 	$(OCAMLBUILD) $(TARGET).p.native
 
 debug: version.ml
-	$(OCAMLBUILD) -cflags -g -lflags -g $(TARGET).native
+	$(OCAMLBUILD) -cflags -g -lflags -g $(TARGET).d.native
 
 debug-byte: version.ml
-	$(OCAMLBUILD) -cflags -g -lflags -g $(TARGET).byte
+	$(OCAMLBUILD) -cflags -g -lflags -g $(TARGET).d.byte
 
 conflicts:
 	menhir --explain parser.mly

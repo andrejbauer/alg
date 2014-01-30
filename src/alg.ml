@@ -105,9 +105,8 @@ try begin (*A big wrapper for error reporting. *)
 	 Arg.String (fun str -> config.counter_example_to <- str),
 	 " Find the smallest counter example (only with groups) to the provided expression.");
 	("--groups",
-	 Arg.String (fun str -> config.groups <- match str with 
-												| "" -> List.of_enum (1--200)
-												| st -> List.sort compare (Util.union config.sizes (sizes_of_str str))),
+	 Arg.String (fun str -> 
+     config.groups <- List.sort compare (Util.union config.sizes (sizes_of_str str))),
 	 " Comma-separated list of group sizes and size intervals from-to, that you want included. If empty it assumes all grpups. Maximum size is 200.");
     ("--version",
      Arg.Unit (fun () ->
@@ -134,20 +133,22 @@ try begin (*A big wrapper for error reporting. *)
   if !cmd_axioms <> [] then cmd_axioms := "" :: "# Extra command-line axioms" :: !cmd_axioms ;
 
   (*Read the precomputed theories.??? If possible: make it so, that it only reads if argument present*)
-  let precomputed : (int * Algebra.algebra) list= 
+  let preloaded : (int * Algebra.algebra) list =
     begin match config.load_file with
       | "" -> ([] : (int * Algebra.algebra) list)
       | filename -> 
-		try 
-			let ic = open_in_bin filename in 
-			let sth = (Marshal.from_channel ic : (int * Algebra.algebra) list) in
-			close_in ic ;
-			sth
-		with Sys_error msg -> Error.runtime_error "could not read %s" msg
+		    try 
+			    let ic = open_in_bin filename in 
+			    let sth = (Marshal.from_channel ic : (int * Algebra.algebra) list) in
+			      close_in ic ;
+			      sth
+		    with Sys_error msg -> Error.runtime_error "could not read %s" msg
     end
   in
-  if (config.groups <> []) then 
-	precomputed = union precomputed (Loading_saving_groups.read ());
+
+  let loaded_groups = Loading_saving_groups.read config.groups in
+
+  let precomputed = Util.union preloaded loaded_groups in
   
 (*
   if (Config.counter_example_to <> "") then
@@ -250,17 +251,19 @@ try begin (*A big wrapper for error reporting. *)
     let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
     let algebras = decomposables in
     let to_cache = ref [] in
-	let rec find1 p lst = match lst with
-       | ([] : (int*Algebra.algebra) list) -> ([] : Algebra.algebra list)
-       | (s, a) :: q -> if p = s then a :: (find1 p q) else find1 p q
-	in
-	let sth = (fun a -> 
-        (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
-		save_theories := (n, a) :: !save_theories ; (*Initialised just before the main loop, here 
-		theories are stored. ??? Why is this a syntax error?*)
-        let ac = A.make_cache a in
-        let aa = A.with_cache ~cache:ac a in
-        let (seen, i) = Iso.seen theory aa algebras in
+	  let rec find1 p lst = 
+      match lst with
+        | [] -> []
+        | (s, a) :: q ->
+          if p = s then a :: (find1 p q) else find1 p q
+	  in
+	  let sth = (fun a -> 
+    (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
+		  save_theories := (n, a) :: !save_theories ; (*Initialised just before the main loop, here 
+		                                                theories are stored. ??? Why is this a syntax error?*)
+      let ac = A.make_cache a in
+      let aa = A.with_cache ~cache:ac a in
+      let (seen, i) = Iso.seen theory aa algebras in
         if not seen && First_order.check_axioms theory a then
           if config.paranoid && CM.seen theory a algebras then
             Error.internal_error "There is a bug in isomorphism detection in alg.\nPlease report with example."
@@ -268,17 +271,18 @@ try begin (*A big wrapper for error reporting. *)
             begin
               let b = Util.copy_algebra a in
               let bc = A.with_cache ~cache:ac b in
-              Iso.store algebras ~inv:i bc ;
-              if must_cache then to_cache := b :: !to_cache ;
-              output (b, true)
+                Iso.store algebras ~inv:i bc ;
+                if must_cache then to_cache := b :: !to_cache ;
+                output (b, true)
             end)
-	in	
-	match find1 n precomputed with
-		| [] -> 
-			(if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth ;
-		| lst -> List.iter sth lst ;
-	if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
-    (*if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras*)
+	  in	
+	    match find1 n precomputed with
+		    | [] -> 
+			    (if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth ;
+		    | lst ->
+          List.iter sth lst ;
+	        if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
+  (*if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras*)
   in
 
   if config.format = "" then
@@ -338,8 +342,8 @@ try begin (*A big wrapper for error reporting. *)
 		  | filename -> 
 			 try 
 				let oc = open_out_bin filename in
-				Marshal.to_channel oc save_theories [(Compat_32 : Marshal.extern_flags)] ;
-				close_out oc ;
+				  Marshal.to_channel oc save_theories [] ;
+				  close_out oc ;
 		     with Sys_error msg -> Error.runtime_error "could not write to %s" msg
 		end ;
 		sth
