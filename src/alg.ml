@@ -33,7 +33,7 @@ let sizes_of_str str =
     !lst
   with
     | Failure "int_of_string" ->
-      Error.usage_error "--size accepts a comma-separated list of non-negative integers and intervals, e.g., 1,2,5-7,9"
+      Error.usage_error "--size and --groups accept a comma-separated list of non-negative integers and intervals, e.g., 1,2,5-7,9"
 ;;
 
 
@@ -260,10 +260,10 @@ try begin (*A big wrapper for error reporting. *)
 	  let sth = (fun a -> 
     (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
 		  save_theories := (n, a) :: !save_theories ; (*Initialised just before the main loop, here 
-		                                                theories are stored. ??? Why is this a syntax error?*)
+		                                                theories are stored.*)
       let ac = A.make_cache a in
       let aa = A.with_cache ~cache:ac a in
-      let (seen, i) = Iso.seen theory aa algebras in
+      let (seen, i) = Iso.seen theory aa algebras in (*XXX: This dies when loading algebras from file. Why ???*)
         if not seen && First_order.check_axioms theory a then
           if config.paranoid && CM.seen theory a algebras then
             Error.internal_error "There is a bug in isomorphism detection in alg.\nPlease report with example."
@@ -280,11 +280,11 @@ try begin (*A big wrapper for error reporting. *)
 		    | [] -> 
 			    (if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth ;
 		    | lst ->
-          List.iter sth lst ;
-	        if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
+				(*List.iter sth lst ;*)(if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth ;
+	    if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
   (*if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras*)
   in
-
+  
   if config.format = "" then
     config.format <-
       begin
