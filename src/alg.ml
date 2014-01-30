@@ -342,7 +342,7 @@ try begin (*A big wrapper for error reporting. *)
 		  | filename -> 
 			 try 
 				let oc = open_out_bin filename in
-				  Marshal.to_channel oc save_theories [] ;
+				  Marshal.to_channel oc (!save_theories : (int * Algebra.algebra) list) [] ;
 				  close_out oc ;
 		     with Sys_error msg -> Error.runtime_error "could not write to %s" msg
 		end ;
