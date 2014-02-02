@@ -92,8 +92,9 @@ let gen_decomposable theory n factors precomputed output =
 			  | [] -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
 			  | x  -> List.iter (fun a  -> gen_p p 0 a ps) x
   in (* end of gen_product *)
-	(*match find1 n precomputed with 
-	  | [] -> List.iter gen_product (Util.partitions n) ;
-	  | _  -> gen_product [n] ; (*n is "divided" into partition [n]. We do this, so that we can load the precumputed algebras.*)*)
-    List.iter gen_product (Util.partitions n) ;
-	algebras (*??? Why does this want to be unit type?*)
+  (*match (find1 n precomputed) with 
+    | [] -> List.iter gen_product (Util.partitions n) ;
+    | _  -> gen_product [n] ;	  (*n is "divided" into partition [n]. We do this, so that we can load the precumputed algebras.*)*)
+  List.iter gen_product (Util.partitions n) ;
+  algebras
+

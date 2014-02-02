@@ -50,21 +50,22 @@ let read gs =
               List.map (fun s -> int_of_string s - 1)
                 (Str.split (Str.regexp "[ \t]+") line)
             in
-            let binary = splice size lst in
-					  let my_unit = find_unit binary size in
-            let unary = compute_inverses size my_unit binary in
-					  let algebra = {
-						  Algebra.alg_name = None;
-						  Algebra.alg_prod = None;
-						  Algebra.alg_size = size;
-						  Algebra.alg_const = Array.init (size) (fun i -> i) ;
-						  Algebra.alg_unary = [| unary |];
-						  Algebra.alg_binary = [| binary |];
-						  Algebra.alg_predicates = [| |];
-						  Algebra.alg_relations = [| |];
-						} in
-					    algebras := (size, algebra) :: !algebras
-				  done
+			if (List.length lst <> 0) then
+				let binary = splice size lst in
+						  let my_unit = find_unit binary size in
+				let unary = compute_inverses size my_unit binary in
+						  let algebra = {
+							  Algebra.alg_name = None;
+							  Algebra.alg_prod = None;
+							  Algebra.alg_size = size;
+							  Algebra.alg_const = Array.init (size) (fun i -> i) ;
+							  Algebra.alg_unary = [| unary |];
+							  Algebra.alg_binary = [| binary |];
+							  Algebra.alg_predicates = [| |];
+							  Algebra.alg_relations = [| |];
+							} in
+							algebras := (size, algebra) :: !algebras
+					  done
 			  with End_of_file -> close_in ic
     end
 		with Sys_error msg -> Error.runtime_error "file error (%s)" msg

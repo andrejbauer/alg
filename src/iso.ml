@@ -27,7 +27,8 @@ let check_relation iso r1 r2 =
   let l = Array.length iso in
   Util.for_all2 (fun i j -> r1.(i).(j) = r2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
 
-let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
+ (*XXX:The error is here before the if clause. So that means in the argument.*)
+let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op; 
              th_predicates=predicates_op; th_relations=relations_op}
             ({alg_size=n1; alg_const=c1; alg_unary=u1; 
               alg_binary=b1; alg_relations=r1; alg_predicates=p1}, 
@@ -36,8 +37,10 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
               alg_binary=b2; alg_relations=r2; alg_predicates=p2},
              {indegs=indegs2; outdegs=outdegs2}) = 
   if n1 <> n2
-  then false
+  then (print_endline "This works 2"; false)
   else
+	begin 
+	print_endline "This works 2a";
     let n = n1 in
     let lp = Array.length predicates_op in
     let lr = Array.length relations_op in
@@ -45,7 +48,7 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
     let iso = Array.make n (-1) in
     (* Handle constants *)
     Util.array_iter2 (fun i j -> used.(j) <- true ; iso.(i) <- j) c1 c2 ;
-
+	print_endline "This works 3";
     (*
       Generate actions from unary and binary operations analogous to generation
       of actions from axioms. Axioms here are implicit from the definition of isomorphism
@@ -71,7 +74,9 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
         while not (Stack.is_empty stack) && Stack.top stack = i do
           iso.(arr1.(Stack.pop stack)) <- -1 ;
           used.(arr2.(iso.(i))) <- false
-        done in (f_unary, undo) in
+        done 
+	  in 
+	  (f_unary, undo) in
 
     let actions_from_binary arr1 arr2 =
       let stack = Stack.create () in
@@ -178,10 +183,11 @@ let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
                 end
           end
           allow.(i) in
+	print_endline "This works 4";
     try
       gen_iso 0 ; false
     with Found -> true
-
+	end
 (* Utility functions for checking whether we have already seen a given algebra. *)
 
 let empty_store () = Hashtbl.create 1000
@@ -191,7 +197,9 @@ let empty_store () = Hashtbl.create 1000
 let seen th a store =
   let i = invariant (wo_cache a) in
   let lst = (try Hashtbl.find store i with Not_found -> []) in
-    List.exists (are_iso th a) lst, i
+    print_endline "This works 0";
+	print_endline (string_of_int (List.length lst));
+    List.exists (are_iso th a) lst, i (*XXX:The list is empty. Is this a problem?*)
 
 (* Store the given algebra. Warning: if you pass the optional
    invariant [i] then it _must_ be the same as [invariant a]. This is

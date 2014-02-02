@@ -133,13 +133,13 @@ try begin (*A big wrapper for error reporting. *)
   if !cmd_axioms <> [] then cmd_axioms := "" :: "# Extra command-line axioms" :: !cmd_axioms ;
 
   (*Read the precomputed theories.??? If possible: make it so, that it only reads if argument present*)
-  let preloaded : (int * Algebra.algebra) list =
+  let preloaded : ((int * Algebra.algebra) list)=
     begin match config.load_file with
-      | "" -> ([] : (int * Algebra.algebra) list)
+      | "" -> ([] : ((int * Algebra.algebra) list))
       | filename -> 
 		    try 
 			    let ic = open_in_bin filename in 
-			    let sth = (Marshal.from_channel ic : (int * Algebra.algebra) list) in
+			    let sth = (Marshal.from_channel ic : ((int * Algebra.algebra) list)) in
 			      close_in ic ;
 			      sth
 		    with Sys_error msg -> Error.runtime_error "could not read %s" msg
@@ -263,7 +263,8 @@ try begin (*A big wrapper for error reporting. *)
 		                                                theories are stored.*)
       let ac = A.make_cache a in
       let aa = A.with_cache ~cache:ac a in
-      let (seen, i) = Iso.seen theory aa algebras in (*XXX: This dies when loading algebras from file. Why ???*)
+      let (seen, i) = Iso.seen theory aa algebras in
+		print_endline "I work1!";
         if not seen && First_order.check_axioms theory a then
           if config.paranoid && CM.seen theory a algebras then
             Error.internal_error "There is a bug in isomorphism detection in alg.\nPlease report with example."
@@ -273,6 +274,7 @@ try begin (*A big wrapper for error reporting. *)
               let bc = A.with_cache ~cache:ac b in
                 Iso.store algebras ~inv:i bc ;
                 if must_cache then to_cache := b :: !to_cache ;
+				print_endline "I work2!";
                 output (b, true)
             end)
 	  in	
@@ -280,8 +282,9 @@ try begin (*A big wrapper for error reporting. *)
 		    | [] -> 
 			    (if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth ;
 		    | lst ->
-				(*List.iter sth lst ;*)(if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth ;
-	    if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
+				(List.iter sth lst) ;
+		print_endline "I work3!";
+	    if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras (*XXX: Y u no work?*)
   (*if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras*)
   in
   
@@ -330,7 +333,9 @@ try begin (*A big wrapper for error reporting. *)
               then out.algebra algebra 
             in
             process_size n output ;
+			print_endline "I work4!";
             counts := (n, !k) :: !counts ;
+			print_endline "I work5!";
             if config.count_only
             then out.count n !k
             else out.size_footer ()
@@ -342,7 +347,7 @@ try begin (*A big wrapper for error reporting. *)
 		  | filename -> 
 			 try 
 				let oc = open_out_bin filename in
-				  Marshal.to_channel oc (!save_theories : (int * Algebra.algebra) list) [] ;
+				  Marshal.to_channel oc (!save_theories : ((int * Algebra.algebra) list)) [] ;
 				  close_out oc ;
 		     with Sys_error msg -> Error.runtime_error "could not write to %s" msg
 		end ;
