@@ -42,7 +42,7 @@ let read gs =
 
   let read_file size =
 		try begin
-			let ic = open_in (string_of_int size) in
+			let ic = open_in ( "./groups/"^(string_of_int size)) in
 			  try
 				  while true do
 					  let line = input_line ic in

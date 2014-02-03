@@ -207,6 +207,7 @@ try begin (*A big wrapper for error reporting. *)
 	  try 
 	    let ic = open_in_bin filename in 
 	    let sth = (Marshal.from_channel ic : ((int * Algebra.algebra) list)) in
+        print_endline ("Loaded:  "^ (string_of_int (List.length sth))) ;
 	      close_in ic ;
 	      sth
 	  with Sys_error msg -> Error.runtime_error "could not read %s" msg
@@ -217,6 +218,20 @@ try begin (*A big wrapper for error reporting. *)
 
     let precomputed = Util.union preloaded loaded_groups in
       
+    let loaded = IntMap.empty in (*??? Fill in precomputed.*)
+    
+    let rec fill_in loaded precomputed =
+      match precomputed with
+        | [] -> loaded
+        | (n,a) :: x -> 
+          fill_in (IntMap.add n (a :: 
+          (try
+            (IntMap.find n loaded)
+          with Not_found -> []))
+          loaded) x
+    in
+    fill_in loaded precomputed ;
+    
     (*
       if (Config.counter_example_to <> "") then
     (*???Najdi protiprimer in ga sprintaj*)
@@ -259,7 +274,7 @@ try begin (*A big wrapper for error reporting. *)
                       | None ->
                         let lst = ref [] in
                           process_size k (fun (algebra, indecomposable) -> 
-			    if indecomposable then lst := Util.copy_algebra algebra :: !lst) ;
+                          if indecomposable then lst := Util.copy_algebra algebra :: !lst) ;
                           !lst
                     end
                   in
@@ -277,37 +292,31 @@ try begin (*A big wrapper for error reporting. *)
         let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
         let algebras = decomposables in
         let to_cache = ref [] in
-        let rec find1 p lst = 
-          match lst with
-            | [] -> []
-            | (s, a) :: q ->
-              if p = s then a :: (find1 p q) else find1 p q
-	in
-	let sth = (fun a -> 
-          (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
-          let ac = A.make_cache a in
-          let aa = A.with_cache ~cache:ac a in
-          let (seen, i) = Iso.seen theory aa algebras in
-            if not seen && First_order.check_axioms theory a then
-              if config.paranoid && CM.seen theory a algebras then
-                Error.internal_error "There is a bug in isomorphism detection in alg.\nPlease report with example."
-              else
-                begin
-                  let b = Util.copy_algebra a in
-                  let bc = A.with_cache ~cache:ac b in
-                    Iso.store algebras ~inv:i bc ;
-                    if must_cache then to_cache := b :: !to_cache ;
-	            save_theories := (n, b) :: !save_theories ;
-                    output (b, true)
-                end)
-	in
-	  begin match find1 n precomputed with
-	    | [] -> 
-	      (if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth
-	    | lst ->
-	      (List.iter sth lst) ;
-          end ;
-	  if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
+
+        let sth = (fun a -> 
+                (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
+                let ac = A.make_cache a in
+                let aa = A.with_cache ~cache:ac a in
+                let (seen, i) = Iso.seen theory aa algebras in
+                  if not seen && First_order.check_axioms theory a then
+                    if config.paranoid && CM.seen theory a algebras then
+                      Error.internal_error "There is a bug in isomorphism detection in alg.\nPlease report with example."
+                    else
+                      begin
+                        let b = Util.copy_algebra a in
+                        let bc = A.with_cache ~cache:ac b in
+                          Iso.store algebras ~inv:i bc ;
+                          if must_cache then to_cache := b :: !to_cache ;
+                          save_theories := ((Array.length b.Algebra.alg_const), b) :: !save_theories ; (*Here b.alg_size can be wrong.*)
+                          output (b, true)
+                      end)
+        in
+        try 
+          let lst = IntMap.find n loaded in
+          print_endline ((string_of_int n)^"  :  "^string_of_int (List.length lst));
+          (List.iter sth lst) ;
+        with Not_found -> ((if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth)
+        if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
       end (* process_size *)
 
       in
@@ -346,6 +355,7 @@ try begin (*A big wrapper for error reporting. *)
 		    | filename -> 
 		      try 
 			let oc = open_out_bin filename in
+        print_endline ("Saved"^string_of_int (List.length !save_theories)) ;
 			  Marshal.to_channel oc (!save_theories : ((int * Algebra.algebra) list)) [] ;
 			  close_out oc ;
 		      with Sys_error msg -> Error.runtime_error "could not write to %s" msg

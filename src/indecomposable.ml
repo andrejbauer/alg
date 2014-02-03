@@ -50,11 +50,6 @@ let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; 
 
 (* factors is a map of possible factors *)
 let gen_decomposable theory n factors precomputed output = 
-  (*??? Add the requiered code for loading theories from precomputed.*)
-  let rec find1 p lst = match lst with
-  | [] -> []
-  | (s, a) :: q -> if p = s then a :: (find1 p q) else find1 p q
-  in
   let algebras = Iso.empty_store () in
   (* Generate all products of algebras which partition into algebras of sizes in partition.
      partition is assumed to be in some order (descending or ascending). *)
@@ -75,25 +70,28 @@ let gen_decomposable theory n factors precomputed output =
       | (p::ps) -> 
           let start = if last = p then start else 0 in
           let last = p in
-			match find1 p precomputed with
-			| [] -> 
-				Util.iter_enum
-				  (fun i a -> if i >= start then gen_p last i (product acc a) ps)
-				  (IntMap.find last factors)
-		    | x -> 
-				Util.iter_enum
-				  (fun i a -> if i >= start then gen_p last i (product acc a) ps)
-				  x
+          try
+            let x = IntMap.find p loaded in
+            Util.iter_enum
+              (fun i a -> if i >= start then gen_p last i (product acc a) ps)
+              x
+          with Not_found ->
+            Util.iter_enum
+            (fun i a -> if i >= start then gen_p last i (product acc a) ps)
+            (IntMap.find last factors)
    in
     match partition with
       | [] -> ()
       | p::ps -> 
-			match find1 p precomputed with
-			  | [] -> List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
-			  | x  -> List.iter (fun a  -> gen_p p 0 a ps) x
+			  try
+          let x = IntMap.find p loaded in
+          List.iter (fun a  -> gen_p p 0 a ps) x
+        with Not_found ->
+          List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
   in (* end of gen_product *)
-    (match (find1 n precomputed) with 
-      | [] -> List.iter gen_product (Util.partitions n)
-      | _::_  -> gen_product [n]) ;
-    algebras
+  (*(match (find1 n precomputed) with 
+    | [] -> List.iter gen_product (Util.partitions n)
+    | _::_  -> gen_product [n]) ;*) (*If we want to get product groups when using --groups we must not have this.*)
+  List.iter gen_product (Util.partitions n);
+  algebras
 
