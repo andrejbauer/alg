@@ -204,33 +204,35 @@ try begin (*A big wrapper for error reporting. *)
       begin match config.load_file with
         | "" -> ([] : ((int * Algebra.algebra) list))
         | filename -> 
-	  try 
-	    let ic = open_in_bin filename in 
-	    let sth = (Marshal.from_channel ic : ((int * Algebra.algebra) list)) in
-        print_endline ("Loaded:  "^ (string_of_int (List.length sth))) ;
-	      close_in ic ;
-	      sth
-	  with Sys_error msg -> Error.runtime_error "could not read %s" msg
+          try 
+            let ic = open_in_bin filename in 
+            let sth = (Marshal.from_channel ic : ((int * Algebra.algebra) list)) in
+              print_endline ("Loaded:  "^ (string_of_int (List.length sth))) ;
+              close_in ic ;
+              sth
+          with Sys_error msg -> Error.runtime_error "could not read %s" msg
       end
     in
 
     let loaded_groups = Loading_saving_groups.read config.groups in
 
     let precomputed = Util.union preloaded loaded_groups in
-      
-    let loaded = IntMap.empty in (*??? Fill in precomputed.*)
     
+    let loaded = IntMap.empty in
+
     let rec fill_in loaded precomputed =
       match precomputed with
         | [] -> loaded
         | (n,a) :: x -> 
-          fill_in (IntMap.add n (a :: 
-          (try
-            (IntMap.find n loaded)
-          with Not_found -> []))
-          loaded) x
+          let loaded = IntMap.add n (a :: 
+            (try
+              (IntMap.find n loaded)
+            with Not_found -> [])
+          ) loaded in
+          fill_in loaded x
     in
-    fill_in loaded precomputed ;
+    
+    let loaded = fill_in loaded precomputed in 
     
     (*
       if (Config.counter_example_to <> "") then
@@ -284,7 +286,7 @@ try begin (*A big wrapper for error reporting. *)
             in
               begin
                 (* make (or load) decomposables *)
-                Indecomposable.gen_decomposable theory n factors precomputed (fun a -> output (a, false))
+                Indecomposable.gen_decomposable theory n factors loaded (fun a -> output (a, false))
               end
         in
         (* Generate indecomposable algebras. *)
@@ -315,12 +317,13 @@ try begin (*A big wrapper for error reporting. *)
           let lst = IntMap.find n loaded in
           print_endline ((string_of_int n)^"  :  "^string_of_int (List.length lst));
           (List.iter sth lst) ;
-        with Not_found -> ((if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth)
+        with Not_found -> ((if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth);
         if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
       end (* process_size *)
 
       in
 
+        let counts = ref [] in
         let counts = ref [] in
           
           (* The main loop *)

@@ -49,7 +49,7 @@ let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; 
   end
 
 (* factors is a map of possible factors *)
-let gen_decomposable theory n factors precomputed output = 
+let gen_decomposable theory n factors loaded output = 
   let algebras = Iso.empty_store () in
   (* Generate all products of algebras which partition into algebras of sizes in partition.
      partition is assumed to be in some order (descending or ascending). *)
@@ -89,9 +89,13 @@ let gen_decomposable theory n factors precomputed output =
         with Not_found ->
           List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
   in (* end of gen_product *)
-  (*(match (find1 n precomputed) with 
-    | [] -> List.iter gen_product (Util.partitions n)
-    | _::_  -> gen_product [n]) ;*) (*If we want to get product groups when using --groups we must not have this.*)
-  List.iter gen_product (Util.partitions n);
+  let nothere = 
+    begin
+    match (try IntMap.find n loaded with Not_found -> []) with 
+      | [] -> List.iter gen_product (Util.partitions n);
+      | _::_  -> gen_product [n];  (*If we want to get product groups when using --groups we must not have this.*)
+    (*List.iter gen_product (Util.partitions n);*)
+    end
+  in
   algebras
 
