@@ -107,7 +107,7 @@ try begin (*A big wrapper for error reporting. *)
     ("--groups",
      Arg.String (fun str -> 
        config.groups <- List.sort compare (Util.union config.sizes (sizes_of_str str))),
-     " Comma-separated list of group sizes and size intervals from-to, that you want included. If empty it assumes all grpups. Maximum size is 200.");
+     " Comma-separated list of group sizes and size intervals from-to, that you want included.");
     ("--version",
      Arg.Unit (fun () ->
        Printf.printf "Copyright (c) 2011 Ales Bizjak and Andrej Bauer\n" ;
@@ -207,9 +207,8 @@ try begin (*A big wrapper for error reporting. *)
           try 
             let ic = open_in_bin filename in 
             let sth = (Marshal.from_channel ic : ((int * Algebra.algebra) list)) in
-              print_endline ("Loaded:  "^ (string_of_int (List.length sth))) ;
-              close_in ic ;
-              sth
+            close_in ic ;
+            sth
           with Sys_error msg -> Error.runtime_error "could not read %s" msg
       end
     in
@@ -219,7 +218,7 @@ try begin (*A big wrapper for error reporting. *)
     let precomputed = Util.union preloaded loaded_groups in
     
     let loaded = IntMap.empty in
-
+    
     let rec fill_in loaded precomputed =
       match precomputed with
         | [] -> loaded
@@ -234,141 +233,159 @@ try begin (*A big wrapper for error reporting. *)
     
     let loaded = fill_in loaded precomputed in 
     
-    (*
-      if (Config.counter_example_to <> "") then
-    (*???Najdi protiprimer in ga sprintaj*)
-      while b = true do
-      najdi protiprimer algebre iz precomputed
-      if našel : b = false ; vrni algebro
-      done
-    *)
     let save_theories = ref [] in
-      
-      (* If --indecomposable is given then --no-products makes no sense. *)
-      if config.indecomposable_only then config.products <- true ;
-
-      (* If there are predicates or relations --no-products makes no sense (and will crash). *)
-      if theory_with_relations then config.products <- false ;
-
-      (* Cache for indecomposable algebras computed so far. This is a map from size to a list of algebras. *)
-      let indecomposable_algebras = ref IntMap.empty in
-
-      let lookup_cached n =
-        try
-          Some (IntMap.find n !indecomposable_algebras)
-        with Not_found -> None
+    
+    (*if (config.counter_example_to <> "") then
+      print_endline "Looking for counterexample.";
+      let (env, eqs, axs1) = Cook.split_entries raw_theory in
+      let axs = () in (* Cook.cook_formula env [Config.counter_example_to] in*)
+      let rec chck lst size axs =
+        match lst with
+          | [] -> (false, Algebra.empty size theory)
+          | h :: hs ->
+            if (Enum.does_contradict (snd h) axs) then
+               (true, snd h)
+            else 
+              chck hs size axs
       in
-
-      (* Processing of algebras of a given size and pass them to the given continuations,
-         together with information whether the algebra is indecomposable. *)
-      let rec process_size n output = begin
-        (* Generate a hash table of decomposable algebras if needed. *)
-        let decomposables = 
-          if n < Array.length theory.Theory.th_const || not config.products then Iso.empty_store ()
-          else
-            (* Generate indecomposable factors and then decomposable algebras from them. *)
-            let factors =
-              List.fold_left
-                (fun m k ->
-                  let lst =
-                    begin match lookup_cached k with
-                      | Some lst -> lst
-                      | None ->
-                        let lst = ref [] in
-                          process_size k (fun (algebra, indecomposable) -> 
-                          if indecomposable then lst := Util.copy_algebra algebra :: !lst) ;
-                          !lst
-                    end
-                  in
-                    IntMap.add k lst m)
-                IntMap.empty
-                (Util.divisors n)
-            in
-              begin
-                (* make (or load) decomposables *)
-                Indecomposable.gen_decomposable theory n factors loaded (fun a -> output (a, false))
-              end
-        in
-        (* Generate indecomposable algebras. *)
-        (* Are we going to cache these? *)
-        let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
-        let algebras = decomposables in
-        let to_cache = ref [] in
-
-        let sth = (fun a -> 
-                (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
-                let ac = A.make_cache a in
-                let aa = A.with_cache ~cache:ac a in
-                let (seen, i) = Iso.seen theory aa algebras in
-                  if not seen && First_order.check_axioms theory a then
-                    if config.paranoid && CM.seen theory a algebras then
-                      Error.internal_error "There is a bug in isomorphism detection in alg.\nPlease report with example."
-                    else
-                      begin
-                        let b = Util.copy_algebra a in
-                        let bc = A.with_cache ~cache:ac b in
-                          Iso.store algebras ~inv:i bc ;
-                          if must_cache then to_cache := b :: !to_cache ;
-                          save_theories := ((Array.length b.Algebra.alg_const), b) :: !save_theories ; (*Here b.alg_size can be wrong.*)
-                          output (b, true)
-                      end)
-        in
-        try 
-          let lst = IntMap.find n loaded in
-          print_endline ((string_of_int n)^"  :  "^string_of_int (List.length lst));
-          (List.iter sth lst) ;
-        with Not_found -> ((if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth);
-        if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
-      end (* process_size *)
-
+      let rec find_counter size axs =
+        match chck (Loading_saving_groups.read [size]) size axs with
+          | (false, _) -> find_counter (size + 1) axs
+          | (true, a) -> a
       in
-
-        let counts = ref [] in
-        let counts = ref [] in
+      try 
+        let a = find_counter 1 axs in
+        print_endline ("# The counterexample to \""^ config.counter_example_to ^"\" is : \n");       
+        (*output (a, true); How to output only this algebra?*)
+      with Error.runtime_error ->
+        print_endline ("We ran out of groups to test. Axiom is consistent with all provided groups.");*)
           
-          (* The main loop *)
-          begin
-            Sys.catch_break true ;
-            out.header () ;
-            if config.count_only then out.count_header () ;
-            begin 
-              try
-                let sth = List.iter
-                  (fun n -> 
-                    if not config.count_only then out.size_header n ;
-                    let k = ref 0 in
-                    let output (algebra, indecomposable) =
-                      if config.paranoid && not (CM.check_model theory algebra) then
-                        Error.internal_error "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
-                      if not config.indecomposable_only || indecomposable then incr k ;
-                      algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
-                      if not config.count_only && (not config.indecomposable_only || indecomposable)
-                      then out.algebra algebra 
-                    in
-                      process_size n output ;
-                      counts := (n, !k) :: !counts ;
-                      if config.count_only
-                      then out.count n !k
-                      else out.size_footer ()
-		  )
-		  config.sizes
-		in
-		  begin match config.save_file with
-		    | "" -> ()
-		    | filename -> 
-		      try 
-			let oc = open_out_bin filename in
-        print_endline ("Saved"^string_of_int (List.length !save_theories)) ;
-			  Marshal.to_channel oc (!save_theories : ((int * Algebra.algebra) list)) [] ;
-			  close_out oc ;
-		      with Sys_error msg -> Error.runtime_error "could not write to %s" msg
-		  end ;
-		  sth
-	      with Sys.Break -> out.interrupted ()
+      
+      
+    (* If --indecomposable is given then --no-products makes no sense. *)
+    if config.indecomposable_only then config.products <- true ;
+
+    (* If there are predicates or relations --no-products makes no sense (and will crash). *)
+    if theory_with_relations then config.products <- false ;
+
+    (* Cache for indecomposable algebras computed so far. This is a map from size to a list of algebras. *)
+    let indecomposable_algebras = ref IntMap.empty in
+
+    let lookup_cached n =
+      try
+        Some (IntMap.find n !indecomposable_algebras)
+      with Not_found -> None
+    in
+
+    (* Processing of algebras of a given size and pass them to the given continuations,
+       together with information whether the algebra is indecomposable. *)
+    let rec process_size n output = begin
+      (* Generate a hash table of decomposable algebras if needed. *)
+      let (decomposables, save_theories) = 
+        if n < Array.length theory.Theory.th_const || not config.products then (Iso.empty_store (),ref [])
+        else
+          (* Generate indecomposable factors and then decomposable algebras from them. *)
+          let factors =
+            List.fold_left
+              (fun m k ->
+                let lst =
+                  begin match lookup_cached k with
+                    | Some lst -> lst
+                    | None ->
+                      let lst = ref [] in
+                        process_size k (fun (algebra, indecomposable) -> 
+                        if indecomposable then lst := Util.copy_algebra algebra :: !lst) ;
+                        !lst
+                  end
+                in
+                  IntMap.add k lst m)
+              IntMap.empty
+              (Util.divisors n)
+          in
+            begin
+              (* make (or load) decomposables *)
+              Indecomposable.gen_decomposable theory n factors loaded save_theories (fun a -> output (a, false))
+            end
+      in
+      (* Generate indecomposable algebras. *)
+      (* Are we going to cache these? *)
+      let must_cache = config.products && List.exists (fun m -> n > 0 && m > n && m mod n = 0) config.sizes in
+      let algebras = decomposables in
+      let to_cache = ref [] in
+
+      let sth = (fun a -> 
+        (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
+        let ac = A.make_cache a in
+        let aa = A.with_cache ~cache:ac a in
+        let (seen, i) = Iso.seen theory aa algebras in
+          if not seen && First_order.check_axioms theory a then
+            if config.paranoid && CM.seen theory a algebras then
+              Error.internal_error "There is a bug in isomorphism detection in alg.\nPlease report with example."
+            else
+              begin
+                let b = Util.copy_algebra a in
+                let bc = A.with_cache ~cache:ac b in
+                  Iso.store algebras ~inv:i bc ;
+                  if must_cache then to_cache := b :: !to_cache ;
+                  save_theories := (b.alg_size, b) :: !save_theories ; (*Here b can be of wrong size.*)
+                  output (b, true)
+              end)
+      in
+      try 
+        let lst = IntMap.find n loaded in
+        (List.iter sth lst) ;
+      with Not_found -> 
+        ((if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory sth);
+      if must_cache then indecomposable_algebras := IntMap.add n !to_cache !indecomposable_algebras
+    end (* process_size *)
+
+    in
+
+      let counts = ref [] in
+      let counts = ref [] in
+        
+      (* The main loop *)
+      begin
+        Sys.catch_break true ;
+        out.header () ;
+        if config.count_only then out.count_header () ;
+        begin 
+          try
+            let sth = List.iter
+              (fun n -> 
+                if not config.count_only then out.size_header n ;
+                let k = ref 0 in
+                let output (algebra, indecomposable) =
+                  if config.paranoid && not (CM.check_model theory algebra) then
+                    Error.internal_error "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
+                  if not config.indecomposable_only || indecomposable then incr k ;
+                  algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
+                  if not config.count_only && (not config.indecomposable_only || indecomposable)
+                  then out.algebra algebra 
+                in
+                  process_size n output ;
+                  counts := (n, !k) :: !counts ;
+                  if config.count_only
+                  then out.count n !k
+                  else out.size_footer ()
+              )
+              config.sizes
+            in
+            begin match config.save_file with
+              | "" -> ()
+              | filename -> 
+                try 
+                  let oc = open_out_bin filename in
+                    Marshal.to_channel oc (!save_theories : ((int * Algebra.algebra) list)) [] ;
+                    close_out oc ;
+                with Sys_error msg -> Error.runtime_error "could not write to %s" msg
             end ;
-            if config.count_only
-            then out.count_footer (List.rev !counts)
-            else out.footer (List.rev !counts)
-          end
+            sth
+          with Sys.Break -> out.interrupted ()
+        end ;
+        if config.count_only
+        then out.count_footer (List.rev !counts)
+        else out.footer (List.rev !counts)
+      end
 end
 with Error.Error err -> Print.error err

@@ -183,16 +183,16 @@ let env_to_array lst =
 
 let cook_theory th_name lst =
   let (env, eqs, axs) = split_entries lst in
-    match Util.find_duplicate (List.map fst (env.const @ env.unary @ env.binary)) with
-      | Some op -> Error.typing_error ~loc:Common.Nowhere "operation %s is declared more than once" op
-      | None -> 
-          {
-            Theory.th_name = th_name;
-            Theory.th_const = env_to_array env.const;
-            Theory.th_unary = env_to_array env.unary;
-            Theory.th_binary = env_to_array env.binary;
-            Theory.th_predicates = env_to_array env.predicates;
-            Theory.th_relations = env_to_array env.relations;
-            Theory.th_equations = List.map (cook_equation env) eqs;
-            Theory.th_axioms = List.map (cook_formula env) axs;
-          }
+  match Util.find_duplicate (List.map fst (env.const @ env.unary @ env.binary)) with
+    | Some op -> Error.typing_error ~loc:Common.Nowhere "operation %s is declared more than once" op
+    | None -> 
+        {
+          Theory.th_name = th_name;
+          Theory.th_const = env_to_array env.const;
+          Theory.th_unary = env_to_array env.unary;
+          Theory.th_binary = env_to_array env.binary;
+          Theory.th_predicates = env_to_array env.predicates;
+          Theory.th_relations = env_to_array env.relations;
+          Theory.th_equations = List.map (cook_equation env) eqs;
+          Theory.th_axioms = List.map (cook_formula env) axs;
+        }

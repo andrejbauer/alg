@@ -42,7 +42,8 @@ let read gs =
 
   let read_file size =
 		try begin
-			let ic = open_in ( "./groups/"^(string_of_int size)) in
+      (*??? Here I have ../groups, because my alg.native is in src. It must be changed to ./, if your alg.native is one level higher.*)
+			let ic = open_in ( "../_groups/"^(string_of_int size)) in
 			  try
 				  while true do
 					  let line = input_line ic in

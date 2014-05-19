@@ -5,8 +5,8 @@ module IntMap =
   Map.Make(struct
     type t = int
     let compare = compare
-  end) ;;
-
+  end) ;; 
+  
 (* Return the list of lines in the given file. *)
 let read_lines filename =
   let fh = open_in filename in

@@ -49,7 +49,7 @@ let product {alg_size=n1; alg_name=a1; alg_prod=p1; alg_const=c1; alg_unary=u1; 
   end
 
 (* factors is a map of possible factors *)
-let gen_decomposable theory n factors loaded output = 
+let gen_decomposable theory n factors loaded save_theories output = 
   let algebras = Iso.empty_store () in
   (* Generate all products of algebras which partition into algebras of sizes in partition.
      partition is assumed to be in some order (descending or ascending). *)
@@ -64,6 +64,7 @@ let gen_decomposable theory n factors loaded output =
         let (seen, i) = Iso.seen theory ac algebras in
         if not seen && First_order.check_axioms theory acc
         then begin
+          save_theories := ((acc.alg_size, acc) :: !save_theories);
           Iso.store algebras ~inv:i (Util.copy_algebra_with_cache ac) ;
           output acc
         end
@@ -79,7 +80,7 @@ let gen_decomposable theory n factors loaded output =
             Util.iter_enum
             (fun i a -> if i >= start then gen_p last i (product acc a) ps)
             (IntMap.find last factors)
-   in
+    in
     match partition with
       | [] -> ()
       | p::ps -> 
@@ -94,8 +95,7 @@ let gen_decomposable theory n factors loaded output =
     match (try IntMap.find n loaded with Not_found -> []) with 
       | [] -> List.iter gen_product (Util.partitions n);
       | _::_  -> gen_product [n];  (*If we want to get product groups when using --groups we must not have this.*)
-    (*List.iter gen_product (Util.partitions n);*)
     end
   in
-  algebras
+  (algebras, save_theories)
 
