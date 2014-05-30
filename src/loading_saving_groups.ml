@@ -13,6 +13,7 @@ let compute_inverses size my_unit binary =
 ;;
 
 exception Result of int
+exception No_file of string
 
 let find_unit binary size =
   let v = Array.init size (fun k -> k) in
@@ -37,7 +38,7 @@ let splice n lst =
     b
 
 (*??? Do we want to rename elements, so that 0 is always the unit?*)
-let read gs = 
+let read gs exce= 
   let algebras = ref [] in
 
   let read_file size =
@@ -69,7 +70,7 @@ let read gs =
 					  done
 			  with End_of_file -> close_in ic
     end
-		with Sys_error msg -> Error.runtime_error "file error (%s)" msg
+		with Sys_error msg -> exce "file error (%s)" msg
 
   in
 	  List.iter read_file (List.rev gs) ;

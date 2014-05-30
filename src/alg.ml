@@ -213,7 +213,7 @@ try begin (*A big wrapper for error reporting. *)
       end
     in
 
-    let loaded_groups = Loading_saving_groups.read config.groups in
+    let loaded_groups = Loading_saving_groups.read config.groups Error.runtime_error in
 
     let precomputed = Util.union preloaded loaded_groups in
     
@@ -235,10 +235,10 @@ try begin (*A big wrapper for error reporting. *)
     
     let save_theories = ref [] in
     
-    (*if (config.counter_example_to <> "") then
+    (*if (config.counter_example_to <> "") then begin
       print_endline "Looking for counterexample.";
       let (env, eqs, axs1) = Cook.split_entries raw_theory in
-      let axs = () in (* Cook.cook_formula env [Config.counter_example_to] in*)
+      let axs = [] in (* Cook.cook_formula env [Config.counter_example_to] in*)
       let rec chck lst size axs =
         match lst with
           | [] -> (false, Algebra.empty size theory)
@@ -249,17 +249,18 @@ try begin (*A big wrapper for error reporting. *)
               chck hs size axs
       in
       let rec find_counter size axs =
-        match chck (Loading_saving_groups.read [size]) size axs with
+        match chck (Loading_saving_groups.read [size] (fun msg -> Loading_saving_groups.No_file msg)) size axs with
           | (false, _) -> find_counter (size + 1) axs
           | (true, a) -> a
       in
-      try 
+      begin try 
         let a = find_counter 1 axs in
-        print_endline ("# The counterexample to \""^ config.counter_example_to ^"\" is : \n");       
+        print_endline ("# The counterexample to \"" ^ config.counter_example_to ^ "\" is : \n")
         (*output (a, true); How to output only this algebra?*)
-      with Error.runtime_error ->
-        print_endline ("We ran out of groups to test. Axiom is consistent with all provided groups.");*)
-          
+      with Loading_saving_groups.No_file msg ->
+        print_endline "We ran out of groups to test. Axiom is consistent with all provided groups."
+      end  
+    end ;     *)
       
       
     (* If --indecomposable is given then --no-products makes no sense. *)
@@ -327,7 +328,7 @@ try begin (*A big wrapper for error reporting. *)
                 let bc = A.with_cache ~cache:ac b in
                   Iso.store algebras ~inv:i bc ;
                   if must_cache then to_cache := b :: !to_cache ;
-                  save_theories := (b.alg_size, b) :: !save_theories ; (*Here b can be of wrong size.*)
+                  save_theories := (b.A.alg_size, b) :: !save_theories ; (*Here b can be of wrong size.*)
                   output (b, true)
               end)
       in
