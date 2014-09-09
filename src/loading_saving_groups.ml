@@ -39,41 +39,41 @@ let splice n lst =
     ) lst ;
     b
 
+exception GroupLoadError of string
+
+let read_group size =
+  try
+    let groups = ref [] in
+    (*??? Here I have ../groups, because my alg.native is in src. It must be changed to ./, if your alg.native is one level higher.*)
+    let ic = open_in ( "../_groups/"^(string_of_int size)) in
+      begin try
+	while true do
+	  let line = input_line ic in
+	  let lst = 
+            List.map (fun s -> int_of_string s - 1)
+              (Str.split (Str.regexp "[ \t]+") line)
+          in
+	    if (List.length lst <> 0) then
+	      let binary = splice size lst in
+	      let my_unit = find_unit binary size in
+	      let unary = compute_inverses size my_unit binary in
+	      let group = {
+		Algebra.alg_name = None;
+		Algebra.alg_prod = None;
+		Algebra.alg_size = size;
+		Algebra.alg_const = Array.init (size) (fun i -> i) ;
+		Algebra.alg_unary = [| unary |];
+		Algebra.alg_binary = [| binary |];
+		Algebra.alg_predicates = [| |];
+		Algebra.alg_relations = [| |];
+	      } in
+		groups := (size, group) :: !groups
+	done ;
+      with End_of_file -> close_in ic
+      end ;
+      !groups
+  with Sys_error msg -> raise (GroupLoadError msg)
+
 (*??? Do we want to rename elements, so that 0 is always the unit?*)
-let read gs exce = 
-  let algebras = ref [] in
-
-  let read_file size =
-		try begin
-      (*??? Here I have ../groups, because my alg.native is in src. It must be changed to ./, if your alg.native is one level higher.*)
-			let ic = open_in ( "../_groups/"^(string_of_int size)) in
-			  try
-				  while true do
-					  let line = input_line ic in
-					  let lst = 
-              List.map (fun s -> int_of_string s - 1)
-                (Str.split (Str.regexp "[ \t]+") line)
-            in
-			if (List.length lst <> 0) then
-				let binary = splice size lst in
-						  let my_unit = find_unit binary size in
-				let unary = compute_inverses size my_unit binary in
-						  let algebra = {
-							  Algebra.alg_name = None;
-							  Algebra.alg_prod = None;
-							  Algebra.alg_size = size;
-							  Algebra.alg_const = Array.init (size) (fun i -> i) ;
-							  Algebra.alg_unary = [| unary |];
-							  Algebra.alg_binary = [| binary |];
-							  Algebra.alg_predicates = [| |];
-							  Algebra.alg_relations = [| |];
-							} in
-							algebras := (size, algebra) :: !algebras
-					  done
-			  with End_of_file -> close_in ic
-    end
-		with Sys_error msg -> exce "file error (%s)" msg
-
-  in
-	  List.iter read_file (List.rev gs) ;
-	  !algebras
+let read_groups sizes =
+  List.flatten (List.map (fun n -> read_group n) sizes)

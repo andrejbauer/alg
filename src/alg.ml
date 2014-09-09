@@ -102,7 +102,7 @@ try begin (*A big wrapper for error reporting. *)
      Arg.String (fun str -> config.save_file <- str),
      " Saves the computed theories in the file.");
     ("--counter",
-     Arg.String (fun str -> config.counter_example_to <- str),
+     Arg.String (fun str -> config.counter_example_to <- Some str),
      " Find the smallest counter example (only with groups) to the provided expression.");
     ("--groups",
      Arg.String (fun str -> 
@@ -213,7 +213,13 @@ try begin (*A big wrapper for error reporting. *)
       end
     in
 
-    let loaded_groups = Loading_saving_groups.read config.groups (fun (msg : string) -> Error.runtime_error msg) in
+    let loaded_groups = 
+      begin try
+        Loading_saving_groups.read_groups config.groups
+        with Loading_saving_groups.GroupLoadError msg ->
+          Error.runtime_error "could not load groups: %s" msg
+      end
+    in
 
     let precomputed = Util.union preloaded loaded_groups in
     
@@ -235,34 +241,33 @@ try begin (*A big wrapper for error reporting. *)
     
     let save_theories = ref [] in
     
-
-    if (config.counter_example_to <> "") then begin
-      print_endline "Looking for counterexample.";
-      let (env, eqs, axs1) = Cook.split_entries raw_theory in
-      let axs = [] in (* Cook.cook_formula env [Config.counter_example_to] in*)
-      let rec chck lst size axs =
-        match lst with
-          | [] -> (false, Algebra.empty size theory)
-          | h :: hs ->
-            if not (First_order.check_formula (snd h) axs) then
-               (true, snd h)
-            else 
-              chck hs size axs
-      in
-      let rec find_counter size axs =
-        match chck (Loading_saving_groups.read [size] (fun (msg : string) -> Error.no_file msg)) size axs with
-          | (false, _) -> find_counter (size + 1) axs
-          | (true, a) -> a
-      in
-      begin try 
-        let a = find_counter 1 axs in
-        print_endline ("# The counterexample to \"" ^ config.counter_example_to ^ "\" is : \n")
-        output (a, true);
-      with Error.File_error msg -> print_endline "We ran out of groups to test. Axiom is consistent with all provided groups."
+    begin match config.counter_example_to with
+      | None -> ()
+      | Some s -> begin
+        Printf.printf "Will parse: [%s]" s ;
+        let frml = Parser.formula Lexer.token (Lexing.from_string s) in
+        let frml = (let (env, _, _) = Cook.split_entries raw_theory in
+                      Cook.cook_formula env frml)
+        in
+          List.iter
+            (fun n ->
+              List.iter
+                (fun (_, g) ->
+                  if not (First_order.check_formula g frml) then begin
+                    (* We found a counter-example *)
+                    Printf.printf "Counter-example found\n" ;
+                    out.algebra g ;
+                    exit 0
+                  end
+                )
+                (Loading_saving_groups.read_group n)
+            )
+            config.groups ;
+          Printf.printf "No counter-examples were found\n" ;
+          exit 0
       end  
     end ;
-      
-      
+
     (* If --indecomposable is given then --no-products makes no sense. *)
     if config.indecomposable_only then config.products <- true ;
 
@@ -342,7 +347,6 @@ try begin (*A big wrapper for error reporting. *)
 
     in
 
-      let counts = ref [] in
       let counts = ref [] in
         
       (* The main loop *)

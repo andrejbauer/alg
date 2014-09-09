@@ -111,10 +111,3 @@ let rec does_contradict axiom algebra =
       | Not form -> not (does_contradict form algebra)
   in
   chck axiom
-
-      
-    
-    
-    
-    
-    

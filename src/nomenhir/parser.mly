@@ -19,7 +19,9 @@
 %right INFIXOP4
 
 %start theory
+%start formula
 %type <Input.theory> theory
+%type <Input.formula> formula
 
 %%
 

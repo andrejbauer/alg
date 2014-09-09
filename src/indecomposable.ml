@@ -90,12 +90,11 @@ let gen_decomposable theory n factors loaded save_theories output =
         with Not_found ->
           List.iter (fun a -> gen_p p 0 a ps) (IntMap.find p factors)
   in (* end of gen_product *)
-  let nothere = 
-    begin
-    match (try IntMap.find n loaded with Not_found -> []) with 
-      | [] -> List.iter gen_product (Util.partitions n);
-      | _::_  -> gen_product [n];  (*If we want to get product groups when using --groups we must not have this.*)
-    end
-  in
+  begin
+    if IntMap.mem n loaded then
+      gen_product [n]
+    else
+      List.iter gen_product (Util.partitions n)
+  end ;
   (algebras, save_theories)
 

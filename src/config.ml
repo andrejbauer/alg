@@ -14,7 +14,7 @@ type config = {
   mutable load_file : string;
   mutable save_file : string;
   mutable groups : int list;
-  mutable counter_example_to : string;
+  mutable counter_example_to : string option;
 }
 
 let default = {
@@ -31,5 +31,5 @@ let default = {
   load_file = "";
   save_file = "";
   groups = [];
-  counter_example_to = ""; 
+  counter_example_to = None; 
 }
