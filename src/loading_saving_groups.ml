@@ -15,6 +15,8 @@ let compute_inverses size my_unit binary =
 exception Result of int
 exception No_file of string
 
+(*exception No_file of (Common.position * string * string)*)
+
 let find_unit binary size =
   let v = Array.init size (fun k -> k) in
     try 
@@ -70,7 +72,7 @@ let read gs exce =
 					  done
 			  with End_of_file -> close_in ic
     end
-		with Sys_error msg -> exce ("file error " ^ msg)
+		with Sys_error msg -> exce "file error (%s)" msg
 
   in
 	  List.iter read_file (List.rev gs) ;
