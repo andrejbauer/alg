@@ -245,7 +245,7 @@ try begin (*A big wrapper for error reporting. *)
       | None -> ()
       | Some s -> begin
         Printf.printf "Will parse: [%s]" s ;
-        let frml = Parser.formula Lexer.token (Lexing.from_string s) in
+        let frml = Parser.topformula Lexer.token (Lexing.from_string s) in
         let frml = (let (env, _, _) = Cook.split_entries raw_theory in
                       Cook.cook_formula env frml)
         in

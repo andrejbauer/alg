@@ -19,11 +19,14 @@
 %right INFIXOP4
 
 %start theory
-%start formula
+%start topformula
 %type <Input.theory> theory
-%type <Input.formula> formula
+%type <Input.formula> topformula
 
 %%
+
+topformula:
+  | f = formula EOF { f }
 
 theory: n = option(theory_name) lst = list(terminated(theory_entry, DOT)) EOF
   { {Input.th_name = n; Input.th_entries = lst} }
