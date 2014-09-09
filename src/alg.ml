@@ -213,7 +213,7 @@ try begin (*A big wrapper for error reporting. *)
       end
     in
 
-    let loaded_groups = Loading_saving_groups.read config.groups in
+    let loaded_groups = Loading_saving_groups.read config.groups (fun msg -> raise (Loading_saving_groups.No_file msg)) in
 
     let precomputed = Util.union preloaded loaded_groups in
     
@@ -235,31 +235,47 @@ try begin (*A big wrapper for error reporting. *)
     
     let save_theories = ref [] in
     
-    (*if (config.counter_example_to <> "") then
+    if (config.counter_example_to <> "") then
+      let lexx = Lexing.from_string config.counter_example_to in
+      let {Input.th_name=theory_name1; Input.th_entries=raw_theory1} =
+        begin
+          try
+            Parser.theory Lexer.token lexx
+          with
+            | Parser.Error ->
+              Error.syntax_error ~loc:(Common.position_of_lex lexx) "I got confused here"
+            | Failure "lexing: empty token" ->
+              Error.syntax_error ~loc:(Common.position_of_lex lexx) "Unrecognized symbol."
+        end
+      in
+      let theory1 = Cook.cook_theory "" raw_theory1 in
       print_endline "Looking for counterexample.";
-      let (env, eqs, axs1) = Cook.split_entries raw_theory in
-      let axs = () in (* Cook.cook_formula env [Config.counter_example_to] in*)
+
+      let axs = match theory1.th_axioms with
+        | h :: _ -> h
+        | _ -> ([||], Theory.True)  (*This should never happen.*)
+      in 
       let rec chck lst size axs =
         match lst with
           | [] -> (false, Algebra.empty size theory)
           | h :: hs ->
-            if (Enum.does_contradict (snd h) axs) then
+            if not (First_order.check_formula (snd h) axs) then
                (true, snd h)
             else 
               chck hs size axs
       in
       let rec find_counter size axs =
-        match chck (Loading_saving_groups.read [size]) size axs with
+        match chck (Loading_saving_groups.read [size] (fun msg -> raise (Loading_saving_groups.No_file msg))) size axs with
           | (false, _) -> find_counter (size + 1) axs
           | (true, a) -> a
       in
       try 
         let a = find_counter 1 axs in
-        print_endline ("# The counterexample to \""^ config.counter_example_to ^"\" is : \n");       
+        print_endline ("# The counterexample to \""^ config.counter_example_to ^"\" is : \n")    
         (*output (a, true); How to output only this algebra?*)
-      with Error.runtime_error ->
-        print_endline ("We ran out of groups to test. Axiom is consistent with all provided groups.");*)
-          
+      with Loading_saving_groups.No_file msg ->
+        print_endline ("We ran out of groups to test. Axiom is consistent with all provided groups.")
+    ;    
       
       
     (* If --indecomposable is given then --no-products makes no sense. *)
