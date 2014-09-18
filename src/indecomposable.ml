@@ -64,7 +64,7 @@ let gen_decomposable theory n factors loaded save_theories output =
         let (seen, i) = Iso.seen theory ac algebras in
         if not seen && First_order.check_axioms theory acc
         then begin
-          save_theories := ((acc.alg_size, acc) :: !save_theories);
+          save_theories := (acc :: !save_theories);
           Iso.store algebras ~inv:i (Util.copy_algebra_with_cache ac) ;
           output acc
         end

@@ -63,16 +63,6 @@ let rec union lst1 lst2 =
         then union xs ys
         else x :: union xs ys
 
-(* Lists as sets. *)
-let rec union lst1 lst2 =
-  match lst1, lst2 with
-    | [], lst2 -> lst2
-    | lst1, [] -> lst1
-    | x::xs, ys ->
-        if List.mem x ys
-        then union xs ys
-        else x :: union xs ys
-
 let rec remove x = function
   | [] -> []
   | y::ys ->

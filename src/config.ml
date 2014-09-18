@@ -11,8 +11,9 @@ type config = {
   mutable format : string;
   mutable paranoid : bool;
   mutable use_sat : bool;
-  mutable load_file : string;
-  mutable save_file : string;
+  mutable load_file : string option;
+  mutable save_file : string option;
+  mutable location : string option;
   mutable groups : int list;
   mutable counter_example_to : string option;
 }
@@ -28,8 +29,9 @@ let default = {
   format = "";
   paranoid = false;
   use_sat = false;
-  load_file = "";
-  save_file = "";
+  load_file = None;
+  save_file = None;
+  location = None;
   groups = [];
   counter_example_to = None; 
 }

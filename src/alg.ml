@@ -96,18 +96,21 @@ try begin (*A big wrapper for error reporting. *)
      Arg.Unit (fun () -> config.source <- false),
      " Do not include the theory source in the output.");
     ("--load",
-     Arg.String  (fun str -> config.load_file <- str),
+     Arg.String  (fun str -> config.load_file <- Some str),
      " Loads precomputed theories from file.");
     ("--save",
-     Arg.String (fun str -> config.save_file <- str),
+     Arg.String (fun str -> config.save_file <- Some str),
      " Saves the computed theories in the file.");
-    ("--counter",
+    ("--example",
      Arg.String (fun str -> config.counter_example_to <- Some str),
-     " Find the smallest counter example (only with groups) to the provided expression.");
+     " Find the smallest example (can only do groups right now) to the provided expression, from the pool of selected groups.");
     ("--groups",
      Arg.String (fun str -> 
        config.groups <- List.sort compare (Util.union config.sizes (sizes_of_str str))),
      " Comma-separated list of group sizes and size intervals from-to, that you want included.");
+    ("--location",
+     Arg.String (fun str -> config.location <- Some str),
+     " Location where your groups are saved (in appropriate format). Can provide relative or full path. Eg. ./_groups/, C:\\alg/_groups/.");
     ("--version",
      Arg.Unit (fun () ->
        Printf.printf "Copyright (c) 2011 Ales Bizjak and Andrej Bauer\n" ;
@@ -199,14 +202,13 @@ try begin (*A big wrapper for error reporting. *)
           
     (* Load precomputed stuff. *)
 
-    (*Read the precomputed theories.??? If possible: make it so, that it only reads if argument present*)
     let preloaded  =
       begin match config.load_file with
-        | "" -> ([] : ((int * Algebra.algebra) list))
-        | filename -> 
+        | None -> []
+        | Some filename -> 
           try 
             let ic = open_in_bin filename in 
-            let sth = (Marshal.from_channel ic : ((int * Algebra.algebra) list)) in
+            let sth = (Marshal.from_channel ic : Algebra.algebra list) in
             close_in ic ;
             sth
           with Sys_error msg -> Error.runtime_error "could not read %s" msg
@@ -228,10 +230,10 @@ try begin (*A big wrapper for error reporting. *)
     let rec fill_in loaded precomputed =
       match precomputed with
         | [] -> loaded
-        | (n,a) :: x -> 
-          let loaded = IntMap.add n (a :: 
+        | a :: x -> 
+          let loaded = IntMap.add a.Algebra.alg_size (a :: 
             (try
-              (IntMap.find n loaded)
+              (IntMap.find a.Algebra.alg_size loaded)
             with Not_found -> [])
           ) loaded in
           fill_in loaded x
@@ -244,7 +246,6 @@ try begin (*A big wrapper for error reporting. *)
     begin match config.counter_example_to with
       | None -> ()
       | Some s -> begin
-        Printf.printf "Will parse: [%s]" s ;
         let frml = Parser.topformula Lexer.token (Lexing.from_string s) in
         let frml = (let (env, _, _) = Cook.split_entries raw_theory in
                       Cook.cook_formula env frml)
@@ -252,18 +253,18 @@ try begin (*A big wrapper for error reporting. *)
           List.iter
             (fun n ->
               List.iter
-                (fun (_, g) ->
-                  if not (First_order.check_formula g frml) then begin
+                (fun g ->
+                  if First_order.check_formula g frml then begin
                     (* We found a counter-example *)
-                    Printf.printf "Counter-example found\n" ;
+                    Printf.printf "An example that satisfies [%s] found\n" s ;
                     out.algebra g ;
                     exit 0
                   end
                 )
-                (Loading_saving_groups.read_group n)
+                (Loading_saving_groups.read_group n (ref []))
             )
             config.groups ;
-          Printf.printf "No counter-examples were found\n" ;
+          Printf.printf "No examples were found\n" ;
           exit 0
       end  
     end ;
@@ -333,7 +334,7 @@ try begin (*A big wrapper for error reporting. *)
                 let bc = A.with_cache ~cache:ac b in
                   Iso.store algebras ~inv:i bc ;
                   if must_cache then to_cache := b :: !to_cache ;
-                  save_theories := (b.A.alg_size, b) :: !save_theories ; (*Here b can be of wrong size.*)
+                  save_theories := b :: !save_theories ;
                   output (b, true)
               end)
       in
@@ -377,11 +378,11 @@ try begin (*A big wrapper for error reporting. *)
               config.sizes
             in
             begin match config.save_file with
-              | "" -> ()
-              | filename -> 
+              | None -> ()
+              | Some filename -> 
                 try 
                   let oc = open_out_bin filename in
-                    Marshal.to_channel oc (!save_theories : ((int * Algebra.algebra) list)) [] ;
+                    Marshal.to_channel oc (!save_theories : Algebra.algebra list) [] ;
                     close_out oc ;
                 with Sys_error msg -> Error.runtime_error "could not write to %s" msg
             end ;
