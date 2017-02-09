@@ -1,4 +1,4 @@
-# The axioms for a (possibly non-commutative) field.
+# The axioms for a field.
 
 Constant 0 1.
 Unary neg.
