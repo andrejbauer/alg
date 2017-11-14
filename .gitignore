@@ -8,5 +8,6 @@
 *.cmxs
 *.cmxa
 src/version.ml
-src/_build
 _build
+/alg.native
+/doc/manual.pdf
