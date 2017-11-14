@@ -32,7 +32,7 @@ let sizes_of_str str =
     done ;
     !lst
   with
-    | Failure "int_of_string" ->
+    | Failure _ ->
       Error.usage_error "--size accepts a comma-separated list of non-negative integers and intervals, e.g., 1,2,5-7,9"
 ;;
 
@@ -54,13 +54,13 @@ let formats_extension = [
 
 (* Main program starts here. *)
 try begin (*A big wrapper for error reporting. *)
-  
+
   (* References that store the command-line options *)
   let config = Config.default in
 
   (* Command-line axioms. *)
   let cmd_axioms = ref [] in
-  
+
   (* Command-line options and usage *)
   let usage = "Usage: alg --size <i,j-k,m> [options] <theory.th>" in
 
@@ -87,7 +87,7 @@ try begin (*A big wrapper for error reporting. *)
      Arg.Unit (fun () -> config.products <- false),
      " Do not generate algebras as products of smaller algebras.");
     ("--format",
-     Arg.String (fun str -> config.format <- str),                     
+     Arg.String (fun str -> config.format <- str),
      " Output format, one of: " ^ String.concat ", " (List.map fst formats) ^ ".");
     ("--output",
      Arg.String (fun str -> config.output_filename <- str),
@@ -138,7 +138,7 @@ try begin (*A big wrapper for error reporting. *)
       with
         | Parser.Error ->
           Error.syntax_error ~loc:(Common.position_of_lex lex) "I got confused here"
-        | Failure "lexing: empty token" ->
+        | Failure _ ->
           Error.syntax_error ~loc:(Common.position_of_lex lex) "Unrecognized symbol."
     end
   in
@@ -179,7 +179,7 @@ try begin (*A big wrapper for error reporting. *)
      together with information whether the algebra is indecomposable. *)
   let rec process_size n output =
     (* Generate a hash table of decomposable algebras if needed. *)
-    let decomposables = 
+    let decomposables =
       if n < Array.length theory.Theory.th_const || not config.products then Iso.empty_store ()
       else
         (* Generate indecomposable factors and then decomposable algebras from them. *)
@@ -191,7 +191,7 @@ try begin (*A big wrapper for error reporting. *)
                   | Some lst -> lst
                   | None ->
                     let lst = ref [] in
-                    process_size k (fun (algebra, indecomposable) -> 
+                    process_size k (fun (algebra, indecomposable) ->
 				      if indecomposable then lst := Util.copy_algebra algebra :: !lst) ;
                     !lst
                 end
@@ -211,7 +211,7 @@ try begin (*A big wrapper for error reporting. *)
     let algebras = decomposables in
     let to_cache = ref [] in
     (if config.use_sat then Sat.generate ?start:None else Enum.enum) n theory
-      (fun a -> 
+      (fun a ->
         (* XXX check to see if it is faster to call First_order.check_axioms first and then Iso.seen. *)
         let ac = A.make_cache a in
         let aa = A.with_cache ~cache:ac a in
@@ -245,7 +245,7 @@ try begin (*A big wrapper for error reporting. *)
     end
   in
 
-  let out = 
+  let out =
     begin
       try List.assoc config.format formats config outch lines theory
       with Not_found ->
@@ -260,10 +260,10 @@ try begin (*A big wrapper for error reporting. *)
     Sys.catch_break true ;
     out.header () ;
     if config.count_only then out.count_header () ;
-    begin 
+    begin
       try
         List.iter
-          (fun n -> 
+          (fun n ->
             if not config.count_only then out.size_header n ;
             let k = ref 0 in
             let output (algebra, indecomposable) =

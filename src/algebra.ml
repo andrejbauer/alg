@@ -12,7 +12,7 @@ type invariant = {
   inv_relations : (int array * int array) array;
 }
 
-(* 
+(*
    indegs.(r).(i) is a list of element indices with in degree i in relation r and
    similar for out degrees.
 *)
@@ -41,10 +41,10 @@ let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_
     alg_prod = None;
     alg_size = n;
     alg_const = Array.init (Array.length c) (fun i -> i);
-    alg_unary = Array.create_matrix (Array.length u) n (-1);
-    alg_binary = Array.init (Array.length b) (fun i -> Array.create_matrix n n (-1));
-    alg_predicates = Array.create_matrix (Array.length p) n (-1);
-    alg_relations = Array.init (Array.length r) (fun i -> Array.create_matrix n n (-1));
+    alg_unary = Array.make_matrix (Array.length u) n (-1);
+    alg_binary = Array.init (Array.length b) (fun i -> Array.make_matrix n n (-1));
+    alg_predicates = Array.make_matrix (Array.length p) n (-1);
+    alg_relations = Array.init (Array.length r) (fun i -> Array.make_matrix n n (-1));
   }
 
 (* For faster isomorphism checking we define invariants for structures.
@@ -131,7 +131,7 @@ let relation_invariant r =
   let indeg = Array.make (Array.length r) 0 in
   for i = 0 to Array.length r - 1 do
     for j = 0 to Array.length r.(i) - 1 do
-      if r.(i).(j) = 1 then 
+      if r.(i).(j) = 1 then
         begin
           outdeg.(i) <- outdeg.(i) + 1;
           indeg.(j) <- indeg.(j) + 1
@@ -140,22 +140,22 @@ let relation_invariant r =
   done ;
   Array.sort compare outdeg; Array.sort compare indeg;
   (indeg, outdeg)
-    
 
-let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} = 
+
+let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} =
   { inv_size = n ;
     inv_unary = Array.map (fun u -> unary_invariant (fun k -> u.(k)) n) us;
     inv_binary = Array.map (fun b -> binary_invariant (fun k l -> b.(k).(l)) n) bs;
     inv_predicates = Array.map predicate_invariant ps;
     inv_relations = Array.map relation_invariant rs;
-  } 
+  }
 
 let relation_cache r =
   let outdeg = Array.make (Array.length r) 0 in
   let indeg = Array.make (Array.length r) 0 in
   for i = 0 to Array.length r - 1 do
     for j = 0 to Array.length r.(i) - 1 do
-      if r.(i).(j) = 1 then 
+      if r.(i).(j) = 1 then
         begin
           outdeg.(i) <- outdeg.(i) + 1;
           indeg.(j) <- indeg.(j) + 1
@@ -170,7 +170,7 @@ let relation_cache r =
 
   indegs, outdegs
 
-let make_cache {alg_relations=rs} = 
+let make_cache {alg_relations=rs} =
   let rc = Array.map relation_cache rs in
   {indegs = Array.map fst rc; outdegs = Array.map snd rc}
 
