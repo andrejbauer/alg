@@ -1,0 +1,7 @@
+Theory RectangularBand.
+Binary *.
+
+Axiom: x * (y * z) = (x * y) * z.
+Axiom: x * x = x.
+Axiom: x * y * x = x.
+
