@@ -76,7 +76,7 @@ try begin (*A big wrapper for error reporting. *)
      " Add an extra axiom to the theory.");
     ("--indecomposable",
      Arg.Unit (fun () -> config.indecomposable_only <- true),
-     " Output only indecomposable models.");
+     " Output only indecomposable models (used only for equational theories).");
     ("--paranoid",
      Arg.Unit (fun () -> config.paranoid <- true),
      " Naively check all axioms and isomorphism before output. Use if you think there is a bug in alg.");
@@ -85,7 +85,7 @@ try begin (*A big wrapper for error reporting. *)
      " Use the satisfiability algorithm.");
     ("--no-products",
      Arg.Unit (fun () -> config.products <- false),
-     " Do not generate algebras as products of smaller algebras.");
+     " Do not generate algebras as products of smaller algebras (used only for equational theories).");
     ("--format",
      Arg.String (fun str -> config.format <- str),
      " Output format, one of: " ^ String.concat ", " (List.map fst formats) ^ ".");
@@ -158,13 +158,19 @@ try begin (*A big wrapper for error reporting. *)
   (* Parse the theory. *)
   let theory = Cook.cook_theory theory_name raw_theory in
 
-  let theory_with_relations = Array.length theory.Theory.th_predicates > 0 || Array.length theory.Theory.th_relations > 0 in
+  (* Is this an equational theory? *)
+  let equational_theory =
+    Array.length theory.Theory.th_predicates = 0 &&
+    Array.length theory.Theory.th_relations = 0  &&
+    theory.Theory.th_axioms = []
+  in
 
-  (* If --indecomposable is given then --no-products makes no sense. *)
+  (* Sanity checks *)
+  (* If --indecomposable is given then we need products. *)
   if config.indecomposable_only then config.products <- true ;
 
-  (* If there are predicates or relations --no-products makes no sense (and will crash). *)
-  if theory_with_relations then config.products <- false ;
+  (* If the theory is not equational then disable --indecomposable and --products. *)
+  if not equational_theory then (config.indecomposable_only <- false ; config.products <- false) ;
 
   (* Cache for indecomposable algebras computed so far. This is a map from size to a list of algebras. *)
   let indecomposable_algebras = ref IntMap.empty in
