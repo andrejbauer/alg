@@ -13,8 +13,8 @@ Axiom: x * inv(x) = 1.
 Axiom: inv(x) * x = 1.
 Axiom: (x * y) * z = x * (y * z).
 
-Axiom: a <= b => a * c <= b * c.
-Axiom: a <= b => c * a <= c * b.
+Axiom: a <= b -> a * c <= b * c.
+Axiom: a <= b -> c * a <= c * b.
 
 Axiom reflexivity: x <= x.
 Axiom transitivity: x <= y /\ y <= z -> x <= z.
