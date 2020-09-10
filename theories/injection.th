@@ -1,0 +1,3 @@
+# The theory of an injective function.
+Unary f.
+Axiom: f(x) = f(y) => x = y.
