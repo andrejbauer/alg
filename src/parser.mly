@@ -30,8 +30,8 @@ theory_name:
   | THEORY n = IDENT DOT
     { n }
 
-theory_entry: mark_position(plain_theory_entry) { $1 }
-plain_theory_entry:
+theory_entry: mark_position(_theory_entry) { $1 }
+_theory_entry:
   | CONSTANT lst = nonempty_list(name)
     { Input.Constant lst }
   | UNARY lst = nonempty_list(name_or_prefix)
@@ -62,7 +62,7 @@ name_or_op:
   | op = binop
     { op }
 
-%inline binop: 
+%inline binop:
   | op = INFIXOP0
     { op }
   | op = INFIXOP1
@@ -74,98 +74,98 @@ name_or_op:
   | op = INFIXOP4
     { op }
 
-formula: mark_position(plain_formula) { $1 }
-plain_formula:
-  | f = plain_quantified_formula
+formula: mark_position(_formula) { $1 }
+_formula:
+  | f = _quantified_formula
     { f }
-  | f = plain_iff_formula
+  | f = _iff_formula
     { f }
-  | f = plain_imply_formula
-    { f }
-
-formula_noquant: mark_position(plain_formula_noquant) { $1 }
-plain_formula_noquant:
-  | f = plain_quantified_formula
-    { f }
-  | f = plain_imply_formula
-    { f }
-  | f = plain_iff_formula_noquant
+  | f = _imply_formula
     { f }
 
-quantified_formula: mark_position(plain_quantified_formula) { $1 }
-plain_quantified_formula:
+formula_noquant: mark_position(_formula_noquant) { $1 }
+_formula_noquant:
+  | f = _quantified_formula
+    { f }
+  | f = _imply_formula
+    { f }
+  | f = _iff_formula_noquant
+    { f }
+
+quantified_formula: mark_position(_quantified_formula) { $1 }
+_quantified_formula:
   | FORALL xs = vars COMMA f = formula_noquant
     { Input.Forall (xs, f) }
   | EXISTS xs = vars COMMA f = formula_noquant
     { Input.Exists (xs, f) }
 
-(* iff_formula_noquant: mark_position(plain_iff_formula_noquant) { $1 } *)
-plain_iff_formula_noquant:
+(* iff_formula_noquant: mark_position(_iff_formula_noquant) { $1 } *)
+_iff_formula_noquant:
   | f1 = or_formula_noquant IFF f2 = or_formula_noquant
     { Input.Iff (f1, f2) }
 
-(* iff_formula: mark_position(plain_iff_formula) { $1 } *)
-plain_iff_formula:
+(* iff_formula: mark_position(_iff_formula) { $1 } *)
+_iff_formula:
   | f1 = or_formula_noquant IFF f2 = or_formula
     { Input.Iff (f1, f2) }
 
-(* imply_formula: mark_position(plain_imply_formula) { $1 } *)
-plain_imply_formula:
+(* imply_formula: mark_position(_imply_formula) { $1 } *)
+_imply_formula:
   | f1 = or_formula_noquant IMPLY f2 = formula
     { Input.Imply (f1, f2) }
-  | f = plain_or_formula
+  | f = _or_formula
     { f }
 
-or_formula: mark_position(plain_or_formula) { $1 }
-plain_or_formula:
+or_formula: mark_position(_or_formula) { $1 }
+_or_formula:
   | f1 = or_formula_noquant OR f2 = and_formula
     { Input.Or (f1, f2) }
   | f1 = or_formula_noquant OR f2 = quantified_formula
     { Input.Or (f1, f2) }
-  | f = plain_and_formula
+  | f = _and_formula
     { f }
 
-or_formula_noquant: mark_position(plain_or_formula_noquant) { $1 }
-plain_or_formula_noquant:
+or_formula_noquant: mark_position(_or_formula_noquant) { $1 }
+_or_formula_noquant:
   | f1 = or_formula_noquant OR f2 = and_formula_noquant
     { Input.Or (f1, f2) }
-  | f = plain_and_formula_noquant
+  | f = _and_formula_noquant
     { f }
 
-and_formula: mark_position(plain_and_formula) { $1 }
-plain_and_formula:
+and_formula: mark_position(_and_formula) { $1 }
+_and_formula:
   | f1 = and_formula_noquant AND f2 = negation_formula
     { Input.And (f1, f2) }
   | f1 = and_formula_noquant AND f2 = quantified_formula
     { Input.And (f1, f2) }
-  | f = plain_negation_formula
+  | f = _negation_formula
     { f }
 
-and_formula_noquant: mark_position(plain_and_formula_noquant) { $1 }
-plain_and_formula_noquant:
+and_formula_noquant: mark_position(_and_formula_noquant) { $1 }
+_and_formula_noquant:
   | f1 = and_formula_noquant AND f2 = negation_formula_noquant
     { Input.And (f1, f2) }
-  | f = plain_negation_formula_noquant
+  | f = _negation_formula_noquant
     { f }
 
-negation_formula: mark_position(plain_negation_formula) { $1 }
-plain_negation_formula:
+negation_formula: mark_position(_negation_formula) { $1 }
+_negation_formula:
   | NOT f = negation_formula
     { Input.Not f }
   | NOT f = quantified_formula
     { Input.Not f }
-  | f = plain_atomic_formula
+  | f = _atomic_formula
     { f }
 
-negation_formula_noquant: mark_position(plain_negation_formula_noquant) { $1 }
-plain_negation_formula_noquant:
+negation_formula_noquant: mark_position(_negation_formula_noquant) { $1 }
+_negation_formula_noquant:
   | NOT f = negation_formula_noquant
     { Input.Not f }
-  | f = plain_atomic_formula
+  | f = _atomic_formula
     { f }
 
-(* atomic_formula: mark_position(plain_atomic_formula) { $1 } *)
-plain_atomic_formula:
+(* atomic_formula: mark_position(_atomic_formula) { $1 } *)
+_atomic_formula:
   | TRUE
     { Input.True }
   | FALSE
@@ -174,48 +174,48 @@ plain_atomic_formula:
     { Input.Equal (t1, t2) }
   | t1 = term NOTEQUAL t2 = term
     { Input.NotEqual (t1, t2) }
-  | f = plain_predicate
+  | f = _predicate
     { f }
-  | f = plain_relation
+  | f = _relation
     { f }
 
-(* predicate: mark_position(plain_predicate) { $1 } *)
-plain_predicate:
+(* predicate: mark_position(_predicate) { $1 } *)
+_predicate:
   | op = PREFIXOP t = simple_term
     { Input.UnaryPr (op, t) }
   | op = name t = simple_term
     { Input.UnaryPr (op, t) }
 
-(* relation: mark_position(plain_relation) { $1 } *)
-plain_relation:
+(* relation: mark_position(_relation) { $1 } *)
+_relation:
   | t1 = term op = binop t2 = term
     { Input.BinaryPr (op, t1, t2) }
   | op = name LPAREN t1 = term COMMA t2 = term RPAREN
     { Input.BinaryPr (op, t1, t2) }
 
-term: mark_position(plain_term) { $1 }
-plain_term:
+term: mark_position(_term) { $1 }
+_term:
   | t1 = term op = binop t2 = term
     { Input.BinaryOp (op, t1, t2) }
   | op = PREFIXOP t = app_term
     { Input.UnaryOp (op, t) }
-  | t = plain_app_term
+  | t = _app_term
     { t }
 
-app_term: mark_position(plain_app_term) { $1 }
-plain_app_term:
+app_term: mark_position(_app_term) { $1 }
+_app_term:
   | op = name t = simple_term
     { Input.UnaryOp (op, t) }
   | op = name LPAREN t1 = term COMMA t2 = term RPAREN
     { Input.BinaryOp (op, t1, t2) }
-  | t = plain_simple_term
+  | t = _simple_term
     { t }
 
-simple_term: mark_position(plain_simple_term) { $1 }
-plain_simple_term:
+simple_term: mark_position(_simple_term) { $1 }
+_simple_term:
   | x = name
     { Input.Var x }
-  | LPAREN t = plain_term RPAREN
+  | LPAREN t = _term RPAREN
     { t }
 
 vars:
