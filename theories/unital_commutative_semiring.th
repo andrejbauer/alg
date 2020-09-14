@@ -17,3 +17,6 @@ Axiom: x * y = y * x.
 
 Axiom: (x + y) * z = x * z + y * z.
 Axiom: x * (y + z) = x * y + x * z.
+
+Axiom: 0 * x = 0.
+Axiom: x * 0 = 0.
