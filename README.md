@@ -8,9 +8,7 @@ Alg is a program for enumeration of finite models of first-order theories. Curre
 * only unary predicates and binary operations are accepted,
 * it is assumed that constants denote pariwise distinct elements.
 
-## Installation
-
-### Prerequisites
+## Prerequisites
 
 Alg is available at [http://www.andrej.com/alg/] (which currently just redirects to GitHub). Apart from the source code, you will need the following:
 
@@ -33,7 +31,7 @@ Alg is available at [http://www.andrej.com/alg/] (which currently just redirects
 
 With sufficient user base I could probably be convinced to support at least a Homebrew package for Alg.
 
-### Compilation
+## Compilation
 
 If all goes well you should be able to compile Alg simply by running
 
@@ -49,3 +47,6 @@ The compilation procedure also generates the Alg manual `doc/manual.pdf`. It rel
 
     make ./alg.native
 
+## Usage
+
+See the manual `doc/manual.pdf` and the examples in the [`./theories`][./theories] folder.
