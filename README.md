@@ -49,4 +49,4 @@ The compilation procedure also generates the Alg manual `doc/manual.pdf`. It rel
 
 ## Usage
 
-See the manual `doc/manual.pdf` and the examples in the (`./theories`)[./theories] folder.
+See the manual `doc/manual.pdf` and the examples in the [`./theories`](./theories) folder.
