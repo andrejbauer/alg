@@ -1,0 +1,27 @@
+Theory Tarski.
+Constant 0.
+Constant 1.
+Binary +.
+Binary *.
+Binary ^.
+
+Axiom: 0 + x = x.
+Axiom: x + 0 = x.
+Axiom: x + y = y + x.
+Axiom: (x + y) + z = x + (y + z).
+Axiom: 0 * x = 0.
+Axiom: x * 0 = 0.
+Axiom: 1 * x = x.
+Axiom: x * 1 = x.
+Axiom: x * y = y * x.
+Axiom: (x * y) * z = x * (y * z).
+Axiom: x * (y + z) = (x * y) + (x * z).
+Axiom: (x + y) * z = (x * z) + (y * z).
+Axiom: x <> 0 => 0 ^ x = 0.
+Axiom: 0 ^ x = 0 => x <> 0.
+Axiom: x ^ 0 = 1.
+Axiom: 1 ^ x = 1.
+Axiom: x ^ 1 = x.
+Axiom: x ^ (y * z) = (x ^ y) ^ z.
+Axiom: (x * y) ^ z = (x ^ z) * (y ^ z).
+Axiom: x ^ (y + z) = (x ^ y) * (x ^ z).
