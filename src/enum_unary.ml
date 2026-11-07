@@ -14,7 +14,9 @@ let apply_simple simple {alg_unary=unary_arr} =
           if unary_arr.(op).(c1) <> -1 && unary_arr.(op).(c1) <> c2
           then raise InconsistentAxioms
           else unary_arr.(op).(c1) <- c2
-      | _ -> invalid_arg "Not a simple axiom in apply_simple.")
+      | ((Unary _ | Const _), (Unary _ | Const _))
+      | ((Var _ | Elem _ | Binary _), _)
+      | (_, (Var _ | Elem _ | Binary _)) -> invalid_arg "Not a simple axiom in apply_simple.")
     simple
 
 (* Get do and undo actions from axioms in normal form for use in main loop of gen_unary. *)
@@ -86,7 +88,7 @@ let get_unary_actions normal_axioms {alg_size=n; alg_unary=unary_arr} =
                 else
                   left = right
           end
-        | _ -> true in
+        | (None, _) | (_, None) -> true in
 
     match axiom with
       | ((true, id1, l1, left), (true, id2, l2, right)) when id1 = id2 ->
@@ -145,7 +147,7 @@ let get_normal_axioms complicated =
       | (Unary (op,t)) -> loop (op::acc) t
       | (Var v) -> (true, v, acc)
       | (Const c) -> (false, c, acc)
-      | _ -> invalid_arg "path_from_equation: Binary operation." in
+      | Elem _ | Binary _ -> invalid_arg "path_from_equation: Binary operation." in
     match loop [] e with
       | (var, start, []) -> (var, start, None, [])
       | (var, start, os) -> (var, start, Some (List.nth os (List.length os - 1)), init os) in

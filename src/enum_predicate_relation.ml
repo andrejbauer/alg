@@ -59,7 +59,7 @@ let check_and_fill axioms ({alg_const=c;
           | (Some true, Some true) -> (false, undos)
           | (Some true, None) -> eval_fill vars undos false f2
           | (None, Some true) -> eval_fill vars undos false f1
-          | _ -> (true, undos)
+          | (Some false, _) | (_, Some false) | (None, None) -> (true, undos)
       end
     | Or (f1,f2) when target -> 
       let t1 = Eval.eval_formula alg vars f1 in
@@ -69,7 +69,7 @@ let check_and_fill axioms ({alg_const=c;
           | (Some false, Some false) -> (false, undos)
           | (Some false, None) -> eval_fill vars undos true f2
           | (None, Some false) -> eval_fill vars undos true f1
-          | _ -> (true, undos)
+          | (Some true, _) | (_, Some true) | (None, None) -> (true, undos)
       end
     | Or (f1,f2) -> eval_fill vars undos true (And (Not f1,Not f2))
     | Imply (f1,f2) when target -> 
@@ -80,7 +80,7 @@ let check_and_fill axioms ({alg_const=c;
           | (Some true, Some false) -> (false, undos)
           | (Some true, None) -> eval_fill vars undos true f2
           | (None, Some false) -> eval_fill vars undos false f1
-          | _ -> (true, undos)
+          | (Some false, _) | (_, Some true) | (None, None) -> (true, undos)
       end
     | Imply (f1,f2) -> 
       let (t,unds) = eval_fill vars undos true f1 in
@@ -94,7 +94,7 @@ let check_and_fill axioms ({alg_const=c;
           | (Some false, Some true) -> (false, undos)
           | (Some t, None) -> eval_fill vars undos t f2
           | (None, Some t) -> eval_fill vars undos t f1
-          | _ -> (true, undos)
+          | (Some true, Some true) | (Some false, Some false) | (None, None) -> (true, undos)
       end
     | Iff (f1,f2) -> 
       let t1 = Eval.eval_formula alg vars f1 in
@@ -105,7 +105,7 @@ let check_and_fill axioms ({alg_const=c;
           | (Some false, Some false) -> (false, undos)
           | (Some t, None) -> eval_fill vars undos (not t) f2
           | (None, Some t) -> eval_fill vars undos (not t) f1
-          | _ -> (true, undos)
+          | (Some true, Some false) | (Some false, Some true) | (None, None) -> (true, undos)
       end
     | Not f -> eval_fill vars undos (not target) f
     | Predicate (i, t) -> begin
@@ -130,7 +130,7 @@ let check_and_fill axioms ({alg_const=c;
               (true, (1, (i,r1,r2))::undos)
             end
           else (r.(i).(r1).(r2) = (if target then 1 else 0), undos)
-        | _ -> (true, undos)
+        | (None, _) | (_, None) -> (true, undos)
   in (* end of eval_fill *)
   let rec for_all_axioms (b, undos) = function
     | [] -> (b,undos)
@@ -146,7 +146,7 @@ let undo {alg_predicates=ps; alg_relations=rs} undos =
     | [] -> ()
     | ((0,(p,e,_))::us) -> ps.(p).(e) <- -1 ; undo us
     | ((1,(r,e1,e2))::us) -> rs.(r).(e1).(e2) <- -1 ; undo us
-    | _ -> invalid_arg "invalid element in undos"
+    | (_, _) :: _ -> invalid_arg "invalid element in undos"
   in undo undos
  
 
@@ -197,7 +197,7 @@ let gen_relation th ({alg_size=n;
   if r then begin
     let lr = Array.length th.th_relations in
     let rec gen_relation r = function
-      | _ when r = lr -> let b, undos = check_and_fill th.th_axioms alg in
+      | (_, _) when r = lr -> let b, undos = check_and_fill th.th_axioms alg in
                          if b && undos = [] then cont ()
       | (i,_) when i = n -> gen_relation (r+1) (0,0)
       | (i,j) when j = n -> gen_relation r (i+1,0)

@@ -20,7 +20,8 @@ let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr} =
     let rec get_value = function
       | (Const c) -> c
       | (Unary (op,v)) -> unary_arr.(op).(get_value v)
-      | _ -> invalid_arg "Ooops, binary operation or variable in apply_simple.get_value.
+      | Var _ | Elem _ | Binary _ ->
+        invalid_arg "Ooops, binary operation or variable in apply_simple.get_value.
                           This shouldn't happen!"
     in match axiom with
       | (Binary (op, t1, t2), Const c)
@@ -31,7 +32,9 @@ let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr} =
           raise Contradiction
         else
           binary_arr.(op).(v1).(v2) <- c
-      | _ -> invalid_arg "Not a simple binary axiom."
+      | (Binary _, Binary _) | (Const _, Const _)
+      | ((Var _ | Elem _ | Unary _), _)
+      | (_, (Var _ | Elem _ | Unary _)) -> invalid_arg "Not a simple binary axiom."
   in List.iter apply_simple simple
 
 (* Apply one variable shallow axioms to the binary_arr operation tables. *)
@@ -47,7 +50,7 @@ let apply_one_var_shallow one_var_shallow {alg_size=n;
       | (Const c) -> c
       | (Var _) -> elem
       | (Unary (op,v)) -> unary_arr.(op).(get_value v)
-      | _ -> invalid_arg "Ooops, binary operation in apply_one_var.get_value. This shouldn't happen!"
+      | Elem _ | Binary _ -> invalid_arg "Ooops, binary operation in apply_one_var.get_value. This shouldn't happen!"
     in match axiom with
       | (Binary (op, t1, t2), t3)
       | (t3, Binary (op, t1, t2)) ->
@@ -58,7 +61,8 @@ let apply_one_var_shallow one_var_shallow {alg_size=n;
           raise Contradiction
         else
           binary_arr.(op).(v1).(v2) <- v3
-      | _ -> invalid_arg "not a legal axiom in apply_one_var"
+      | ((Var _ | Elem _ | Const _ | Unary _), (Var _ | Elem _ | Const _ | Unary _)) ->
+        invalid_arg "not a legal axiom in apply_one_var"
   in
   for i=0 to n-1 do
     List.iter (fun x -> apply_one_var x i) one_var_shallow
@@ -158,7 +162,7 @@ let get_binary_actions ({alg_size=n;
             | (Binary (_, l, r)) ->
               free (fun () -> free cont r) l
             | Unary (_, t) -> free cont t
-            | _ -> cont ()
+            | Var _ | Const _ | Elem _ -> cont ()
         end
       else cont () in
 
@@ -188,7 +192,7 @@ let get_binary_actions ({alg_size=n;
                   vars.(v) <- -1
                 | Var v when vars.(v) = k -> cont ()
                 | Const c when c = k -> cont ()
-                | _ -> ()
+                | Var _ | Const _ | Elem _ -> ()
             end
           else cont () in
 
@@ -209,7 +213,7 @@ let get_binary_actions ({alg_size=n;
           (* both are in the right subtree *)
             fill (o,i,j) (fun () -> free cont l) r
           | Unary (_, t) -> fill (o,i,j) cont t
-          | _ -> () in
+          | Var _ | Const _ | Elem _ -> () in
 
     (*
        check_other: Check if an axiom is violated or we can set a new value.
@@ -295,7 +299,8 @@ let get_binary_actions ({alg_size=n;
             fill (o,i,j) check_other term ;
             fill (o,i,j) check_other (Binary (op2, l2, r2)) ; true
           with Break -> false in (f, undo)
-      | _ -> invalid_arg "Invalid axiom in actions_from_axiom. At least one term has to be binary." in
+      | ((Var _ | Elem _ | Const _ | Unary _), (Var _ | Elem _ | Const _ | Unary _)) ->
+        invalid_arg "Invalid axiom in actions_from_axiom. At least one term has to be binary." in
 
   (* Special case of actions_from_axiom for associativity axioms.
      It is ugly, but much faster.
@@ -426,7 +431,10 @@ let get_binary_actions ({alg_size=n;
           done
         else Stack.clear stack 
       in (f, undo)
-    | _ -> invalid_arg "actions_from_assoc axiom given is not associativity" in
+    | (_, (Binary _, Binary _))
+    | (_, ((Var _ | Elem _ | Const _ | Unary _), _))
+    | (_, (_, (Var _ | Elem _ | Const _ | Unary _))) ->
+      invalid_arg "actions_from_assoc axiom given is not associativity" in
 
   let (dos, undos) = List.split (List.map actions_from_assoc assoc @
                                  List.map actions_from_axiom amenable) in
@@ -462,7 +470,7 @@ let gen_binary th {alg_size=n; alg_binary=binary_arr; alg_unary=unary_arr}
   (* Main loop. *)
   (* o is index of operation, (i,j) current element *)
   let rec gen_operation o = function
-    | _ when o = lb -> k ()
+    | (_, _) when o = lb -> k ()
     | (i,_) when i = n -> gen_operation (o+1) (0,0)
     | (i,j) when j = n -> gen_operation o (i+1,0)
     | (i,j) when binary_arr.(o).(i).(j) = -1 ->

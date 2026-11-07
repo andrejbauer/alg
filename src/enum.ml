@@ -23,7 +23,9 @@ let part_unary_axioms axioms =
   let is_simple = function
     | (Unary (_,Const _), Const _)
     | (Const _, Unary (_,Const _)) -> true
-    | _ -> false
+    | ((Unary _ | Const _), (Unary _ | Const _))
+    | ((Var _ | Elem _ | Binary _), _)
+    | (_, (Var _ | Elem _ | Binary _)) -> false
   in List.partition (apply_to_snd is_simple) axioms
 
 (*
@@ -35,11 +37,13 @@ let part_binary_axioms axioms =
   let rec const_and_unary = function
     | (Unary (_,t)) -> const_and_unary t
     | (Const _ ) -> true
-    | _ -> false in
+    | Var _ | Elem _ | Binary _ -> false in
   let is_simple = function
     | (Binary (_,t1,t2), Const _)
     | (Const _, Binary (_,t1,t2)) -> const_and_unary t1 && const_and_unary t2
-    | _ -> false
+    | (Binary _, Binary _) | (Const _, Const _)
+    | ((Var _ | Elem _ | Unary _), _)
+    | (_, (Var _ | Elem _ | Unary _)) -> false
   in List.partition (apply_to_snd is_simple) axioms
 
 (*
@@ -56,7 +60,7 @@ let part_one_var_binary axioms =
     | (Unary (_,t)) -> const_var_unary t
     | (Const c ) -> Some (Const c)
     | (Var v) -> Some (Var v)
-    | _ -> None in
+    | Elem _ | Binary _ -> None in
   let is_simple = function
     | (num_vars, (Binary (_,t1,t2), t3))
     | (num_vars, (t3, Binary (_,t1,t2))) ->
@@ -66,9 +70,9 @@ let part_one_var_binary axioms =
           begin
             match (v1,v2,v3) with
               | (None,_,_) | (_,None,_) | (_,_,None) -> false
-              | _ -> num_vars <= 1
+              | (Some _, Some _, Some _) -> num_vars <= 1
           end
-    | _ -> false
+    | (_, ((Var _ | Elem _ | Const _ | Unary _), (Var _ | Elem _ | Const _ | Unary _))) -> false
   in List.partition is_simple axioms
 
 (* Select associativity axioms. *)
@@ -79,7 +83,9 @@ let partition_assoc axioms =
         when op1 = op2 && op2 = op3 && op3 = op4 && 
           a1 = a2 && b1 = b2 && c1 = c2 && 
           a1 <> b1 && a1 <> c1 && b1 <> c1 -> true
-    | _ -> false
+    | (Binary _, Binary _)
+    | ((Var _ | Elem _ | Const _ | Unary _), _)
+    | (_, (Var _ | Elem _ | Const _ | Unary _)) -> false
   in List.partition (apply_to_snd is_assoc) axioms
 
 let make_3d_array x y z initial =
@@ -119,7 +125,7 @@ let partition_amenable axioms =
           List.sort compare (eq_vars [] left) = List.sort compare (eq_vars [] right)
       | ((Binary _), _) -> Util.is_sublist (eq_vars [] right) (eq_vars [] left)
       | (_, (Binary _)) -> Util.is_sublist (eq_vars [] left) (eq_vars [] right)
-      | _ -> false in
+      | ((Var _ | Elem _ | Const _ | Unary _), (Var _ | Elem _ | Const _ | Unary _)) -> false in
     List.partition (apply_to_snd is_amenable) axioms
 
 

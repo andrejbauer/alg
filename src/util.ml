@@ -136,9 +136,8 @@ let rec array_iter2 f arr1 arr2 =
 
 (* Missing list functions. *)
 let enumFromTo s e =
-  let rec loop = function
-    | n when n <= e -> n :: loop (n+1)
-    | _ -> []
+  let rec loop n =
+    if n <= e then n :: loop (n+1) else []
   in
     loop s
 
@@ -160,7 +159,7 @@ let iter_enum f lst =
 
 let is_empty = function
   | [] -> true
-  | _ -> false
+  | _ :: _ -> false
 
 let is_sublist xs ys =
   List.for_all (fun x -> List.mem x ys) xs
@@ -195,7 +194,7 @@ let rec group = function
 
 let fromSome = function
   | (Some a) -> a
-  | _ -> invalid_arg "fromSome called with None argument"
+  | None -> invalid_arg "fromSome called with None argument"
 
 (*
   Generating all ntuples.

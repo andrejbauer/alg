@@ -56,7 +56,7 @@ let eval_formula ({alg_predicates=ps; alg_relations=rs; alg_size=n} as alg) vars
                        begin
                          match r1, r2 with
                            | (Some r1, Some r2) -> Some (r1 = r2)
-                           | _ -> None
+                           | (None, _) | (_, None) -> None
                        end
     | Forall (i,f) -> let b = ref true in
                       let k = ref 0 in
@@ -89,7 +89,7 @@ let eval_formula ({alg_predicates=ps; alg_relations=rs; alg_size=n} as alg) vars
         | None -> begin
           match eval_formula' f2 with 
             | Some false -> Some false
-            | _ -> None
+            | Some true | None -> None
         end
         | Some false -> Some false
         | Some true -> eval_formula' f2
@@ -97,9 +97,9 @@ let eval_formula ({alg_predicates=ps; alg_relations=rs; alg_size=n} as alg) vars
     | Or (f1,f2) -> begin
       match eval_formula' f1 with
         | None -> begin
-          match eval_formula' f2 with 
+          match eval_formula' f2 with
             | Some true -> Some true
-            | _ -> None
+            | Some false | None -> None
         end
         | Some true -> Some true
         | Some false -> eval_formula' f2
@@ -107,9 +107,9 @@ let eval_formula ({alg_predicates=ps; alg_relations=rs; alg_size=n} as alg) vars
     | Imply (f1,f2) -> begin
       match eval_formula' f1 with
         | None -> begin
-          match eval_formula' f2 with 
+          match eval_formula' f2 with
             | Some true -> Some true
-            | _ -> None
+            | Some false | None -> None
         end
         | Some false -> Some true
         | Some true -> eval_formula' f2
