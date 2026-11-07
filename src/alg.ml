@@ -273,7 +273,7 @@ try begin (*A big wrapper for error reporting. *)
             if not config.count_only then out.size_header n ;
             let k = ref 0 in
             let output (algebra, indecomposable) =
-              if config.paranoid && not (CM.check_model theory algebra) then
+              if not (CM.check_model theory algebra) then
                 Error.internal_error "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
               if not config.indecomposable_only || indecomposable then incr k ;
               algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;

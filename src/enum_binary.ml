@@ -134,6 +134,14 @@ let get_binary_actions ({alg_size=n;
         done
       else Stack.clear stack in
 
+    let with_vars_saved cont id op left right =
+      let saved_vars = Array.copy vars in
+      let saved_nfill = !nfill in
+      let ok = cont id op left right in
+      Array.blit saved_vars 0 vars 0 num_vars ;
+      nfill := saved_nfill ;
+      ok in
+
     (* free fills the rest of the variables with all possible values *)
     let rec free cont term =
       if !nfill < num_vars then
@@ -149,6 +157,7 @@ let get_binary_actions ({alg_size=n;
               done
             | (Binary (_, l, r)) ->
               free (fun () -> free cont r) l
+            | Unary (_, t) -> free cont t
             | _ -> cont ()
         end
       else cont () in
@@ -231,7 +240,7 @@ let get_binary_actions ({alg_size=n;
                       Stack.push (id, op2, el2, er2) stack ;
 
                       (* Try to fill some more or fail trying *)
-                      if not (cont id op2 el2 er2) then
+                      if not (with_vars_saved cont id op2 el2 er2) then
                         raise Break
                     end
                   else if left = -1 && right <> -1 then
@@ -241,7 +250,7 @@ let get_binary_actions ({alg_size=n;
                       Stack.push (id, op1, el1, er1) stack ;
 
                       (* Try to fill some more or fail trying *)
-                      if not (cont id op1 el1 er1) then
+                      if not (with_vars_saved cont id op1 el1 er1) then
                         raise Break
                     end
                   else if (* left <> -1 && right <> -1 &&  *)left <> right then
@@ -275,7 +284,7 @@ let get_binary_actions ({alg_size=n;
                       Stack.push (id, op2, el2, er2) stack ;
 
                       (* Try to fill some more or fail trying *)
-                      if not (cont id op2 el2 er2) then
+                      if not (with_vars_saved cont id op2 el2 er2) then
                         raise Break
                     end
                   else if left <> right then
@@ -283,6 +292,7 @@ let get_binary_actions ({alg_size=n;
                 end
             with Undefined -> () in
           try
+            fill (o,i,j) check_other term ;
             fill (o,i,j) check_other (Binary (op2, l2, r2)) ; true
           with Break -> false in (f, undo)
       | _ -> invalid_arg "Invalid axiom in actions_from_axiom. At least one term has to be binary." in
