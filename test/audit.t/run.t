@@ -208,3 +208,11 @@ check reported an internal error from size 2 on.
          1 | 1
          2 | 36
   
+
+A relation declared twice. Before the fix the declaration was accepted,
+the axioms constrained only the second copy, and the counts were
+inflated by the unconstrained first copy.
+
+  $ alg --no-source --count --size 1-3 duplicate_relation.th
+  Typing error:
+  R is declared more than once

@@ -183,8 +183,8 @@ let env_to_array lst =
 
 let cook_theory th_name lst =
   let (env, eqs, axs) = split_entries lst in
-    match Util.find_duplicate (List.map fst (env.const @ env.unary @ env.binary)) with
-      | Some op -> Error.typing_error ~loc:Common.Nowhere "operation %s is declared more than once" op
+    match Util.find_duplicate (List.map fst (env.const @ env.unary @ env.binary @ env.predicates @ env.relations)) with
+      | Some op -> Error.typing_error ~loc:Common.Nowhere "%s is declared more than once" op
       | None -> 
           {
             Theory.th_name = th_name;

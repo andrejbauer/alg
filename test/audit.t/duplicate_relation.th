@@ -1,0 +1,6 @@
+Theory duplicate_relation.
+
+Relation R.
+Relation R.
+
+Axiom: R(x,x).
