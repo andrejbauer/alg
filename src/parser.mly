@@ -1,4 +1,10 @@
 %{
+  (* A term in formula position is a predicate or a relation applied to terms. *)
+  let formula_of_term (t, loc) =
+    match t with
+      | Input.UnaryOp (op, t) -> Input.UnaryPr (op, t)
+      | Input.BinaryOp (op, t1, t2) -> Input.BinaryPr (op, t1, t2)
+      | Input.Var _ -> Error.syntax_error ~loc "expected a formula but found a variable"
 %}
 
 %token THEORY
@@ -12,6 +18,8 @@
 %token AND OR IMPLY IFF NOT EQUAL NOTEQUAL EXISTS FORALL
 %token EOF
 
+%nonassoc TERM_AS_FORMULA
+%nonassoc RPAREN
 %left  INFIXOP0
 %right INFIXOP1
 %left  INFIXOP2
@@ -174,24 +182,10 @@ _atomic_formula:
     { Input.Equal (t1, t2) }
   | t1 = term NOTEQUAL t2 = term
     { Input.NotEqual (t1, t2) }
-  | f = _predicate
-    { f }
-  | f = _relation
-    { f }
-
-(* predicate: mark_position(_predicate) { $1 } *)
-_predicate:
-  | op = PREFIXOP t = simple_term
-    { Input.UnaryPr (op, t) }
-  | op = name t = simple_term
-    { Input.UnaryPr (op, t) }
-
-(* relation: mark_position(_relation) { $1 } *)
-_relation:
-  | t1 = term op = binop t2 = term
-    { Input.BinaryPr (op, t1, t2) }
-  | op = name LPAREN t1 = term COMMA t2 = term RPAREN
-    { Input.BinaryPr (op, t1, t2) }
+  | t = term %prec TERM_AS_FORMULA
+    { formula_of_term t }
+  | LPAREN f = formula RPAREN
+    { fst f }
 
 term: mark_position(_term) { $1 }
 _term:
@@ -215,8 +209,8 @@ simple_term: mark_position(_simple_term) { $1 }
 _simple_term:
   | x = name
     { Input.Var x }
-  | LPAREN t = _term RPAREN
-    { t }
+  | LPAREN t = term RPAREN
+    { fst t }
 
 vars:
   | vs = nonempty_list(name)
