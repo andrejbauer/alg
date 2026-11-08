@@ -56,3 +56,26 @@ own evaluator and gives the correct counts.
          1 | 6
          2 | 1176
   
+
+Relation entries forced under one assignment of the predicates leaked
+into the enumeration of the next assignment. Before the fix the counts
+were 3, 126, 43504 and depended on the order of the axioms.
+
+  $ alg --no-source --count --size 1-3 leftover.th
+  # Theory leftover
+  
+      size | count
+      -----|------
+         1 | 4
+         2 | 136
+         3 | 44224
+  
+  $ alg --sat --no-source --count --size 1-3 leftover.th
+  # Theory leftover
+  
+      size | count
+      -----|------
+         1 | 4
+         2 | 136
+         3 | 44224
+  

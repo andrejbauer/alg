@@ -171,7 +171,7 @@ let gen_relation th ({alg_size=n;
                       alg_relations=relation_arr; _} as alg) cont =
   let (usable, rest) = select_usable th.th_axioms in
   (* We use usable axioms only once. Should improve speed. *)
-  let (r,_) = check_and_fill usable alg in 
+  let (r, undos) = check_and_fill usable alg in
   if r then begin
     let lr = Array.length th.th_relations in
     let rec gen_relation r = function
@@ -189,4 +189,5 @@ let gen_relation th ({alg_size=n;
         done
       | (i,j) ->  gen_relation r (i,j+1) in
     gen_relation 0 (0,0)
-  end
+  end ;
+  undo alg undos

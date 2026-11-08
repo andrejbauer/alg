@@ -1,0 +1,7 @@
+Theory leftover.
+
+Predicate P.
+Relation S R.
+
+Axiom: forall x, not (not P(x) /\ not S(x,x)).
+Axiom: forall x, not (S(x,x) /\ R(x,x)).
