@@ -179,6 +179,11 @@ try begin (*A big wrapper for error reporting. *)
     with Not_found -> None
   in
 
+  (* Name the k-th model of size n. *)
+  let name n k algebra =
+    algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int k)
+  in
+
   (* Processing of algebras of a given size and pass them to the given continuations,
      together with information whether the algebra is indecomposable. *)
   let rec process_size n output =
@@ -195,8 +200,13 @@ try begin (*A big wrapper for error reporting. *)
                   | Some lst -> lst
                   | None ->
                     let lst = ref [] in
+                    let count = ref 0 in
                     process_size k (fun (algebra, indecomposable) ->
-				      if indecomposable then lst := Util.copy_algebra algebra :: !lst) ;
+                      if not config.indecomposable_only || indecomposable then incr count ;
+                      if indecomposable then begin
+                        name k !count algebra ;
+                        lst := Util.copy_algebra algebra :: !lst
+                      end) ;
                     !lst
                 end
               in
@@ -274,7 +284,7 @@ try begin (*A big wrapper for error reporting. *)
               if not (CM.check_model theory algebra) then
                 Error.internal_error "There is a bug in alg. Algebra does not satisfy all axioms.\nPlease report with example." ;
               if not config.indecomposable_only || indecomposable then incr k ;
-              algebra.Algebra.alg_name <- Some (theory.Theory.th_name ^ "_" ^ string_of_int n ^ "_" ^ string_of_int !k) ;
+              name n !k algebra ;
               if not config.count_only && (not config.indecomposable_only || indecomposable)
               then out.algebra algebra
             in

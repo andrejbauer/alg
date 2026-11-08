@@ -308,6 +308,8 @@ used twice and w not at all.
   
   ### identity_18_1
   
+  Decomposition: identity_2_1, identity_3_1, identity_3_1
+  
   
       f |  a  b  c  d  e  g  h  i  j  k  l  m  n  o  p  q  r  s
       --+------------------------------------------------------
@@ -341,4 +343,58 @@ asymmetric relations.
          5 | 582
   
   Check the numbers [2, 7, 42, 582](http://oeis.org/search?q=2,7,42,582) on-line at oeis.org
+  
+
+The decomposition of a product whose factors have a size that was not
+requested. Before the fix the factors had no names in this case, so the
+decomposition line was missing.
+
+  $ alg --no-source --size 4 ../../theories/group.th
+  # Theory group
+  
+  # Size 4
+  
+  ### group_4_1
+  
+  Decomposition: group_2_1, group_2_1
+  
+  
+      inv |  1  a  b  c
+      ----+------------
+          |  1  a  b  c
+  
+  
+      * |  1  a  b  c
+      --+------------
+      1 |  1  a  b  c
+      a |  a  1  c  b
+      b |  b  c  1  a
+      c |  c  b  a  1
+  
+  
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+  ### group_4_2
+  
+  
+      inv |  1  a  b  c
+      ----+------------
+          |  1  a  c  b
+  
+  
+      * |  1  a  b  c
+      --+------------
+      1 |  1  a  b  c
+      a |  a  1  c  b
+      b |  b  c  a  1
+      c |  c  b  1  a
+  
+  
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+  # Statistics
+  
+      size | count
+      -----|------
+         4 | 2
   
