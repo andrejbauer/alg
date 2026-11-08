@@ -515,8 +515,6 @@ module LaTeX = Make(LaTeXStyle)
 (* The json formatter is different from the others, so we implement it directly. *)
 module JSON : Formatter =
 struct
-  let sep i n = if i < n then ", " else ""
-
   let init _ ch _
       {T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary;
        T.th_predicates=th_pred; T.th_relations=th_rel; _} =
@@ -529,55 +527,19 @@ struct
       algebra =
         begin
           fun {A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary; A.alg_predicates=pred; A.alg_relations=rel; _} ->
-            Printf.fprintf ch ",\n  {\n";
-            Array.iteri (fun i c -> Printf.fprintf ch "    \"%s\" : %d,\n" c const.(i)) th_const;
-            let ulen = Array.length unary in
-            Array.iteri
-              (fun op t -> 
-                let n = Array.length t in
-                Printf.fprintf ch "    \"%s\" : [" th_unary.(op) ;
-                for i = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i) (sep i (n-1)) done;
-                Printf.fprintf ch "]%s\n" (sep op ulen)
-              )
-              unary;
-           let blen = Array.length binary in
-            Array.iteri
-              (fun op t -> 
-                let n = Array.length t in
-                Printf.fprintf ch "    \"%s\" :\n      [\n" th_binary.(op) ;
-                for i = 0 to n-1 do
-                  Printf.fprintf ch "        [" ;
-                  for j = 0 to n-1 do Printf.fprintf ch "%d%s" t.(i).(j) (sep j (n-1)) done ;
-                  Printf.fprintf ch "]%s\n" (sep i (n-1))
-                done ;
-                Printf.fprintf ch "      ]%s\n" (sep op (blen-1))
-              )
-              binary;
-            let plen = Array.length pred in
-            Array.iteri
-              (fun p t -> 
-                let n = Array.length t in
-                Printf.fprintf ch "    \"%s\" : [" th_pred.(p) ;
-                for i = 0 to n-1 do
-                  Printf.fprintf ch "%s%s" (if t.(i) = 1 then "true" else "false") (sep i (n-1))
-                done;
-                Printf.fprintf ch "]%s\n" (sep p plen))
-              pred;
-           let rlen = Array.length rel in
-            Array.iteri
-              (fun r t -> 
-                let n = Array.length t in
-                Printf.fprintf ch "    \"%s\" :\n      [\n" th_rel.(r) ;
-                for i = 0 to n-1 do
-                  Printf.fprintf ch "        [" ;
-                  for j = 0 to n-1 do
-                    Printf.fprintf ch "%s%s" (if t.(i).(j) = 1 then "true" else "false") (sep j (n-1))
-                  done ;
-                  Printf.fprintf ch "]%s\n" (sep i (n-1))
-                done ;
-                Printf.fprintf ch "      ]%s\n" (sep r (rlen-1)))
-              rel;
-            Printf.fprintf ch "  }"
+            let list f t = "[" ^ String.concat ", " (List.map f (Array.to_list t)) ^ "]" in
+            let matrix f t = "[\n      " ^ String.concat ",\n      " (List.map (list f) (Array.to_list t)) ^ "\n    ]" in
+            let truth b = if b = 1 then "true" else "false" in
+            let entries f names tables =
+              List.map2 (fun name t -> Printf.sprintf "    \"%s\" : %s" name (f t)) (Array.to_list names) (Array.to_list tables)
+            in
+            Printf.fprintf ch ",\n  {\n%s\n  }"
+              (String.concat ",\n"
+                 (entries string_of_int th_const const @
+                  entries (list string_of_int) th_unary unary @
+                  entries (matrix string_of_int) th_binary binary @
+                  entries (list truth) th_pred pred @
+                  entries (matrix truth) th_rel rel))
         end;
 
       size_footer = begin fun () -> () end;

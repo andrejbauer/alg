@@ -240,3 +240,60 @@ gave 1, 4, 378.
          2 | 1
          3 | 1
   
+
+JSON output. Before the fix the commas between the tables of a model
+were wrong for most signatures: a comma followed the last unary table
+and the last predicate table, and none separated the last binary table
+from the predicate or relation tables.
+
+  $ alg --format json --size 1 json_all.th
+  [ "json_all",
+    {
+      "c" : 0,
+      "f" : [0],
+      "*" : [
+        [0]
+      ],
+      "P" : [false],
+      "R" : [
+        [false]
+      ]
+    },
+    {
+      "c" : 0,
+      "f" : [0],
+      "*" : [
+        [0]
+      ],
+      "P" : [false],
+      "R" : [
+        [true]
+      ]
+    },
+    {
+      "c" : 0,
+      "f" : [0],
+      "*" : [
+        [0]
+      ],
+      "P" : [true],
+      "R" : [
+        [false]
+      ]
+    },
+    {
+      "c" : 0,
+      "f" : [0],
+      "*" : [
+        [0]
+      ],
+      "P" : [true],
+      "R" : [
+        [true]
+      ]
+    }]
+  $ alg --format json --size 1 json_unary.th
+  [ "json_unary",
+    {
+      "f" : [0]
+    }]

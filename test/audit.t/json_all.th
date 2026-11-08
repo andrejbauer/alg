@@ -1,0 +1,7 @@
+Theory json_all.
+
+Constant c.
+Unary f.
+Binary *.
+Predicate P.
+Relation R.
