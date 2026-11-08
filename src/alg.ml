@@ -301,4 +301,4 @@ try begin (*A big wrapper for error reporting. *)
     else out.footer (List.rev !counts)
   end
 end
-with Error.Error err -> Print.error err
+with Error.Error err -> Print.error err ; exit 1

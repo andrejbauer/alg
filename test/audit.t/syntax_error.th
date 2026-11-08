@@ -1,0 +1,3 @@
+Theory syntax_error.
+
+Axiom: x = .

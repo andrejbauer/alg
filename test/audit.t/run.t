@@ -216,6 +216,7 @@ inflated by the unconstrained first copy.
   $ alg --no-source --count --size 1-3 duplicate_relation.th
   Typing error:
   R is declared more than once
+  [1]
 
 A bound variable with the same name as a constant. In an equation it
 was read as the constant, in any other formula as the variable, so the
@@ -425,3 +426,10 @@ and had one model, and the other two axioms were syntax errors.
       -----|------
          1 | 1
   
+
+The exit status after an error. Before the fix it was 0.
+
+  $ alg --no-source --count --size 1 syntax_error.th
+  Syntax error at line 3, characters 11-12:
+  I got confused here
+  [1]
