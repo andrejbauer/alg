@@ -32,5 +32,7 @@ Axiom: x | (x & y) = x.
 
 ### Multiplication
 Axiom: x * (y * z) = (x * y) * z.
-Axiom: x * (y | z) = (x | y) * (x | z).
-Axiom: (y | z) * x = (y | x) * (z | x).
+Axiom: x * (y | z) = (x * y) | (x * z).
+Axiom: (y | z) * x = (y * x) | (z * x).
+Axiom: 0 * x = 0.
+Axiom: x * 0 = 0.
