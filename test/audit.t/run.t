@@ -79,3 +79,26 @@ were 3, 126, 43504 and depended on the order of the axioms.
          2 | 136
          3 | 44224
   
+
+An existential statement over the empty structure is false. Before the
+fix the alternative algorithm took it to be true, so it found no model
+of size 0 for this theory.
+
+  $ alg --no-source --count --size 0-2 noexists.th
+  # Theory noexists
+  
+      size | count
+      -----|------
+         0 | 1
+         1 | 0
+         2 | 0
+  
+  $ alg --sat --no-source --count --size 0-2 noexists.th
+  # Theory noexists
+  
+      size | count
+      -----|------
+         0 | 1
+         1 | 0
+         2 | 0
+  

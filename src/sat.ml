@@ -43,7 +43,7 @@ let or_of n i f =
     then a
     else loop (k+1) (Or (subst_formula i (Elem k) f, a))
   in
-    if n = 0 then True else loop 1 (subst_formula i (Elem 0) f)
+    if n = 0 then False else loop 1 (subst_formula i (Elem 0) f)
 
 (* We measure complexity of a formula by a pair (k,m) where k is the
    number of unary undefined operations and m the number of binary

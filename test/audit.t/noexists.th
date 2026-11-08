@@ -1,0 +1,3 @@
+Theory noexists.
+
+Axiom: not (exists x, x = x).
