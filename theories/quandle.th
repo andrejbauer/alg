@@ -1,0 +1,5 @@
+Binary <.
+
+Axiom quandleness: x < x = x.
+Axiom self_distributive: x < (y < z) = (x < y) < (x < z).
+Axiom pseudo_inverse: exists z, x < z = y.

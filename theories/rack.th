@@ -1,0 +1,4 @@
+Binary <.
+
+Axiom self_distributive: x < (y < z) = (x < y) < (x < z).
+Axiom pseudo_inverse: forall x, forall y, exists z, x < z = y.

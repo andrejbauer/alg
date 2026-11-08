@@ -1,0 +1,8 @@
+Binary < >.
+
+Axiom left_distributive: x < (y < z) = (x < y) < (x < z).
+Axiom right_distributive: (z > y) > x = (z > x) > (y > x).
+Axiom left_inverse: (x < y) > x = y.
+Axiom right_inverse: x < (y > x) = y.
+Axiom left_quandleness: x < x = x.
+Axiom right_quandleness: x > x = x.
