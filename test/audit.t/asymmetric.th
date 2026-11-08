@@ -1,0 +1,5 @@
+Theory asymmetric.
+
+Relation <.
+
+Axiom: not (x < y /\ y < x).

@@ -322,3 +322,23 @@ used twice and w not at all.
       -----|------
         18 | 1
   
+
+An axiom that constrains relation entries conditionally, written as a
+negated conjunction. Before the fix it was applied once before the
+enumeration of the relations and never consulted during it, so the
+enumeration was not pruned by it. The counts are those of the
+asymmetric relations.
+
+  $ alg --no-source --count --size 1-5 asymmetric.th
+  # Theory asymmetric
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 2
+         3 | 7
+         4 | 42
+         5 | 582
+  
+  Check the numbers [2, 7, 42, 582](http://oeis.org/search?q=2,7,42,582) on-line at oeis.org
+  

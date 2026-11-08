@@ -1,15 +1,20 @@
 open Theory
 open Algebra
 
-let select_usable axioms = 
-  let rec usable = function 
-    | True | False -> true
-    | Equal _ | Exists _ | Or _ | Imply _ | Iff _ -> false
-    | Forall (_,t) -> usable t
-    | And (t1,t2) -> usable t1 && usable t2
-    | Not t -> usable t
-    | Relation _ | Predicate _ -> true (* assuming binary and unary ops are filled *) in
-  List.partition (fun (_,a) -> usable a) axioms 
+(* Select the axioms that a single pass of [check_and_fill] enforces completely,
+   because it forces every predicate and relation entry they constrain. This
+   assumes that the operation tables are filled. *)
+let select_usable axioms =
+  let rec usable positive = function
+    | True | False | Relation _ | Predicate _ -> true
+    | Equal _ | Iff _ -> false
+    | Forall (_, f) -> positive && usable true f
+    | Exists (_, f) -> not positive && usable false f
+    | And (f1, f2) -> positive && usable true f1 && usable true f2
+    | Or (f1, f2) -> not positive && usable false f1 && usable false f2
+    | Imply (f1, f2) -> not positive && usable true f1 && usable false f2
+    | Not f -> usable (not positive) f in
+  List.partition (fun (_, a) -> usable true a) axioms
 
 (* Check if all of the axioms are still valid and fill 
    predicates or relations where possible. 
