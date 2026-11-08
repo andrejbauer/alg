@@ -75,49 +75,30 @@ let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_
      many elements of each in/out degree we have).
 *)
 
-exception Result of (int * int)
-
-let unary_invariant f n =
-  let t = Array.make (n+1) 0 in
-  let eventual_period f x =
-    try
-      t.(0) <- x ;
-      for j = 1 to n do
-        t.(j) <- f t.(j-1) ;
-        for i = 0 to j-1 do
-          if t.(i) = t.(j) then raise (Result (i,j))
-        done
-      done ;
-      Error.internal_error "algebra.ml -- map_invariant"
-    with Result r -> r
+(* The eventual period of [x] under [step], as defined above. *)
+let eventual_period n step x =
+  let seen = Array.make n (-1) in
+  let rec loop j y =
+    if seen.(y) >= 0 then (seen.(y), j)
+    else begin
+      seen.(y) <- j ;
+      loop (j+1) (step y)
+    end
   in
+    loop 0 x
+
+(* The counts N(i,j) of elements with eventual period (i,j). *)
+let map_invariant n period =
   let a = Array.init n (fun j -> Array.make (j+1) 0) in
     for x = 0 to n - 1 do
-      let (i,j) = eventual_period f x in
+      let (i,j) = period x in
         a.(j-1).(i) <- a.(j-1).(i) + 1
     done ;
     a
 
-let binary_invariant f n =
-  let t = Array.make (n+1) 0 in
-  let eventual_period f x =
-    try
-      t.(0) <- x ;
-      for j = 1 to n do
-        t.(j) <- f x t.(j-1) ;
-        for i = 0 to j-1 do
-          if t.(i) = t.(j) then raise (Result (i,j))
-        done
-      done ;
-      Error.internal_error "algebra.ml -- map_invariant"
-    with Result r -> r
-  in
-  let a = Array.init n (fun j -> Array.make (j+1) 0) in
-    for x = 0 to n - 1 do
-      let (i,j) = eventual_period f x in
-        a.(j-1).(i) <- a.(j-1).(i) + 1
-    done ;
-    a
+let unary_invariant f n = map_invariant n (eventual_period n f)
+
+let binary_invariant f n = map_invariant n (fun x -> eventual_period n (f x) x)
 
 let predicate_invariant p =
   let k = ref 0 in
