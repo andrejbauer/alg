@@ -297,3 +297,28 @@ from the predicate or relation tables.
     {
       "f" : [0]
     }]
+
+Default element names of a large model. Before the fix the name e was
+used twice and w not at all.
+
+  $ alg --no-source --size 18 identity.th
+  # Theory identity
+  
+  # Size 18
+  
+  ### identity_18_1
+  
+  
+      f |  a  b  c  d  e  g  h  i  j  k  l  m  n  o  p  q  r  s
+      --+------------------------------------------------------
+        |  a  b  c  d  e  g  h  i  j  k  l  m  n  o  p  q  r  s
+  
+  
+  - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+  # Statistics
+  
+      size | count
+      -----|------
+        18 | 1
+  
