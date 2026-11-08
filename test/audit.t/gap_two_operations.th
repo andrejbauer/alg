@@ -1,0 +1,6 @@
+Theory gap_two_operations.
+
+Unary f.
+Binary * +.
+
+Axiom: x * y = f(x + x).

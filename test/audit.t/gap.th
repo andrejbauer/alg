@@ -1,0 +1,6 @@
+Theory gap.
+
+Unary f.
+Binary *.
+
+Axiom: f(x * x) = (x * y) * y.

@@ -167,3 +167,44 @@ on as a model and the final sanity check reported an internal error.
          2 | 0
          3 | 0
   
+
+Equations whose one side is a binary application and whose other side
+mentions fewer variables. Before the fix the equation was not checked
+when the last table entry it needs was filled through the side with
+fewer variables, so invalid models were produced and the final sanity
+check reported an internal error from size 2 on.
+
+  $ alg --no-source --count --size 1-3 gap.th
+  # Theory gap
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 4
+         3 | 91
+  
+  $ alg --sat --no-source --count --size 1-3 gap.th
+  # Theory gap
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 4
+         3 | 91
+  
+  $ alg --no-source --count --size 1-2 gap_two_operations.th
+  # Theory gap_two_operations
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 36
+  
+  $ alg --sat --no-source --count --size 1-2 gap_two_operations.th
+  # Theory gap_two_operations
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 36
+  

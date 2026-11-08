@@ -294,7 +294,7 @@ let get_binary_actions ({alg_size=n;
                 end
             with Undefined -> () in
           try
-            fill (o,i,j) check_other term ;
+            fill (o,i,j) (fun () -> free check_other (Binary (op2, l2, r2))) term ;
             fill (o,i,j) check_other (Binary (op2, l2, r2)) ; true
           with Break -> false in (f, undo)
       | ((Var _ | Elem _ | Const _ | Unary _), (Var _ | Elem _ | Const _ | Unary _)) ->
