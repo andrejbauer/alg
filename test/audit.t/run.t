@@ -126,3 +126,44 @@ yielding a count of 0.
          2 | 0
          3 | 0
   
+
+Equations without any operation in a theory without unary operations.
+Before the fix they were never checked, so every structure was passed
+on as a model and the final sanity check reported an internal error.
+
+  $ alg --no-source --count --size 1-3 var_eq_const.th
+  # Theory var_eq_const
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 0
+         3 | 0
+  
+  $ alg --sat --no-source --count --size 1-3 var_eq_const.th
+  # Theory var_eq_const
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 0
+         3 | 0
+  
+  $ alg --no-source --count --size 1-3 var_eq_var.th
+  # Theory var_eq_var
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 0
+         3 | 0
+  
+  $ alg --sat --no-source --count --size 1-3 var_eq_var.th
+  # Theory var_eq_var
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 0
+         3 | 0
+  

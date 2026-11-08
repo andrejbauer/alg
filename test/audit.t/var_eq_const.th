@@ -1,0 +1,5 @@
+Theory var_eq_const.
+
+Constant c.
+
+Axiom: x = c.

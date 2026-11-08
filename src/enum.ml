@@ -195,12 +195,8 @@ let enum n ({th_const=const;
         
         Enum_unary.apply_simple simple alg ;
 
-        for o=0 to lu - 1 do
-          for i=0 to n-1 do
-            if unary_arr.(o).(i) <> -1 && not (unary_dos (o,i)) then
-              raise InconsistentAxioms
-          done
-        done ;
+        (* Check the unary axioms on the cells filled so far and fill what they force. *)
+        if not (unary_dos (-1,-1)) then raise InconsistentAxioms ;
 
         (* Auxiliary variables for generation of binary operations. *)
         (* ******************************************************* *)

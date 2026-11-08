@@ -1,0 +1,5 @@
+Theory var_eq_var.
+
+Binary *.
+
+Axiom: x = y.
