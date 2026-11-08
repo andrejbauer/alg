@@ -71,7 +71,7 @@ let rec remove x = function
 let rec remove_many xs = function
   | [] -> []
   | y :: ys ->
-    if List.mem y xs then ys
+    if List.mem y xs then remove_many xs ys
     else y :: remove_many xs ys
 
 let intersect lst1 lst2 =

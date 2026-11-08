@@ -1,0 +1,7 @@
+Theory poset_explicit.
+
+Relation <=.
+
+Axiom reflexivity: forall x, x <= x.
+Axiom transitivity: forall x y z, x <= y /\ y <= z -> x <= z.
+Axiom antisymmetry: forall x y, x <= y /\ y <= x -> x = y.
