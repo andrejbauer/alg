@@ -1,0 +1,4 @@
+Theory nonidempotent.
+Binary *.
+
+Axiom: x * x <> x.

@@ -1,0 +1,4 @@
+Theory fixedpointfree.
+Unary f.
+
+Axiom: f(x) <> x.

@@ -282,20 +282,19 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs; _} as t
                     end
                     else if rel.(r).(v1).(v2) = b then k ()))
         | Equal (t1, t2) ->
+            let force_other t v =
+              if b = 1
+              then force_term t v (fun _ -> k ())
+              else
+                for w = 0 to n-1 do
+                  if w <> v then force_term t w (fun _ -> k ())
+                done
+            in
             begin match eval_term t1, eval_term t2 with
-              | TValue v1, TValue v2 -> if v1 = v2 then k ()
-              | TValue v1, TPartial (t2,_) -> force_term t2 v1 (fun _ -> k ())
-              | TPartial _, TValue v2 -> force_term t1 v2 (fun _ -> k ())
-              | TPartial (t1,_), TPartial (t2,_) ->
-                  force_term t1 (-1)
-                    (fun v ->
-                       if b = 1
-                       then force_term t2 v (fun _ -> k ())
-                       else begin
-                         for w = 0 to n-1 do
-                           if w <> v then force_term t2 w (fun _ -> k ())
-                         done
-                       end)
+              | TValue v1, TValue v2 -> if (b = 1) = (v1 = v2) then k ()
+              | TValue v1, TPartial (t2,_) -> force_other t2 v1
+              | TPartial (t1,_), TValue v2 -> force_other t1 v2
+              | TPartial (t1,_), TPartial (t2,_) -> force_term t1 (-1) (force_other t2)
             end
         | Not f -> force_formula f (1-b) k
         | And (f1, f2) ->
