@@ -102,3 +102,27 @@ of size 0 for this theory.
          1 | 0
          2 | 0
   
+
+Axioms that contradict each other at a given size but not at smaller
+ones. Before the fix the contradiction, when found while applying the
+unary axioms, aborted the whole run with a fatal error instead of
+yielding a count of 0.
+
+  $ alg --no-source --count --size 1-3 fatal.th
+  # Theory fatal
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 0
+         3 | 0
+  
+  $ alg --sat --no-source --count --size 1-3 fatal.th
+  # Theory fatal
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 0
+         3 | 0
+  

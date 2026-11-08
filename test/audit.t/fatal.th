@@ -1,0 +1,7 @@
+Theory fatal.
+
+Constant a.
+Unary f.
+
+Axiom: f(a) = a.
+Axiom: f(x) = y.
