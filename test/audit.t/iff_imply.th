@@ -1,0 +1,3 @@
+Theory iff_imply.
+
+Axiom: True <-> True -> False.

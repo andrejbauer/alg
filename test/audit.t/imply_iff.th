@@ -1,0 +1,3 @@
+Theory imply_iff.
+
+Axiom: False -> True <-> False.

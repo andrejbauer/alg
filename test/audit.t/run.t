@@ -398,3 +398,30 @@ decomposition line was missing.
       -----|------
          4 | 2
   
+
+Precedence of implication and equivalence. The manual gives equivalence
+the lower precedence, so the first axiom reads (False -> True) <-> False
+and has no models. Before the fix it was read as False -> (True <-> False)
+and had one model, and the other two axioms were syntax errors.
+
+  $ alg --no-source --count --size 1 imply_iff.th
+  # Theory imply_iff
+  
+      size | count
+      -----|------
+         1 | 0
+  
+  $ alg --no-source --count --size 1 iff_imply.th
+  # Theory iff_imply
+  
+      size | count
+      -----|------
+         1 | 0
+  
+  $ alg --no-source --count --size 1 iff_forall.th
+  # Theory iff_forall
+  
+      size | count
+      -----|------
+         1 | 1
+  

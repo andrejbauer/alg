@@ -1,0 +1,3 @@
+Theory iff_forall.
+
+Axiom: True <-> forall x, x = x.

@@ -88,43 +88,39 @@ _formula:
     { f }
   | f = _iff_formula
     { f }
-  | f = _imply_formula
-    { f }
-
-formula_noquant: mark_position(_formula_noquant) { $1 }
-_formula_noquant:
-  | f = _quantified_formula
-    { f }
-  | f = _imply_formula
-    { f }
-  | f = _iff_formula_noquant
-    { f }
 
 quantified_formula: mark_position(_quantified_formula) { $1 }
 _quantified_formula:
-  | FORALL xs = vars COMMA f = formula_noquant
+  | FORALL xs = vars COMMA f = formula
     { Input.Forall (xs, f) }
-  | EXISTS xs = vars COMMA f = formula_noquant
+  | EXISTS xs = vars COMMA f = formula
     { Input.Exists (xs, f) }
-
-(* iff_formula_noquant: mark_position(_iff_formula_noquant) { $1 } *)
-_iff_formula_noquant:
-  | f1 = or_formula_noquant IFF f2 = or_formula_noquant
-    { Input.Iff (f1, f2) }
 
 (* iff_formula: mark_position(_iff_formula) { $1 } *)
 _iff_formula:
-  | f1 = or_formula_noquant IFF f2 = or_formula
+  | f1 = imply_formula_noquant IFF f2 = imply_formula
     { Input.Iff (f1, f2) }
+  | f1 = imply_formula_noquant IFF f2 = quantified_formula
+    { Input.Iff (f1, f2) }
+  | f = _imply_formula
+    { f }
 
-(* imply_formula: mark_position(_imply_formula) { $1 } *)
+imply_formula: mark_position(_imply_formula) { $1 }
 _imply_formula:
-  | f1 = or_formula_noquant IMPLY f2 = formula
+  | f1 = or_formula_noquant IMPLY f2 = imply_formula
+    { Input.Imply (f1, f2) }
+  | f1 = or_formula_noquant IMPLY f2 = quantified_formula
     { Input.Imply (f1, f2) }
   | f = _or_formula
     { f }
 
-or_formula: mark_position(_or_formula) { $1 }
+imply_formula_noquant: mark_position(_imply_formula_noquant) { $1 }
+_imply_formula_noquant:
+  | f1 = or_formula_noquant IMPLY f2 = imply_formula_noquant
+    { Input.Imply (f1, f2) }
+  | f = _or_formula_noquant
+    { f }
+
 _or_formula:
   | f1 = or_formula_noquant OR f2 = and_formula
     { Input.Or (f1, f2) }
