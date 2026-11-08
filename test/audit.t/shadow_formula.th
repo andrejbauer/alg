@@ -1,0 +1,6 @@
+Theory shadow_formula.
+
+Constant e.
+Binary *.
+
+Axiom: forall e, e * x = x /\ True.

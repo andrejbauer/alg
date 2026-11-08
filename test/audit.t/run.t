@@ -216,3 +216,27 @@ inflated by the unconstrained first copy.
   $ alg --no-source --count --size 1-3 duplicate_relation.th
   Typing error:
   R is declared more than once
+
+A bound variable with the same name as a constant. In an equation it
+was read as the constant, in any other formula as the variable, so the
+two theories below had different models. Before the fix the first one
+gave 1, 4, 378.
+
+  $ alg --no-source --count --size 1-3 shadow.th
+  # Theory shadow
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 1
+         3 | 1
+  
+  $ alg --no-source --count --size 1-3 shadow_formula.th
+  # Theory shadow_formula
+  
+      size | count
+      -----|------
+         1 | 1
+         2 | 1
+         3 | 1
+  

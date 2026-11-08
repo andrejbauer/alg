@@ -38,11 +38,12 @@ type theory_name = string
 
 type theory = { th_name : theory_name option ; th_entries : theory_entry list }
 
-(* [as_equation f] tries to convert an axiom to an equation. *)
+(* [as_equation f] tries to convert an axiom to an equation. It returns the
+   variables bound by the leading universal quantifiers and the two sides. *)
 let rec as_equation (f, _) =
   match f with
-    | Equal (t1, t2) -> Some (t1, t2)
-    | Forall (_, f) -> as_equation f
+    | Equal (t1, t2) -> Some ([], t1, t2)
+    | Forall (xs, f) -> Option.map (fun (ys, t1, t2) -> (xs @ ys, t1, t2)) (as_equation f)
     | False | True | NotEqual _ | UnaryPr _ | BinaryPr _ | 
       Exists _ | And _ | Or _ | Imply _ | Iff _ | Not _ -> None
 

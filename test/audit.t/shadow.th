@@ -1,0 +1,6 @@
+Theory shadow.
+
+Constant e.
+Binary *.
+
+Axiom: forall e, e * x = x.

@@ -46,33 +46,34 @@ let lookup_var vars x = Util.lookup x vars
 let is_op {const=ec; unary=eu; binary=eb; _} x =
   List.mem_assoc x ec || List.mem_assoc x eu || List.mem_assoc x eb
 
-(* The free variables of a term, without repetitions. *)
-let rec fv_term env (t, _) =
+(* The free variables of a term, without repetitions. A name in [bound] is a
+   variable even when it is also declared as a constant or an operation. *)
+let rec fv_term env bound (t, _) =
   match t with
     | Input.Var x ->
-      if is_op env x then [] else [x]
-    | Input.UnaryOp (_, t) -> fv_term env t
-    | Input.BinaryOp (_, t1, t2) -> Util.union (fv_term env t1) (fv_term env t2)
+      if is_op env x && not (List.mem x bound) then [] else [x]
+    | Input.UnaryOp (_, t) -> fv_term env bound t
+    | Input.BinaryOp (_, t1, t2) -> Util.union (fv_term env bound t1) (fv_term env bound t2)
 
 
 (* The free variables of a formula, without repetitions. *)
-let rec fv_formula env (f, _) =
+let rec fv_formula env bound (f, _) =
   match f with
     | Input.False -> []
     | Input.True -> []
     | Input.Equal (t1, t2)
     | Input.NotEqual (t1, t2) ->
-      Util.union (fv_term env t1) (fv_term env t2)
-    | Input.UnaryPr (_, t) -> fv_term env t
-    | Input.BinaryPr (_, t1, t2) -> Util.union (fv_term env t1) (fv_term env t2)
-    | Input.Not f -> fv_formula env f
+      Util.union (fv_term env bound t1) (fv_term env bound t2)
+    | Input.UnaryPr (_, t) -> fv_term env bound t
+    | Input.BinaryPr (_, t1, t2) -> Util.union (fv_term env bound t1) (fv_term env bound t2)
+    | Input.Not f -> fv_formula env bound f
     | Input.And (f1, f2)
     | Input.Or (f1, f2)
     | Input.Imply (f1, f2)
     | Input.Iff (f1, f2) ->
-      Util.union (fv_formula env f1) (fv_formula env f2)
+      Util.union (fv_formula env bound f1) (fv_formula env bound f2)
     | Input.Forall (xs, f) | Input.Exists (xs, f) ->
-      Util.remove_many xs (fv_formula env f)
+      Util.remove_many xs (fv_formula env (xs @ bound) f)
 
 (* The depth of the formula is the maximum level of nesting of quantifiers. *)
 let rec depth (f, _) =
@@ -112,8 +113,8 @@ let rec cook_term env vars (t,loc) =
       | None -> Error.typing_error ~loc "%s is used as a unary operation but it is not" op
     end
 
-let cook_equation env (t1, t2) =
-  let k, vars = Util.enum (Util.union (fv_term env t1) (fv_term env t2)) in
+let cook_equation env (xs, t1, t2) =
+  let k, vars = Util.enum (Util.union (fv_term env xs t1) (fv_term env xs t2)) in
     (k, (cook_term env vars t1, cook_term env vars t2))
 
 let cook_formula env f =
@@ -155,7 +156,7 @@ let cook_formula env f =
         end
   in
   let loc = snd f in
-  let xs = fv_formula env f in
+  let xs = fv_formula env [] f in
   let f = Input.Forall (xs, f), loc in
     Array.make (depth f) (-1), cook [] f
 
@@ -171,7 +172,7 @@ let split_entries lst =
         | Input.Axiom (_,a) ->
           begin match Input.as_equation a with
             | None -> (env, eqs, a :: axs)
-            | Some (t1,t2) -> (env, (t1,t2) :: eqs, axs)
+            | Some (xs, t1, t2) -> (env, (xs, t1, t2) :: eqs, axs)
           end)
     (empty_env, [], [])
     lst
