@@ -1,0 +1,5 @@
+Theory iff_or.
+
+Relation R S T.
+
+Axiom: (R(x,x) <-> S(x,x)) \/ T(x,x).

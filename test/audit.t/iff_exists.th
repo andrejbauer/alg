@@ -1,0 +1,5 @@
+Theory iff_exists.
+
+Relation R S.
+
+Axiom: exists x, R(x,x) <-> S(x,x).

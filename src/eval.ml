@@ -115,9 +115,9 @@ let eval_formula ({alg_predicates=ps; alg_relations=rs; alg_size=n; _} as alg) v
         | Some true -> eval_formula' f2
     end
     | Iff (f1,f2) -> begin
-      match eval_formula' f1 with
-        | None -> None
-        | a -> Some (a = eval_formula' f2)
+      match eval_formula' f1, eval_formula' f2 with
+        | (Some b1, Some b2) -> Some (b1 = b2)
+        | (None, _) | (_, None) -> None
     end
     | Not f -> begin
       match eval_formula' f with
