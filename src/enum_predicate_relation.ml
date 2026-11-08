@@ -5,7 +5,7 @@ let select_usable axioms =
   let rec usable = function 
     | True | False -> true
     | Equal _ | Exists _ | Or _ | Imply _ | Iff _ -> false
-    | Forall (v,t) -> usable t
+    | Forall (_,t) -> usable t
     | And (t1,t2) -> usable t1 && usable t2
     | Not t -> usable t
     | Relation _ | Predicate _ -> true (* assuming binary and unary ops are filled *) in
@@ -18,16 +18,13 @@ let select_usable axioms =
    and false otherwise. undos is a list of actions needed
    to return predicates and relations to previous state.
 *)
-let check_and_fill axioms ({alg_const=c;
-                            alg_unary=u;
-                            alg_binary=b;
-                            alg_predicates=p;
+let check_and_fill axioms ({alg_predicates=p;
                             alg_relations=r;
-                            alg_size=n} as alg) = 
+                            alg_size=n; _} as alg) = 
   let rec eval_fill vars undos target = function 
     | True -> (target, undos)
     | False -> (not target, undos)
-    | Equal (t1,t2) -> (true, undos)
+    | Equal _ -> (true, undos)
     | Forall (v, f) when target -> 
       let rec eval_forall undos = function
         | i when i = n -> (true, undos)
@@ -141,7 +138,7 @@ let check_and_fill axioms ({alg_const=c;
     end in
   for_all_axioms (true, []) axioms
 
-let undo {alg_predicates=ps; alg_relations=rs} undos =
+let undo {alg_predicates=ps; alg_relations=rs; _} undos =
   let rec undo = function
     | [] -> ()
     | ((0,(p,e,_))::us) -> ps.(p).(e) <- -1 ; undo us
@@ -154,7 +151,7 @@ let undo {alg_predicates=ps; alg_relations=rs} undos =
 (* Silly predicate enumeration. *)
 
 let gen_predicate th ({alg_size=n; 
-                       alg_predicates=predicate_arr} as alg) cont =
+                       alg_predicates=predicate_arr; _} as alg) cont =
   let lp = Array.length th.th_predicates in
   let rec gen_predicate i = function
     | j when j = n && i < lp - 1 -> gen_predicate (i+1) 0
@@ -170,27 +167,8 @@ let gen_predicate th ({alg_size=n;
     | j -> gen_predicate i (j+1)
   in gen_predicate 0 0
 
-(* Silly predicate enumeration. *)
-
-let gen_predicate th ({alg_size=n; 
-                       alg_predicates=predicate_arr} as alg) cont =
-  let lp = Array.length th.th_predicates in
-  let rec gen_predicate i = function
-    | j when j = n && i < lp - 1 -> gen_predicate (i+1) 0
-    | j when j = n || i = lp -> cont ()
-    | j when predicate_arr.(i).(j) = -1 ->
-      for b = 0 to 1 do
-        predicate_arr.(i).(j) <- b ;
-        let (p, undos) = check_and_fill th.th_axioms alg in
-        if p then gen_predicate i (j+1) ;
-        undo alg undos ;
-        predicate_arr.(i).(j) <- -1 ;
-      done
-    | j -> gen_predicate i (j+1)
-  in gen_predicate 0 0
-
-let gen_relation th ({alg_size=n; 
-                      alg_relations=relation_arr} as alg) cont =
+let gen_relation th ({alg_size=n;
+                      alg_relations=relation_arr; _} as alg) cont =
   let (usable, rest) = select_usable th.th_axioms in
   (* We use usable axioms only once. Should improve speed. *)
   let (r,_) = check_and_fill usable alg in 

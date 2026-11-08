@@ -1,0 +1,5 @@
+Theory star.
+Unary s.
+Binary *.
+
+Axiom: s(x * y) = s(y) * s(x).

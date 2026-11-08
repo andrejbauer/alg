@@ -1,5 +1,4 @@
 open Algebra
-open Theory
 open Util
 
 (* It is assumed that the two algebras correspond to the same signature. Furthermore, an error

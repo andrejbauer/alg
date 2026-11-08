@@ -1,0 +1,7 @@
+(install
+ (section share)
+ (source_trees theories))
+
+(install
+ (section doc)
+ (files MANUAL.md))

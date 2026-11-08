@@ -57,7 +57,7 @@ let compare_complexity (k1,m1) (k2,m2) =
 (* Generate all algebras for theory [th] of size [n]. Pass each one to the
    continuation [k]. You may optionally pass in a partially constructed algebra,
    and the algorithm will fill in the rest. *)
-let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) k =
+let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs; _} as th) k =
   if n >= Array.length const then
     let a = (match start with None -> Algebra.empty n th | Some a -> a) in
     let const = a.alg_const in
@@ -70,7 +70,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
        with a count of how many table entries need to be filled in for the term to 
        become completely evaluated. *)
     let rec eval_term = function
-      | Var i -> Error.internal_error "eval_term: variable encountered"
+      | Var _ -> Error.internal_error "eval_term: variable encountered"
       | Elem e -> TValue e
       | Const i -> TValue const.(i) (* NB: We assume constants are always defined. *)
       | Unary (op, t) ->
@@ -198,7 +198,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
     (* Force [t] to have value [v]. Pass the results, if any, to continuation [k]. *)
     let rec force_term t v k =
       match t with
-        | Var i -> Error.internal_error "force_term: variable encountered"
+        | Var _ -> Error.internal_error "force_term: variable encountered"
         | Elem e -> if v = -1 || e = v then k e
         | Const i ->
             if v = -1 then k (const.(i))
@@ -285,7 +285,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
             begin match eval_term t1, eval_term t2 with
               | TValue v1, TValue v2 -> if v1 = v2 then k ()
               | TValue v1, TPartial (t2,_) -> force_term t2 v1 (fun _ -> k ())
-              | TPartial (t2,_), TValue v2 -> force_term t1 v2 (fun _ -> k ())
+              | TPartial _, TValue v2 -> force_term t1 v2 (fun _ -> k ())
               | TPartial (t1,_), TPartial (t2,_) ->
                   force_term t1 (-1)
                     (fun v ->
@@ -332,7 +332,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
         | Exists _ -> Error.internal_error "force_formula: exists encountered"
     in
       
-    let rec fill_relation k =
+    let fill_relation k =
       let rec g r =
         if r >= Array.length rel then k ()
         else begin
@@ -354,7 +354,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
         g 0
     in
 
-    let rec fill_predicate k =
+    let fill_predicate k =
       let rec g p =
         if p >= Array.length pred then k ()
         else begin
@@ -376,7 +376,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
         g 0
     in
 
-    let rec fill_binary k =
+    let fill_binary k =
       let rec g op =
         if op >= Array.length binary then k ()
         else begin
@@ -398,7 +398,7 @@ let generate ?start n ({th_const=const; th_equations=eqs; th_axioms=axs} as th) 
         g 0
     in
 
-    let rec fill_unary k =
+    let fill_unary k =
       let rec g op =
         if op >= Array.length unary then k ()
         else begin

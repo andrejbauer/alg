@@ -1,0 +1,12 @@
+(executable
+ (name alg)
+ (public_name alg)
+ (promote
+  (until-clean)
+  (into ..))
+ (libraries dune-build-info))
+
+(ocamllex lexer)
+
+(menhir
+ (modules parser))

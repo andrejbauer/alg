@@ -33,7 +33,7 @@ type algebra = {
 }
 
 (* An algebra with all -1's. *)
-let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_relations=r} =
+let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_relations=r; _} =
   if n < Array.length c
   then Error.internal_error "Algebra.empty: cannot create an algebra of size %d with %d constants." n (Array.length c)
   else {
@@ -42,9 +42,9 @@ let empty n {T.th_const=c; T.th_unary=u; T.th_binary=b; T.th_predicates=p; T.th_
     alg_size = n;
     alg_const = Array.init (Array.length c) (fun i -> i);
     alg_unary = Array.make_matrix (Array.length u) n (-1);
-    alg_binary = Array.init (Array.length b) (fun i -> Array.make_matrix n n (-1));
+    alg_binary = Array.init (Array.length b) (fun _ -> Array.make_matrix n n (-1));
     alg_predicates = Array.make_matrix (Array.length p) n (-1);
-    alg_relations = Array.init (Array.length r) (fun i -> Array.make_matrix n n (-1));
+    alg_relations = Array.init (Array.length r) (fun _ -> Array.make_matrix n n (-1));
   }
 
 (* For faster isomorphism checking we define invariants for structures.
@@ -142,7 +142,7 @@ let relation_invariant r =
   (indeg, outdeg)
 
 
-let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs} =
+let invariant {alg_size=n; alg_unary=us; alg_binary=bs; alg_predicates=ps; alg_relations=rs; _} =
   { inv_size = n ;
     inv_unary = Array.map (fun u -> unary_invariant (fun k -> u.(k)) n) us;
     inv_binary = Array.map (fun b -> binary_invariant (fun k l -> b.(k).(l)) n) bs;
@@ -170,7 +170,7 @@ let relation_cache r =
 
   indegs, outdegs
 
-let make_cache {alg_relations=rs} =
+let make_cache {alg_relations=rs; _} =
   let rc = Array.map relation_cache rs in
   {indegs = Array.map fst rc; outdegs = Array.map snd rc}
 

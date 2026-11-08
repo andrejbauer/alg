@@ -27,13 +27,12 @@ let check_relation iso r1 r2 =
   let l = Array.length iso in
   Util.for_all2 (fun i j -> r1.(i).(j) = r2.(iso.(i)).(iso.(j))) 0 (l-1) 0 (l-1)
 
-let are_iso {th_const=const_op; th_unary=unary_op; th_binary=binary_op;
-             th_predicates=predicates_op; th_relations=relations_op}
+let are_iso {th_predicates=predicates_op; th_relations=relations_op; _}
             ({alg_size=n1; alg_const=c1; alg_unary=u1; 
-              alg_binary=b1; alg_relations=r1; alg_predicates=p1}, 
+              alg_binary=b1; alg_relations=r1; alg_predicates=p1; _},
              {indegs=indegs1; outdegs=outdegs1})
             ({alg_size=n2; alg_const=c2; alg_unary=u2;
-              alg_binary=b2; alg_relations=r2; alg_predicates=p2},
+              alg_binary=b2; alg_relations=r2; alg_predicates=p2; _},
              {indegs=indegs2; outdegs=outdegs2}) = 
   if n1 <> n2
   then false

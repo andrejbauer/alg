@@ -1,4 +1,3 @@
-open Theory
 open Algebra
 
 module IntMap =
@@ -52,16 +51,6 @@ let rec filter_map f = function
         | None -> filter_map f xs
         | Some y -> y :: filter_map f xs
       end
-
-(* Lists as sets. *)
-let rec union lst1 lst2 =
-  match lst1, lst2 with
-    | [], lst2 -> lst2
-    | lst1, [] -> lst1
-    | x::xs, ys ->
-        if List.mem x ys
-        then union xs ys
-        else x :: union xs ys
 
 (* Lists as sets. *)
 let rec union lst1 lst2 =
@@ -129,7 +118,7 @@ let array_map2_list f a1 a2 =
         done ;
         List.rev !lst
 
-let rec array_iter2 f arr1 arr2 =
+let array_iter2 f arr1 arr2 =
   for i = 0 to Array.length arr1 - 1 do
     f arr1.(i) arr2.(i)
   done
@@ -177,13 +166,13 @@ let rev_combine xs ys =
 let rev_take n xs = 
   let rec rev_take acc n = function
     | [] -> acc
-    | (x::xs) when n = 0 -> acc
+    | _ :: _ when n = 0 -> acc
     | (x::xs) -> rev_take (x::acc) (n-1) xs in
   rev_take [] n xs
 
 let rec split x = function
   | [] -> ([],[])
-  | (y::ys) as ys' when y <> x -> ([], ys')
+  | (y::_) as ys' when y <> x -> ([], ys')
   | (y::ys) -> let (xs', ys') = split x ys
                in (y::xs', ys')
 
@@ -324,7 +313,7 @@ let divisors n =
     loop 2 [] []
 
 (* Small divisors of n larger than 1, i.e., those not exceeding the square root of n. *)
-let rec small_divisors n =
+let small_divisors n =
   let rec loop k =
     if k * k > n then []
     else if n mod k = 0 then k :: loop (k+1)

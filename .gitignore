@@ -1,13 +1,3 @@
-*.annot
-*.cmo
-*.cma
-*.cmi
-*.a
-*.o
-*.cmx
-*.cmxs
-*.cmxa
-src/version.ml
 _build
-/alg.native
-/doc/manual.pdf
+/alg.exe
+*.install

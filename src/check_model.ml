@@ -11,7 +11,7 @@ let eval_eq alg vars (left,right) =
   (Eval.eval_term alg vars left, Eval.eval_term alg vars right)
 
 (* Naive check if model satisfies all axioms. *)
-let check_model {th_equations=equations; th_axioms=axioms} alg =
+let check_model {th_equations=equations; th_axioms=axioms; _} alg =
   let n = alg.alg_size in 
   let check_eq (num_vars, eq) = 
     array_for_all 
@@ -90,9 +90,9 @@ let check_relation iso r1 r2 =
 *)
 let are_iso th
             {alg_size=n1; alg_const=c1; alg_unary=u1;
-             alg_binary=b1; alg_predicates=p1; alg_relations=r1}
+             alg_binary=b1; alg_predicates=p1; alg_relations=r1; _}
             {alg_size=n2; alg_const=c2; alg_unary=u2;
-             alg_binary=b2; alg_predicates=p2; alg_relations=r2} =
+             alg_binary=b2; alg_predicates=p2; alg_relations=r2; _} =
   if n1 <> n2 then
     false
   else

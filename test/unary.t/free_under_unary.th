@@ -1,0 +1,5 @@
+Theory free_under_unary.
+Unary f.
+Binary *.
+
+Axiom: (x * y) * f(z) = x * (y * f(z)).

@@ -138,7 +138,7 @@ let enum n ({th_const=const;
 	         th_binary=binary;
 	         th_relations=relations;
 	         th_predicates=predicates;
-	         th_equations=axioms} as th) k =
+	         th_equations=axioms; _} as th) k =
   if n >= Array.length const then
     try begin
       let lc = Array.length const in

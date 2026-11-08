@@ -5,7 +5,7 @@ open Algebra
 (* Auxiliary functions for unary axioms. *)
 
 (* Apply simple axioms to operation tables unary_arr *)
-let apply_simple simple {alg_unary=unary_arr} =
+let apply_simple simple {alg_unary=unary_arr; _} =
   (* Apply simple axioms *)
   List.iter
     (function
@@ -20,7 +20,7 @@ let apply_simple simple {alg_unary=unary_arr} =
     simple
 
 (* Get do and undo actions from axioms in normal form for use in main loop of gen_unary. *)
-let get_unary_actions normal_axioms {alg_size=n; alg_unary=unary_arr} =
+let get_unary_actions normal_axioms {alg_size=n; alg_unary=unary_arr; _} =
   (*
     Traces function applications in equation eq starting with start. If an unknown
     element comes up, it returns None.
@@ -97,7 +97,7 @@ let get_unary_actions normal_axioms {alg_size=n; alg_unary=unary_arr} =
           for i=0 to n-1 do
             p := !p && trace_with cont id left i right i l1 l2
           done ; !p in (check_axiom, undo)
-      | ((true, id1, l1, left), (true, id2, l2, right)) ->
+      | ((true, _, l1, left), (true, _, l2, right)) ->
         let check_axiom cont id =
           let p = ref true in
           for i=0 to n-1 do
@@ -105,8 +105,8 @@ let get_unary_actions normal_axioms {alg_size=n; alg_unary=unary_arr} =
               p := !p && trace_with cont id left i right j l1 l2
             done
           done ; !p in (check_axiom, undo)
-      | ((true, id1, l1, left), (false, id2, l2, right))
-      | ((false, id2, l2, right), (true, id1, l1, left)) ->
+      | ((true, _, l1, left), (false, id2, l2, right))
+      | ((false, id2, l2, right), (true, _, l1, left)) ->
         let check_axiom cont id =
           let p = ref true in
           for i=0 to n-1 do
@@ -169,7 +169,7 @@ let get_normal_axioms complicated =
   Generate unary operation tables. lc, lu and lb are numbers of constants,
   unary and binary operations.
 *)
-let gen_unary th dodos doundos {alg_size=n; alg_unary=unary_arr} k =
+let gen_unary th dodos doundos {alg_size=n; alg_unary=unary_arr; _} k =
   let lu = Array.length th.th_unary in
   (* Main loop. *)
   let rec

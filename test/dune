@@ -1,0 +1,4 @@
+(cram
+ (deps
+  %{bin:alg}
+  (glob_files %{project_root}/theories/*.th)))

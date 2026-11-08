@@ -61,11 +61,11 @@ struct
       nums', "http://oeis.org/search?q=" ^ nums
         
   let init
-      {C.sizes=sizes; C.source=source}
+      {C.source=source; _}
       ch
       src_lines
-      ({T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary;
-        T.th_predicates=th_pred; T.th_relations=th_rel} as th) =
+      ({T.th_name=th_name; T.th_unary=th_unary; T.th_binary=th_binary;
+        T.th_predicates=th_pred; T.th_relations=th_rel; _} as th) =
 
     let count_footer lst =
       let lst = List.filter (fun (n,_) -> n >= 2) lst in
@@ -89,8 +89,8 @@ struct
           end;
 
         algebra =
-          begin fun ({A.alg_name=name; A.alg_prod=prod; A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary;
-                      A.alg_predicates=pred; A.alg_relations=rel} as a) ->
+          begin fun ({A.alg_name=name; A.alg_prod=prod; A.alg_unary=unary; A.alg_binary=binary;
+                      A.alg_predicates=pred; A.alg_relations=rel; _} as a) ->
             let name = (match name with | None -> "Model of " ^ th_name | Some n -> n) in
             let info =
               begin match prod with
@@ -132,7 +132,7 @@ module MarkdownStyle : TextStyle =
 struct
   let ttfont str = str
 
-  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {A.alg_size=n; A.alg_const=const} =
+  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary; _} {A.alg_size=n; A.alg_const=const; _} =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
     let default_names = 
       ref (List.filter (fun x -> not (List.mem x forbidden_names))
@@ -160,7 +160,7 @@ struct
 
   let section ch str = Printf.fprintf ch "# %s\n\n" str
 
-  let footer ch = ()
+  let footer _ = ()
 
   let code ch lines =
     List.iter (fun line -> Printf.fprintf ch "    %s\n" line) lines ;
@@ -182,7 +182,7 @@ struct
       Printf.fprintf ch "\n    %*s |" (max w v) op ;
       for i = 0 to n-1 do Printf.fprintf ch "  %*s" w names.(i) done ;
       Printf.fprintf ch "\n    %s-+" (String.make (max w v) '-');
-      for i = 0 to n-1 do Printf.fprintf ch "--%s" ds done;
+      for _i = 0 to n-1 do Printf.fprintf ch "--%s" ds done;
       Printf.fprintf ch "\n    %*s |" (max w v) " ";
       for i = 0 to n-1 do Printf.fprintf ch "  %*s" w names.(t.(i)) done ;
       Printf.fprintf ch "\n\n"
@@ -195,7 +195,7 @@ struct
       Printf.fprintf ch "\n    %*s |" (max w v) op;
       for i = 0 to n-1 do Printf.fprintf ch "  %*s" w names.(i) done ;
       Printf.fprintf ch "\n    %s-+" (String.make (max w v) '-') ;
-      for j = 0 to n-1 do Printf.fprintf ch "--%s" ds done ;
+      for _j = 0 to n-1 do Printf.fprintf ch "--%s" ds done ;
       for i = 0 to n-1 do
         Printf.fprintf ch "\n    %*s |" (max w v) names.(i) ;
         for j = 0 to n-1 do
@@ -212,7 +212,7 @@ struct
       Printf.fprintf ch "\n    %*s |" (max w v) p ;
       for i = 0 to n-1 do Printf.fprintf ch "  %*s" w names.(i) done ;
       Printf.fprintf ch "\n    %s-+" (String.make (max w v) '-');
-      for i = 0 to n-1 do Printf.fprintf ch "--%s" ds done;
+      for _i = 0 to n-1 do Printf.fprintf ch "--%s" ds done;
       Printf.fprintf ch "\n    %*s |" (max w v) " ";
       for i = 0 to n-1 do Printf.fprintf ch "  %*d" w t.(i) done ;
       Printf.fprintf ch "\n\n"
@@ -225,7 +225,7 @@ struct
       Printf.fprintf ch "\n    %*s |" (max w v) r;
       for i = 0 to n-1 do Printf.fprintf ch "  %*s" w names.(i) done ;
       Printf.fprintf ch "\n    %s-+" (String.make (max w v) '-') ;
-      for j = 0 to n-1 do Printf.fprintf ch "--%s" ds done ;
+      for _j = 0 to n-1 do Printf.fprintf ch "--%s" ds done ;
       for i = 0 to n-1 do
         Printf.fprintf ch "\n    %*s |" (max w v) names.(i) ;
         for j = 0 to n-1 do
@@ -256,7 +256,7 @@ struct
 
   let ttfont str = "<code>" ^ escape str ^ "</code>"
 
-  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {A.alg_size=n; A.alg_const=const} =
+  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary; _} {A.alg_size=n; A.alg_const=const; _} =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
     let default_names = 
       ref (List.filter (fun x -> not (List.mem x forbidden_names))
@@ -393,7 +393,7 @@ struct
   let ttfont str = "\\texttt{" ^ escape str ^ "}"
   let math str = "$" ^ str ^ "$"
 
-  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary} {A.alg_size=n; A.alg_const=const} =
+  let names {T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary; _} {A.alg_size=n; A.alg_const=const; _} =
     let forbidden_names = Array.to_list th_const @ Array.to_list th_unary @ Array.to_list th_binary in
     let default_names = 
       ref (List.filter (fun x -> not (List.mem x forbidden_names))
@@ -415,7 +415,7 @@ struct
     done ;
     ns
       
-  let link txt url = txt
+  let link txt _ = txt
     
   let title ch str =
     Printf.fprintf ch
@@ -441,7 +441,7 @@ struct
   let algebra_unary ch names op t =
     let n = Array.length t in
     Printf.fprintf ch "\\begin{tabular}[t]{|" ;
-    for i = 0 to n do Printf.fprintf ch "c|" done ;
+    for _i = 0 to n do Printf.fprintf ch "c|" done ;
     Printf.fprintf ch "}\n\\hline\n" ;
     Printf.fprintf ch "%s " (ttfont op);
     for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
@@ -452,7 +452,7 @@ struct
   let algebra_binary ch names op t =
     let n = Array.length t in
     Printf.fprintf ch "\\begin{tabular}[t]{|" ;
-    for i = 0 to n do Printf.fprintf ch "c|" done ;
+    for _i = 0 to n do Printf.fprintf ch "c|" done ;
     Printf.fprintf ch "}\n\\hline\n" ;
     Printf.fprintf ch "%s " (ttfont op);
     for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
@@ -469,7 +469,7 @@ struct
   let algebra_predicate ch names p t =
     let n = Array.length t in
     Printf.fprintf ch "\\begin{tabular}[t]{|" ;
-    for i = 0 to n do Printf.fprintf ch "c|" done ;
+    for _i = 0 to n do Printf.fprintf ch "c|" done ;
     Printf.fprintf ch "}\n\\hline\n" ;
     Printf.fprintf ch "%s " (ttfont p);
     for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
@@ -480,7 +480,7 @@ struct
   let algebra_relation ch names r t =
     let n = Array.length t in
     Printf.fprintf ch "\\begin{tabular}[t]{|" ;
-    for i = 0 to n do Printf.fprintf ch "c|" done ;
+    for _i = 0 to n do Printf.fprintf ch "c|" done ;
     Printf.fprintf ch "}\n\\hline\n" ;
     Printf.fprintf ch "%s " (ttfont r);
     for i = 0 to n-1 do Printf.fprintf ch "& %s " names.(i) done ;
@@ -517,9 +517,9 @@ module JSON : Formatter =
 struct
   let sep i n = if i < n then ", " else ""
 
-  let init config ch _
+  let init _ ch _
       {T.th_name=th_name; T.th_const=th_const; T.th_unary=th_unary; T.th_binary=th_binary;
-       T.th_predicates=th_pred; T.th_relations=th_rel} =
+       T.th_predicates=th_pred; T.th_relations=th_rel; _} =
 
     {
       header = begin fun () -> Printf.fprintf ch "[ \"%s\"" th_name end;
@@ -528,7 +528,7 @@ struct
 
       algebra =
         begin
-          fun {A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary; A.alg_predicates=pred; A.alg_relations=rel} ->
+          fun {A.alg_const=const; A.alg_unary=unary; A.alg_binary=binary; A.alg_predicates=pred; A.alg_relations=rel; _} ->
             Printf.fprintf ch ",\n  {\n";
             Array.iteri (fun i c -> Printf.fprintf ch "    \"%s\" : %d,\n" c const.(i)) th_const;
             let ulen = Array.length unary in
@@ -586,7 +586,7 @@ struct
 
       count_header = begin fun () -> () end;
 
-      count = begin fun n k -> () end;
+      count = begin fun _ _ -> () end;
 
       count_footer = begin fun lst ->
         Printf.fprintf ch

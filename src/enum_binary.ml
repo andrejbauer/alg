@@ -11,7 +11,7 @@ exception Undefined
 (* Auxiliary functions for binary axioms. *)
 
 (* Apply simple axioms to the binary operation tables. *)
-let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr} =
+let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr; _} =
   (*
      Applies simple axioms to the main operation tables.
      If axioms aren't simple it fails miserably.
@@ -40,7 +40,7 @@ let apply_simple_binary simple {alg_unary=unary_arr; alg_binary=binary_arr} =
 (* Apply one variable shallow axioms to the binary_arr operation tables. *)
 let apply_one_var_shallow one_var_shallow {alg_size=n;
                                            alg_unary=unary_arr;
-                                           alg_binary=binary_arr} =
+                                           alg_binary=binary_arr; _} =
   (*
     Apply one variable shallow axioms. Typical example is axioms for
     a unit element in a monoid (forall a: a * e = e)
@@ -72,7 +72,7 @@ let apply_one_var_shallow one_var_shallow {alg_size=n;
   evaluate term in the context of vars. Raises Undefined if there is
   insufficient information to fully evaluate.
 *)
-let eval_eq {alg_unary=unary_arr; alg_binary=binary_arr} vars =
+let eval_eq {alg_unary=unary_arr; alg_binary=binary_arr; _} vars =
   let rec eval_eq' = function
     | Const c -> c (* XXX This is fishy, shouldn't we lookup c? *)
     | Elem e -> e
@@ -92,9 +92,7 @@ let eval_eq {alg_unary=unary_arr; alg_binary=binary_arr} vars =
           end
       end in eval_eq'
 
-let get_checks all_tuples ({alg_unary=unary_arr;
-                            alg_binary=binary_arr} as alg)
-    zipped_axioms =
+let get_checks all_tuples alg zipped_axioms =
   (*
      Returns false if there is a conflict.
   *)
@@ -123,7 +121,7 @@ let get_checks all_tuples ({alg_unary=unary_arr;
 *)
 let get_binary_actions ({alg_size=n;
                          alg_unary=unary_arr;
-                         alg_binary=binary_arr} as alg) 
+                         alg_binary=binary_arr; _} as alg)
     assoc amenable =
   (* Compute actions from amenable axioms *)
   let actions_from_axiom (num_vars, axiom) =
@@ -464,7 +462,7 @@ let get_binary_actions ({alg_size=n;
   amenable axioms, check checks if non-amenable axioms are still valid.
   k is the continuation.
 *)
-let gen_binary th {alg_size=n; alg_binary=binary_arr; alg_unary=unary_arr}
+let gen_binary th {alg_size=n; alg_binary=binary_arr; _}
     dodos doundos check k =
   let lb = Array.length th.th_binary in
   (* Main loop. *)

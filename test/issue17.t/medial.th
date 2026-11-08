@@ -1,0 +1,4 @@
+Theory medial.
+Binary *.
+
+Axiom: (x * y) * (z * w) = (x * z) * (y * w).

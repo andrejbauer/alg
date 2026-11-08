@@ -31,23 +31,23 @@ let extend_var x vars =
   let k = fresh vars in
     (x,k) :: vars, k
 
-let lookup_const {const=ec} x = Util.lookup x ec
+let lookup_const {const=ec; _} x = Util.lookup x ec
 
-let lookup_unary {unary=eu} x = Util.lookup x eu
+let lookup_unary {unary=eu; _} x = Util.lookup x eu
 
-let lookup_binary {binary=eb} x = Util.lookup x eb
+let lookup_binary {binary=eb; _} x = Util.lookup x eb
 
-let lookup_predicate {predicates=ep} x = Util.lookup x ep
+let lookup_predicate {predicates=ep; _} x = Util.lookup x ep
 
-let lookup_relation {relations=er} x = Util.lookup x er
+let lookup_relation {relations=er; _} x = Util.lookup x er
 
 let lookup_var vars x = Util.lookup x vars
 
-let is_op {const=ec; unary=eu; binary=eb} x =
+let is_op {const=ec; unary=eu; binary=eb; _} x =
   List.mem_assoc x ec || List.mem_assoc x eu || List.mem_assoc x eb
 
 (* The free variables of a term, without repetitions. *)
-let rec fv_term env (t, loc) =
+let rec fv_term env (t, _) =
   match t with
     | Input.Var x ->
       if is_op env x then [] else [x]
@@ -56,7 +56,7 @@ let rec fv_term env (t, loc) =
 
 
 (* The free variables of a formula, without repetitions. *)
-let rec fv_formula env (f, loc) =
+let rec fv_formula env (f, _) =
   match f with
     | Input.False -> []
     | Input.True -> []
@@ -162,7 +162,7 @@ let cook_formula env f =
 let split_entries lst =
   List.fold_left
     (fun (env,eqs,axs) ->
-      fun (e, loc) -> match e with
+      fun (e, _) -> match e with
         | Input.Constant cs -> (List.fold_left extend_const env cs, eqs, axs)
         | Input.Unary us -> (List.fold_left extend_unary env us, eqs, axs)
         | Input.Binary bs -> (List.fold_left extend_binary env bs, eqs, axs)

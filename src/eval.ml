@@ -10,7 +10,7 @@ exception Undefined
    unary and binary operation arrays are assumed to be full so there
    should be no -1's anywhere.
 *)
-let eval_term {alg_const=c; alg_unary=u; alg_binary=b} vars t =
+let eval_term {alg_const=c; alg_unary=u; alg_binary=b; _} vars t =
   let rec eval = function
     | Const v -> c.(v)
     | Elem e -> e
@@ -20,7 +20,7 @@ let eval_term {alg_const=c; alg_unary=u; alg_binary=b} vars t =
   in
     eval t
 
-let eval_term_partial {alg_const=const_arr; alg_unary=unary_arr; alg_binary=binary_arr} vars term =
+let eval_term_partial {alg_const=const_arr; alg_unary=unary_arr; alg_binary=binary_arr; _} vars term =
   let rec eval_t_p = function
     | Const c ->
         begin match const_arr.(c) with
@@ -47,7 +47,7 @@ let eval_term_partial {alg_const=const_arr; alg_unary=unary_arr; alg_binary=bina
 
 
 (* Evaluate a formula. Returns None if undefined otherwise Some bool. *)
-let eval_formula ({alg_predicates=ps; alg_relations=rs; alg_size=n} as alg) vars f =
+let eval_formula ({alg_predicates=ps; alg_relations=rs; alg_size=n; _} as alg) vars f =
   let rec eval_formula' = function
     | True -> Some true
     | False -> Some false
