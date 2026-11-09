@@ -1,9 +1,7 @@
-Regression tests for the bugs found by the code audit.
+Regression tests for the enumeration, the front end and the output.
 
-A quantifier binding several variables at once. Before the fix only the
-first variable was removed from the free variables of the body, so the
-axiom was wrapped in vacuous outer quantifiers and evaluated n times
-slower per extra variable.
+Posets, with the axioms quantifying several variables at once. The
+counts are the numbers of posets, OEIS A000112.
 
   $ alg --no-source --count --size 1-5 poset_explicit.th
   # Theory poset_explicit
@@ -19,10 +17,10 @@ slower per extra variable.
   Check the numbers [2, 5, 16, 63](http://oeis.org/search?q=2,5,16,63) on-line at oeis.org
   
 
-An equivalence with one side still undetermined. Before the fix it
-evaluated to false instead of undetermined, so the first theory had no
-models and the second one too few. The alternative algorithm has its
-own evaluator and gives the correct counts.
+Equivalences between relation entries, which the enumeration evaluates
+while some entries are still undetermined. The default algorithm must
+agree with the alternative one. At size 1 the first theory has 2 models
+and the second one 6, which is easily checked by hand.
 
   $ alg --no-source --count --size 1-2 iff_exists.th
   # Theory iff_exists
@@ -57,9 +55,10 @@ own evaluator and gives the correct counts.
          2 | 1176
   
 
-Relation entries forced under one assignment of the predicates leaked
-into the enumeration of the next assignment. Before the fix the counts
-were 3, 126, 43504 and depended on the order of the axioms.
+A predicate and two relations, with axioms that force relation entries
+depending on the predicate. The default algorithm must agree with the
+alternative one. At size 1 there are 4 models, which is easily checked
+by hand.
 
   $ alg --no-source --count --size 1-3 leftover.th
   # Theory leftover
@@ -80,9 +79,8 @@ were 3, 126, 43504 and depended on the order of the axioms.
          3 | 44224
   
 
-An existential statement over the empty structure is false. Before the
-fix the alternative algorithm took it to be true, so it found no model
-of size 0 for this theory.
+An axiom stating that there are no elements. The empty structure is its
+only model, and both algorithms must find it at size 0.
 
   $ alg --no-source --count --size 0-2 noexists.th
   # Theory noexists
@@ -103,10 +101,9 @@ of size 0 for this theory.
          2 | 0
   
 
-Axioms that contradict each other at a given size but not at smaller
-ones. Before the fix the contradiction, when found while applying the
-unary axioms, aborted the whole run with a fatal error instead of
-yielding a count of 0.
+Axioms that are consistent at size 1 only, since f(x) = y forces all
+elements to be equal. The larger sizes must report 0 models, and the
+run must not stop at the first size without models.
 
   $ alg --no-source --count --size 1-3 fatal.th
   # Theory fatal
@@ -127,9 +124,8 @@ yielding a count of 0.
          3 | 0
   
 
-Equations without any operation in a theory without unary operations.
-Before the fix they were never checked, so every structure was passed
-on as a model and the final sanity check reported an internal error.
+Equations that mention no operation, in theories without unary
+operations. Both theories have models at size 1 only.
 
   $ alg --no-source --count --size 1-3 var_eq_const.th
   # Theory var_eq_const
@@ -168,11 +164,9 @@ on as a model and the final sanity check reported an internal error.
          3 | 0
   
 
-Equations whose one side is a binary application and whose other side
-mentions fewer variables. Before the fix the equation was not checked
-when the last table entry it needs was filled through the side with
-fewer variables, so invalid models were produced and the final sanity
-check reported an internal error from size 2 on.
+Equations whose one side is an application of a binary operation and
+whose other side mentions only some of its variables. The default
+algorithm must agree with the alternative one.
 
   $ alg --no-source --count --size 1-3 gap.th
   # Theory gap
@@ -209,19 +203,17 @@ check reported an internal error from size 2 on.
          2 | 36
   
 
-A relation declared twice. Before the fix the declaration was accepted,
-the axioms constrained only the second copy, and the counts were
-inflated by the unconstrained first copy.
+A relation declared twice must be rejected.
 
   $ alg --no-source --count --size 1-3 duplicate_relation.th
   Typing error:
   R is declared more than once
   [1]
 
-A bound variable with the same name as a constant. In an equation it
-was read as the constant, in any other formula as the variable, so the
-two theories below had different models. Before the fix the first one
-gave 1, 4, 378.
+A bound variable with the same name as a constant denotes the variable,
+whether the axiom is an equation or a more general formula. Both
+theories say that every element is a left unit, so each has exactly
+one model of every size.
 
   $ alg --no-source --count --size 1-3 shadow.th
   # Theory shadow
@@ -242,10 +234,9 @@ gave 1, 4, 378.
          3 | 1
   
 
-JSON output. Before the fix the commas between the tables of a model
-were wrong for most signatures: a comma followed the last unary table
-and the last predicate table, and none separated the last binary table
-from the predicate or relation tables.
+JSON output for a signature with every kind of table and for one with
+a single unary operation. The output must be valid JSON, in particular
+the commas between the tables of a model.
 
   $ alg --format json --size 1 json_all.th
   [ "json_all",
@@ -299,8 +290,8 @@ from the predicate or relation tables.
       "f" : [0]
     }]
 
-Default element names of a large model. Before the fix the name e was
-used twice and w not at all.
+Default element names of a model with 18 elements. The names skip the
+name of the operation, and no name may appear twice.
 
   $ alg --no-source --size 18 identity.th
   # Theory identity
@@ -326,11 +317,8 @@ used twice and w not at all.
         18 | 1
   
 
-An axiom that constrains relation entries conditionally, written as a
-negated conjunction. Before the fix it was applied once before the
-enumeration of the relations and never consulted during it, so the
-enumeration was not pruned by it. The counts are those of the
-asymmetric relations.
+Asymmetric relations, with the axiom written as a negated conjunction.
+The counts are the numbers of oriented graphs, OEIS A001174.
 
   $ alg --no-source --count --size 1-5 asymmetric.th
   # Theory asymmetric
@@ -346,9 +334,9 @@ asymmetric relations.
   Check the numbers [2, 7, 42, 582](http://oeis.org/search?q=2,7,42,582) on-line at oeis.org
   
 
-The decomposition of a product whose factors have a size that was not
-requested. Before the fix the factors had no names in this case, so the
-decomposition line was missing.
+The groups of order 4. The Klein four-group is the product of two
+groups of order 2, and its decomposition must be reported although
+size 2 was not requested.
 
   $ alg --no-source --size 4 ../../theories/group.th
   # Theory group
@@ -400,10 +388,10 @@ decomposition line was missing.
          4 | 2
   
 
-Precedence of implication and equivalence. The manual gives equivalence
-the lower precedence, so the first axiom reads (False -> True) <-> False
-and has no models. Before the fix it was read as False -> (True <-> False)
-and had one model, and the other two axioms were syntax errors.
+Precedence of implication and equivalence. Equivalence binds less
+tightly, so the first axiom reads (False -> True) <-> False and the
+second True <-> (True -> False), which are both false, while the third
+reads True <-> (forall x, x = x), which is true.
 
   $ alg --no-source --count --size 1 imply_iff.th
   # Theory imply_iff
@@ -427,7 +415,7 @@ and had one model, and the other two axioms were syntax errors.
          1 | 1
   
 
-The exit status after an error. Before the fix it was 0.
+A syntax error must be reported with exit status 1.
 
   $ alg --no-source --count --size 1 syntax_error.th
   Syntax error at line 3, characters 11-12:

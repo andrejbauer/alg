@@ -1,4 +1,5 @@
-The medial law from issue 17. Before the fix alg reported 3972 models of size 4.
+Medial magmas, which satisfy (x * y) * (z * w) = (x * z) * (y * w),
+from GitHub issue 17.
 
   $ alg --no-source --count --size 1-4 medial.th
   # Theory medial

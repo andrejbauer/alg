@@ -1,5 +1,5 @@
-Equations with a unary operation under a binary one. Before the fix for
-issue 17 alg reported 2675 and 10470 models of size 3.
+Equations in which a unary operation is applied inside a binary one.
+The alternative algorithm gives the same counts.
 
   $ alg --no-source --count --size 1-3 free_under_unary.th
   # Theory free_under_unary

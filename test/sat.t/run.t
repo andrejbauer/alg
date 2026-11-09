@@ -1,5 +1,6 @@
-Negated equations under the alternative algorithm. Before the fix
-alg --sat found no models of these theories at all.
+Theories whose axioms are negated equations: functions without fixed
+points and binary operations without idempotent elements. The default
+and the alternative algorithm must give the same counts.
 
   $ alg --no-source --count --size 1-5 fixedpointfree.th
   # Theory fixedpointfree

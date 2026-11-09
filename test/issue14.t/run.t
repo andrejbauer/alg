@@ -1,4 +1,5 @@
-Parenthesized formulas, issue 14. None of these theories parsed before the fix.
+Axioms with parenthesized formulas, including every bundled theory that
+uses them (GitHub issue 14).
 
   $ alg --no-source --count --size 1-3 quantifier.th
   # Theory quantifier
